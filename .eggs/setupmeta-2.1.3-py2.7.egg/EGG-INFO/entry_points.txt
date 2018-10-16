@@ -1,0 +1,12 @@
+
+[distutils.commands]
+check = setupmeta.commands:CheckCommand
+cleanall = setupmeta.commands:CleanCommand
+entrypoints = setupmeta.commands:EntryPointsCommand
+explain = setupmeta.commands:ExplainCommand
+twine = setupmeta.commands:TwineCommand
+version = setupmeta.commands:VersionCommand
+
+[distutils.setup_keywords]
+setup_requires = setupmeta.hook:register
+versioning = setupmeta.hook:register

@@ -1,0 +1,15 @@
+app-type: python-lib
+jenkins-default-job: PYPI-TN-titus-isolate
+jenkins-jobs:
+- PYPI-TN-titus-isolate
+jenkins-master: titus
+name: titus-isolate
+org: tn
+python:
+  test-versions:
+  - "2.7"
+  - "3.4"
+  - "3.5"
+  - "3.6"
+tool-versions:
+  python: "3.6"
