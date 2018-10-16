@@ -6,3 +6,5 @@ titus_isolate.egg-info/
 dist/
 test-reports/
 venv/
+
+.idea
