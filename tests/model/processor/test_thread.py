@@ -1,13 +1,13 @@
 import unittest
 import uuid
 
-from titus_isolate.model.thread import Thread
+from titus_isolate.model.processor.thread import Thread
 
 
 class TestThread(unittest.TestCase):
     def test_construction(self):
         thread0 = Thread(0)
-        self.assertEqual(0, thread0.get_processor_id())
+        self.assertEqual(0, thread0.get_id())
 
     def test_invalid_thread(self):
         with self.assertRaises(ValueError):
