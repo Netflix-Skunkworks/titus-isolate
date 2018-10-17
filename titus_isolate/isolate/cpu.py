@@ -1,6 +1,7 @@
 import logging
 from functools import reduce
 
+from titus_isolate.model.processor.utils import get_emptiest_core
 from titus_isolate.model.workload import Workload
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s')
@@ -14,7 +15,7 @@ def assign_threads(cpu, workload):
     package = cpu.get_emptiest_package()
 
     while thread_count > 0 and len(package.get_empty_threads()) > 0:
-        core = package.get_emptiest_core()
+        core = get_emptiest_core(package)
         empty_threads = core.get_empty_threads()[:thread_count]
 
         for empty_thread in empty_threads:

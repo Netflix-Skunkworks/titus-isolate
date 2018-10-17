@@ -22,3 +22,17 @@ def get_cross_package_violations(cpu):
             violations[workload_id] = [p.get_id() for p in packages]
 
     return violations
+
+
+def get_shared_core_violations(cpu):
+    """
+    Returns a dictionary mapping core ids to lists of workload ids.  Only workloads on more than one package are
+    included.
+
+    {
+       fa873f01-da52-45b4-b37b-edad0dfab519: []
+    }
+
+    :param cpu: CPU to scan for cross package violations
+    :return: dictionary mapping workload ids to lists of packages
+    """
