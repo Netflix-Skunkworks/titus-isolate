@@ -23,5 +23,8 @@ class Package:
 
         return emptiest_core
 
+    def get_threads(self):
+        return reduce(list.__add__, [core.get_threads() for core in self.get_cores()])
+
     def get_empty_threads(self):
         return reduce(list.__add__, [core.get_empty_threads() for core in self.get_cores()])

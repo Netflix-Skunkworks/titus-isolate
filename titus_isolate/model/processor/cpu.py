@@ -1,3 +1,6 @@
+from functools import reduce
+
+
 class Cpu:
     def __init__(self, packages):
         if len(packages) < 1:
@@ -20,3 +23,6 @@ class Cpu:
                 curr_empty_thread_count = new_empty_thread_count
 
         return emptiest_package
+
+    def get_empty_threads(self):
+        return reduce(list.__add__, [package.get_empty_threads() for package in self.get_packages()])
