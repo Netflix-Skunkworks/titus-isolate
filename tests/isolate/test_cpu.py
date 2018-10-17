@@ -2,7 +2,7 @@ import logging
 import unittest
 import uuid
 
-from tests.utils import get_test_cpu, DEFAULT_TOTAL_THREAD_COUNT
+from tests.utils import DEFAULT_TOTAL_THREAD_COUNT, get_test_cpu
 from titus_isolate.isolate.cpu import assign_threads, get_threads
 from titus_isolate.model.workload import Workload
 

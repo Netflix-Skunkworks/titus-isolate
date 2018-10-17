@@ -28,13 +28,5 @@ def is_on_package(package, workload_id):
     return len(get_threads_with_workload(package, workload_id)) > 0
 
 
-def get_cores_with_workload(package, workload_id):
-    return [core for core in package.get_cores() if is_on_core(core, workload_id)]
-
-
-def is_on_core(core, workload_id):
-    return len(get_threads_with_workload(core, workload_id)) > 0
-
-
 def get_threads_with_workload(core, workload_id):
     return [thread for thread in core.get_threads() if thread.get_workload_id() == workload_id]
