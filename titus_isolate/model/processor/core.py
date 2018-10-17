@@ -1,3 +1,6 @@
+from titus_isolate.model.processor.utils import get_empty_threads
+
+
 class Core:
     def __init__(self, threads):
         if len(threads) < 1:
@@ -9,4 +12,4 @@ class Core:
         return self.__threads
 
     def get_empty_threads(self):
-        return [t for t in self.get_threads() if not t.is_claimed()]
+        return get_empty_threads(self.get_threads())

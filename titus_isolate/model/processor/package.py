@@ -1,5 +1,7 @@
 from functools import reduce
 
+from titus_isolate.model.processor.utils import get_empty_threads
+
 
 class Package:
     def __init__(self, cores):
@@ -27,4 +29,4 @@ class Package:
         return reduce(list.__add__, [core.get_threads() for core in self.get_cores()])
 
     def get_empty_threads(self):
-        return reduce(list.__add__, [core.get_empty_threads() for core in self.get_cores()])
+        return get_empty_threads(self.get_threads())
