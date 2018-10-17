@@ -1,10 +1,11 @@
 *.pyc
 .cache/
 .tox/
+.eggs/
 build/
 titus_isolate.egg-info/
 dist/
 test-reports/
 venv/
 
-.idea
+.idea/
