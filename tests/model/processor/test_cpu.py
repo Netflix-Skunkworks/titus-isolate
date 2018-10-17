@@ -9,12 +9,12 @@ from titus_isolate.model.processor.thread import Thread
 
 class TestCpu(unittest.TestCase):
     def test_construction(self):
-        p0 = Package([
-            Core([Thread(0), Thread(4)]),
-            Core([Thread(1), Thread(5)])])
-        p1 = Package([
-            Core([Thread(2), Thread(6)]),
-            Core([Thread(3), Thread(7)])])
+        p0 = Package(0, [
+            Core(0, [Thread(0), Thread(4)]),
+            Core(1, [Thread(1), Thread(5)])])
+        p1 = Package(1, [
+            Core(0, [Thread(2), Thread(6)]),
+            Core(1, [Thread(3), Thread(7)])])
 
         packages = [p0, p1]
         cpu = Cpu(packages)
@@ -34,12 +34,12 @@ class TestCpu(unittest.TestCase):
         t6 = Thread(6)
         t7 = Thread(7)
 
-        p0 = Package([
-            Core([t0, t4]),
-            Core([t1, t5])])
-        p1 = Package([
-            Core([t2, t6]),
-            Core([t3, t7])])
+        p0 = Package(0, [
+            Core(0, [t0, t4]),
+            Core(1, [t1, t5])])
+        p1 = Package(1, [
+            Core(0, [t2, t6]),
+            Core(1, [t3, t7])])
 
         cpu = Cpu([p0, p1])
 

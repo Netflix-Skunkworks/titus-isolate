@@ -16,7 +16,6 @@ class Thread:
         return self.__processor_id
 
     def claim(self, workload_id):
-        log.info("Claiming thread '{}' for workload '{}'".format(self.get_id(), workload_id))
         self.__workload_id = workload_id
 
     def get_workload_id(self):
