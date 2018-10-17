@@ -1,7 +1,7 @@
 import unittest
 import uuid
 
-from titus_isolate.model.thread import Thread
+from titus_isolate.model.processor.thread import Thread
 
 
 class TestThread(unittest.TestCase):

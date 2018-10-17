@@ -1,8 +1,8 @@
 import unittest
 import uuid
 
-from titus_isolate.model.core import Core
-from titus_isolate.model.thread import Thread
+from titus_isolate.model.processor.core import Core
+from titus_isolate.model.processor.thread import Thread
 
 
 class TestCore(unittest.TestCase):
