@@ -18,6 +18,8 @@ def assign_threads(cpu, workload):
         empty_threads = core.get_empty_threads()[:thread_count]
 
         for empty_thread in empty_threads:
+            log.info("Claiming package:core:thread '{}:{}:{}' for workload '{}'".format(
+                package.get_id(), core.get_id(), empty_thread.get_id(), workload.get_id()))
             empty_thread.claim(workload.get_id())
             thread_count -= 1
 

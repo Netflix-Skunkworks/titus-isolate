@@ -25,8 +25,8 @@ def get_test_cpu(package_count=DEFAULT_PACKAGE_COUNT, core_count=DEFAULT_CORE_CO
 
         cores = []
         for c_i in range(core_count):
-            cores.append(Core(__get_threads(p_i, c_i, package_count, core_count)))
+            cores.append(Core(c_i, __get_threads(p_i, c_i, package_count, core_count)))
 
-        packages.append(Package(cores))
+        packages.append(Package(p_i, cores))
 
     return Cpu(packages)

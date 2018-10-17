@@ -4,11 +4,15 @@ from titus_isolate.model.processor.utils import get_empty_threads
 
 
 class Package:
-    def __init__(self, cores):
+    def __init__(self, identifier, cores):
         if len(cores) < 1:
             raise ValueError("A CPU package must have at least 1 core.")
 
+        self.__identifier = identifier
         self.__cores = cores
+
+    def get_id(self):
+        return self.__identifier
 
     def get_cores(self):
         return self.__cores
