@@ -1,5 +1,6 @@
 *.pyc
 .cache/
+.coverage*
 .tox/
 .eggs/
 build/
@@ -9,3 +10,4 @@ test-reports/
 venv/
 
 .idea/
+*.swp

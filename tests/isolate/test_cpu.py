@@ -2,9 +2,8 @@ import logging
 import unittest
 import uuid
 
-from tests.utils import DEFAULT_TOTAL_THREAD_COUNT, get_test_cpu
 from titus_isolate.isolate.cpu import assign_threads
-from titus_isolate.model.processor.utils import is_cpu_full
+from titus_isolate.model.processor.utils import is_cpu_full, get_cpu, DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 
 
@@ -17,7 +16,7 @@ class TestCpu(unittest.TestCase):
         """
         Workload 0: 1 cores --> p:0 c:0 t:0
         """
-        cpu = get_test_cpu()
+        cpu = get_cpu()
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
         w = Workload(uuid.uuid4(), 1)
@@ -31,7 +30,7 @@ class TestCpu(unittest.TestCase):
         """
         Workload 0: 2 cores --> p:0 c:0 t:[0, 8]
         """
-        cpu = get_test_cpu()
+        cpu = get_cpu()
         w = Workload(uuid.uuid4(), 2)
 
         threads = assign_threads(cpu, w)
@@ -54,7 +53,7 @@ class TestCpu(unittest.TestCase):
         Workload 0: 2 cores --> p:0 c:0 t:[0, 8]
         Workload 1: 1 core  --> p:1 c:0 t:[4]
         """
-        cpu = get_test_cpu()
+        cpu = get_cpu()
         w0 = Workload(uuid.uuid4(), 2)
         w1 = Workload(uuid.uuid4(), 1)
 
@@ -89,7 +88,7 @@ class TestCpu(unittest.TestCase):
         Workload 0: 10 cores --> p:0 c:[0-3] t:[0-3, 8-11]
                                  p:1 c:0     t:[4, 12]
         """
-        cpu = get_test_cpu()
+        cpu = get_cpu()
         w = Workload(uuid.uuid4(), 10)
 
         threads = assign_threads(cpu, w)
@@ -112,7 +111,7 @@ class TestCpu(unittest.TestCase):
         --------------------
         Total:      16 cores
         """
-        cpu = get_test_cpu()
+        cpu = get_cpu()
         workloads = [
             Workload(uuid.uuid4(), 8),
             Workload(uuid.uuid4(), 4),
@@ -143,7 +142,7 @@ class TestCpu(unittest.TestCase):
         12  13  14  15
         a       a
         """
-        cpu = get_test_cpu()
+        cpu = get_cpu()
 
         # Initialize fragmented workload
         wa = Workload(uuid.uuid4(), 8)
@@ -175,7 +174,7 @@ class TestCpu(unittest.TestCase):
 
     def test_assign_to_full_cpu_fails(self):
         # Fill the CPU
-        cpu = get_test_cpu()
+        cpu = get_cpu()
         w = Workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT)
         assign_threads(cpu, w)
         self.assertTrue(is_cpu_full(cpu))
