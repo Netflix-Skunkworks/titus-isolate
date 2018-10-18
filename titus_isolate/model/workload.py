@@ -3,8 +3,8 @@ class Workload:
         self.__identifier = identifier
         self.__thread_count = int(thread_count)
 
-        if self.__thread_count < 1:
-            raise ValueError("A workload must request at least 1 thread.")
+        if self.__thread_count < 0:
+            raise ValueError("A workload must request at least 0 threads.")
 
     def get_id(self):
         return self.__identifier

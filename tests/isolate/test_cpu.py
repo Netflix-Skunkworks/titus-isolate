@@ -3,7 +3,8 @@ import unittest
 import uuid
 
 from tests.utils import DEFAULT_TOTAL_THREAD_COUNT, get_test_cpu
-from titus_isolate.isolate.cpu import assign_threads, get_threads
+from titus_isolate.isolate.cpu import assign_threads
+from titus_isolate.model.processor.utils import is_cpu_full
 from titus_isolate.model.workload import Workload
 
 
@@ -21,10 +22,8 @@ class TestCpu(unittest.TestCase):
 
         w = Workload(uuid.uuid4(), 1)
 
-        assign_threads(cpu, w)
+        threads = assign_threads(cpu, w)
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 1, len(cpu.get_empty_threads()))
-
-        threads = get_threads(cpu, w)
         self.assertEqual(1, len(threads))
         self.assertEqual(0, threads[0].get_id())
 
@@ -35,7 +34,7 @@ class TestCpu(unittest.TestCase):
         cpu = get_test_cpu()
         w = Workload(uuid.uuid4(), 2)
 
-        assign_threads(cpu, w)
+        threads = assign_threads(cpu, w)
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 2, len(cpu.get_empty_threads()))
 
         # Expected core and threads
@@ -46,7 +45,6 @@ class TestCpu(unittest.TestCase):
         self.assertEqual(8, thread8.get_id())
 
         # Actual assigned threads
-        threads = get_threads(cpu, w)
         self.assertEqual(2, len(threads))
         self.assertEqual(thread0, threads[0])
         self.assertEqual(thread8, threads[1])
@@ -60,8 +58,8 @@ class TestCpu(unittest.TestCase):
         w0 = Workload(uuid.uuid4(), 2)
         w1 = Workload(uuid.uuid4(), 1)
 
-        assign_threads(cpu, w0)
-        assign_threads(cpu, w1)
+        threads0 = assign_threads(cpu, w0)
+        threads1 = assign_threads(cpu, w1)
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 3, len(cpu.get_empty_threads()))
 
         # WORKLOAD 0
@@ -73,10 +71,9 @@ class TestCpu(unittest.TestCase):
         self.assertEqual(8, thread8.get_id())
 
         # Actual assigned threads
-        threads = get_threads(cpu, w0)
-        self.assertEqual(2, len(threads))
-        self.assertEqual(thread0, threads[0])
-        self.assertEqual(thread8, threads[1])
+        self.assertEqual(2, len(threads0))
+        self.assertEqual(thread0, threads0[0])
+        self.assertEqual(thread8, threads0[1])
 
         # WORKLOAD 1
         # Expected core and threads
@@ -84,10 +81,8 @@ class TestCpu(unittest.TestCase):
         thread4 = core00.get_threads()[0]
         self.assertEqual(4, thread4.get_id())
 
-        # Actual assigned threads
-        threads = get_threads(cpu, w1)
-        self.assertEqual(1, len(threads))
-        self.assertEqual(thread4, threads[0])
+        self.assertEqual(1, len(threads1))
+        self.assertEqual(thread4, threads1[0])
 
     def test_assign_ten_threads_empty_cpu(self):
         """
@@ -97,12 +92,11 @@ class TestCpu(unittest.TestCase):
         cpu = get_test_cpu()
         w = Workload(uuid.uuid4(), 10)
 
-        assign_threads(cpu, w)
+        threads = assign_threads(cpu, w)
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 10, len(cpu.get_empty_threads()))
 
         expected_thread_ids = [0, 1, 2, 3, 4, 8, 9, 10, 11, 12]
 
-        threads = get_threads(cpu, w)
         thread_ids = [thread.get_id() for thread in threads]
         thread_ids.sort()
 
@@ -119,21 +113,21 @@ class TestCpu(unittest.TestCase):
         Total:      16 cores
         """
         cpu = get_test_cpu()
-        w0 = Workload(uuid.uuid4(), 8)
-        w1 = Workload(uuid.uuid4(), 4)
-        w2 = Workload(uuid.uuid4(), 2)
-        w3 = Workload(uuid.uuid4(), 1)
-        w4 = Workload(uuid.uuid4(), 1)
+        workloads = [
+            Workload(uuid.uuid4(), 8),
+            Workload(uuid.uuid4(), 4),
+            Workload(uuid.uuid4(), 2),
+            Workload(uuid.uuid4(), 1),
+            Workload(uuid.uuid4(), 1)]
 
-        workloads = [w0, w1, w2, w3, w4]
-        list(map(lambda w: assign_threads(cpu, w), workloads))
+        thread_assignments = [assign_threads(cpu, w) for w in workloads]
 
         self.assertEqual(0, len(cpu.get_empty_threads()))
-        self.assertEqual(8, len(get_threads(cpu, w0)))
-        self.assertEqual(4, len(get_threads(cpu, w1)))
-        self.assertEqual(2, len(get_threads(cpu, w2)))
-        self.assertEqual(1, len(get_threads(cpu, w3)))
-        self.assertEqual(1, len(get_threads(cpu, w4)))
+        self.assertEqual(8, len(thread_assignments[0]))
+        self.assertEqual(4, len(thread_assignments[1]))
+        self.assertEqual(2, len(thread_assignments[2]))
+        self.assertEqual(1, len(thread_assignments[3]))
+        self.assertEqual(1, len(thread_assignments[4]))
 
     def test_filling_holes(self):
         """
@@ -178,3 +172,15 @@ class TestCpu(unittest.TestCase):
         list(map(lambda w: assign_threads(cpu, w), workloads))
 
         self.assertEqual(0, len(cpu.get_empty_threads()))
+
+    def test_assign_to_full_cpu_fails(self):
+        # Fill the CPU
+        cpu = get_test_cpu()
+        w = Workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT)
+        assign_threads(cpu, w)
+        self.assertTrue(is_cpu_full(cpu))
+
+        # Fail to claim one more thread
+        w = Workload(uuid.uuid4(), 1)
+        with self.assertRaises(ValueError):
+            assign_threads(cpu, w)

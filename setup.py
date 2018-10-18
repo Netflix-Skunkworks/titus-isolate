@@ -12,7 +12,7 @@ setup(
     url='https://stash.corp.netflix.com/projects/TN/repos/titus_isolate/browse',
     setup_requires=['setupmeta'],
     python_requires='>=2.7',
-    install_requires=[],
+    install_requires=['docker'],
     extras_require={
         'test': ['tox'],
     },

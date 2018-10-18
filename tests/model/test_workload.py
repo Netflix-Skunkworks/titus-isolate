@@ -16,7 +16,4 @@ class TestWorkload(unittest.TestCase):
 
     def test_invalid_workload(self):
         with self.assertRaises(ValueError):
-            Workload(uuid.uuid4(), 0)
-
-        with self.assertRaises(ValueError):
             Workload(uuid.uuid4(), -1)
