@@ -1,3 +1,6 @@
+from functools import reduce
+
+
 def get_empty_threads(threads):
     return [t for t in threads if not t.is_claimed()]
 
@@ -13,6 +16,11 @@ def get_emptiest_core(package):
             curr_empty_thread_count = new_empty_thread_count
 
     return emptiest_core
+
+
+def is_cpu_full(cpu):
+    empty_threads = reduce(list.__add__, [p.get_empty_threads() for p in cpu.get_packages()])
+    return len(empty_threads) == 0
 
 
 # Workloads
