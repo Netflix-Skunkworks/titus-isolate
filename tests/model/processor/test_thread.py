@@ -25,5 +25,5 @@ class TestThread(unittest.TestCase):
         t.claim(workload_id)
         self.assertEqual(workload_id, t.get_workload_id())
 
-        t.clear()
+        t.free()
         self.assertEqual(None, t.get_workload_id())

@@ -8,6 +8,7 @@ import docker
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
+from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.isolate.resource_manager import ResourceManager
 from titus_isolate.model.processor.utils import get_cpu
 
@@ -30,13 +31,20 @@ signal.signal(signal.SIGINT, signal_handler)
 @click.option('--cores-per-package', help="The number of cores per package")
 @click.option('--threads-per-core', default=2, help="The number of threads per core")
 def main(package_count, cores_per_package, threads_per_core):
-    log.info("Starting titus-isolate...")
+    log.info("Modeling the CPU...")
     cpu = get_cpu(int(package_count), int(cores_per_package), int(threads_per_core))
+
+    # Setup the resource manager
+    log.info("Setting up the resource manager...")
     docker_client = docker.from_env()
     resource_manager = ResourceManager(cpu, docker_client)
-    create_event_handler = CreateEventHandler(resource_manager)
+
+    # Setup the event handlers
+    log.info("Setting up the event handlers...")
     event_logger = EventLogger()
-    event_handlers = [event_logger, create_event_handler]
+    create_event_handler = CreateEventHandler(resource_manager)
+    free_event_handler = FreeEventHandler(resource_manager)
+    event_handlers = [event_logger, create_event_handler, free_event_handler]
 
     log.info("Waiting for Docker events...")
     EventManager(docker_client.events(), event_handlers)

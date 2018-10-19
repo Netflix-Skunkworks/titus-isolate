@@ -9,5 +9,6 @@ TYPE = "Type"
 
 CONTAINER = "container"
 CREATE = "create"
+DIE = "die"
 
 CPU_LABEL_KEY = "com.netflix.titus.cpu"

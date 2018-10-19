@@ -1,3 +1,4 @@
+import json
 from threading import Thread
 
 
@@ -19,5 +20,5 @@ class EventManager:
     def __process_events(self):
         for event in self.__events:
             for event_handler in self.__event_handlers:
-                event_handler.handle(event)
+                event_handler.handle(json.loads(event))
             self.__processed_event_count += 1
