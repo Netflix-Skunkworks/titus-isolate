@@ -2,9 +2,9 @@ import logging
 import unittest
 import uuid
 
-from tests.utils import get_test_cpu
 from titus_isolate.isolate.cpu import assign_threads
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
+from titus_isolate.model.processor.utils import get_cpu
 from titus_isolate.model.workload import Workload
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s')
@@ -14,7 +14,7 @@ log = logging.getLogger()
 class TestDetect(unittest.TestCase):
 
     def test_no_cross_package_violation(self):
-        cpu = get_test_cpu()
+        cpu = get_cpu()
         w = Workload(uuid.uuid4(), 4)
 
         violations = get_cross_package_violations(cpu)
@@ -27,7 +27,7 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(0, len(violations))
 
     def test_one_cross_package_violation(self):
-        cpu = get_test_cpu()
+        cpu = get_cpu()
         w = Workload(uuid.uuid4(), 9)
 
         assign_threads(cpu, w)
@@ -36,7 +36,7 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(1, len(violations))
 
     def test_shared_core_violation(self):
-        cpu = get_test_cpu()
+        cpu = get_cpu()
         violations = get_shared_core_violations(cpu)
         log.info("shared core violations: {}".format(violations))
         self.assertEqual(0, len(violations))

@@ -1,6 +1,6 @@
 from functools import reduce
 
-from titus_isolate.model.processor.utils import get_empty_threads
+from titus_isolate.model.processor import utils
 
 
 class Cpu:
@@ -30,4 +30,4 @@ class Cpu:
         return reduce(list.__add__, [package.get_threads() for package in self.get_packages()])
 
     def get_empty_threads(self):
-        return get_empty_threads(self.get_threads())
+        return utils.get_empty_threads(self.get_threads())

@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 import uuid
@@ -30,29 +31,21 @@ class MockEventProvider:
         self.__closed = True
 
 
-class MockContainerClient(object):
-
+class MockContainerClient:
     @staticmethod
     def update(**kwargs):
         log.info("update called with: '{}'".format(kwargs))
 
 
+class MockContainerList:
+    @staticmethod
+    def get(ignored_contaier_id_or_name):
+        return MockContainerClient()
+
+
 class MockDockerClient:
     def __init__(self):
-        self.containers = MockContainerClient()
-
-
-def __get_event(type, action, container_id, attributes):
-    return {
-        LOWERCASE_ID: str(container_id),
-        TYPE: str(type),
-        ACTION: str(action),
-        ACTOR: {
-            ID: str(container_id),
-            ATTRIBUTES: attributes
-        },
-        TIME: int(time.time())
-    }
+        self.containers = MockContainerList()
 
 
 def get_container_create_event(cpus, actor_id=str(uuid.uuid4()).replace("-", "")):
@@ -61,4 +54,17 @@ def get_container_create_event(cpus, actor_id=str(uuid.uuid4()).replace("-", "")
         CPU_LABEL_KEY: str(cpus)
     }
 
-    return __get_event(CONTAINER, CREATE, actor_id, attributes)
+    return get_event(CONTAINER, CREATE, actor_id, attributes)
+
+
+def get_event(type, action, container_id, attributes):
+    return json.dumps({
+        LOWERCASE_ID: str(container_id),
+        TYPE: str(type),
+        ACTION: str(action),
+        ACTOR: {
+            ID: str(container_id),
+            ATTRIBUTES: attributes
+        },
+        TIME: int(time.time())
+    })

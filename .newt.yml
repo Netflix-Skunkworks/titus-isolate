@@ -1,4 +1,4 @@
-app-type: python-lib
+app-type: cron-python
 jenkins-default-job: PYPI-TN-titus-isolate
 jenkins-jobs:
 - PYPI-TN-titus-isolate
@@ -7,9 +7,6 @@ name: titus-isolate
 org: tn
 python:
   test-versions:
-  - "2.7"
-  - "3.4"
-  - "3.5"
   - "3.6"
 tool-versions:
   python: "3.6"
