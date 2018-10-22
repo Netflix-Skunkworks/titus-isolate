@@ -33,3 +33,13 @@ def assign_threads(cpu, workload):
             thread_count -= 1
 
     return claimed_threads + assign_threads(cpu, Workload(workload.get_id(), thread_count))
+
+
+def free_threads(cpu, workload_id):
+    freed_threads = []
+    for t in cpu.get_threads():
+        if t.get_workload_id() == workload_id:
+            t.free()
+            freed_threads.append(t)
+
+    return freed_threads

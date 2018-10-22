@@ -51,7 +51,7 @@ class TestCpu(unittest.TestCase):
         self.assertEqual(p1, cpu.get_emptiest_package())
 
         # The first package should be the emptiest again, after we release the claimed thread
-        t5.clear()
+        t5.free()
         self.assertEqual(p0, cpu.get_emptiest_package())
 
         # The first package should be emptiest when we claim a thread on the second

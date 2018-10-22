@@ -30,7 +30,7 @@ class TestCore(unittest.TestCase):
         c.get_threads()[0].claim(uuid.uuid4())
         self.assertEqual([t1], c.get_empty_threads())
 
-        t0.clear()
+        t0.free()
         self.assertEqual(c.get_threads(), c.get_empty_threads())
 
         t1.claim(uuid.uuid4())

@@ -36,5 +36,5 @@ class TestPackage(unittest.TestCase):
         t1.claim(uuid.uuid4())
         self.assertEqual([t0, t2, t3], p.get_empty_threads())
 
-        t1.clear()
+        t1.free()
         self.assertEqual([t0, t2, t1, t3], p.get_empty_threads())

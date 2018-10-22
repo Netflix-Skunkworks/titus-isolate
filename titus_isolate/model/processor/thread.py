@@ -21,7 +21,7 @@ class Thread:
     def get_workload_id(self):
         return self.__workload_id
 
-    def clear(self):
+    def free(self):
         log.info("Releasing thread '{}' for workload '{}'".format(self.get_id(), self.__workload_id))
         self.__workload_id = None
 

@@ -2,7 +2,7 @@ import logging
 import unittest
 import uuid
 
-from titus_isolate.isolate.cpu import assign_threads
+from titus_isolate.isolate.cpu import assign_threads, free_threads
 from titus_isolate.model.processor.utils import is_cpu_full, get_cpu, DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 
@@ -183,3 +183,16 @@ class TestCpu(unittest.TestCase):
         w = Workload(uuid.uuid4(), 1)
         with self.assertRaises(ValueError):
             assign_threads(cpu, w)
+
+    def test_free_cpu(self):
+        cpu = get_cpu()
+        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
+
+        w = Workload(uuid.uuid4(), 3)
+        assign_threads(cpu, w)
+        self.assertEqual(
+            DEFAULT_TOTAL_THREAD_COUNT - w.get_thread_count(),
+            len(cpu.get_empty_threads()))
+
+        free_threads(cpu, w.get_id())
+        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
