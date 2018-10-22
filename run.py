@@ -9,6 +9,7 @@ from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.free_event_handler import FreeEventHandler
+from titus_isolate.docker.utils import get_current_workloads
 from titus_isolate.isolate.resource_manager import ResourceManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.utils import get_cpu
@@ -41,15 +42,21 @@ def main(package_count, cores_per_package, threads_per_core):
     workload_manager = WorkloadManager(ResourceManager(cpu, docker_client))
 
     # Setup the event handlers
-    log.info("Setting up the event handlers...")
+    log.info("Setting up the Docker event handlers...")
     event_logger = EventLogger()
     create_event_handler = CreateEventHandler(workload_manager)
     free_event_handler = FreeEventHandler(workload_manager)
     event_handlers = [event_logger, create_event_handler, free_event_handler]
 
     # Start event processing
-    log.info("Waiting for Docker events...")
+    log.info("Starting Docker event handling...")
     EventManager(docker_client.events(), event_handlers)
+
+    # Initialize currently running containers as workloads
+    log.info("Isolating currently running workloads...")
+    workload_manager.add_workloads(get_current_workloads(docker_client))
+
+    log.info("Startup complete, waiting for events...")
 
     # Block exit forever
     event.wait()

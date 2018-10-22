@@ -22,6 +22,6 @@ def get_current_workloads(docker_client):
             cpu = int(container.labels[CPU_LABEL_KEY])
             workloads.append(Workload(workload_id, cpu))
         else:
-            log.warning("Found running workload without expected label: '{}'".format(CPU_LABEL_KEY))
+            log.warning("Found running workload: '{}' without expected label: '{}'".format(workload_id, CPU_LABEL_KEY))
 
     return workloads
