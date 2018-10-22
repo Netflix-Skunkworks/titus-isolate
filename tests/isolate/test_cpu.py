@@ -1,13 +1,12 @@
-import logging
 import unittest
 import uuid
 
 from titus_isolate.isolate.cpu import assign_threads, free_threads
 from titus_isolate.model.processor.utils import is_cpu_full, get_cpu, DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
+from titus_isolate.utils import config_logs
 
-
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s')
+config_logs()
 
 
 class TestCpu(unittest.TestCase):

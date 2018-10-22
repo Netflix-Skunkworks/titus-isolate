@@ -2,7 +2,6 @@ import logging
 
 from titus_isolate.isolate.cpu import assign_threads, free_threads
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s')
 log = logging.getLogger()
 
 

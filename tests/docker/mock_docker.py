@@ -6,7 +6,6 @@ import uuid
 from titus_isolate.docker.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, CPU_LABEL_KEY, CREATE, ID, \
     LOWERCASE_ID, NAME, TIME, TYPE, DIE
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s')
 log = logging.getLogger()
 
 

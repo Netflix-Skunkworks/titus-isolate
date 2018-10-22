@@ -3,7 +3,6 @@ import logging
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
 from titus_isolate.model.workload import Workload
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s')
 log = logging.getLogger()
 
 

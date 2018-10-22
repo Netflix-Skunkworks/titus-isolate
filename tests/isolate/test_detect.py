@@ -6,8 +6,9 @@ from titus_isolate.isolate.cpu import assign_threads
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.model.processor.utils import get_cpu
 from titus_isolate.model.workload import Workload
+from titus_isolate.utils import config_logs
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s')
+config_logs()
 log = logging.getLogger()
 
 

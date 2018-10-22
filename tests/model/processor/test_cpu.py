@@ -5,6 +5,9 @@ from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.package import Package
 from titus_isolate.model.processor.thread import Thread
+from titus_isolate.utils import config_logs
+
+config_logs()
 
 
 class TestCpu(unittest.TestCase):

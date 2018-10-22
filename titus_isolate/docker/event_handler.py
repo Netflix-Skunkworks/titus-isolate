@@ -1,12 +1,11 @@
 import logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] (%(threadName)-10s) %(message)s')
 log = logging.getLogger()
 
 
 class EventHandler:
-    def __init__(self, resource_manager):
-        self.resource_manager = resource_manager
+    def __init__(self, workload_manager):
+        self.workload_manager = workload_manager
         self.__ignored_event_count = 0
         self.__handled_event_count = 0
 
