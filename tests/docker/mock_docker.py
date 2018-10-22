@@ -30,21 +30,40 @@ class MockEventProvider:
         self.__closed = True
 
 
-class MockContainerClient:
+class MockContainer:
+    def __init__(self, workload):
+        self.name = workload.get_id()
+        self.labels = {
+            CPU_LABEL_KEY: str(workload.get_thread_count())
+        }
+
     @staticmethod
     def update(**kwargs):
         log.info("update called with: '{}'".format(kwargs))
 
 
 class MockContainerList:
-    @staticmethod
-    def get(ignored_contaier_id_or_name):
-        return MockContainerClient()
+    def __init__(self, containers):
+        self.__containers = {}
+        for c in containers:
+            self.__containers[c.name] = c
+
+    def get(self, name):
+        return self.__containers[name]
+
+    def list(self):
+        return list(self.__containers.values())
+
+    def _add_container(self, container):
+        self.__containers[container.name] = container
 
 
 class MockDockerClient:
-    def __init__(self):
-        self.containers = MockContainerList()
+    def __init__(self, containers=[]):
+        self.containers = MockContainerList(containers)
+
+    def add_container(self, container):
+        self.containers._add_container(container)
 
 
 def get_container_create_event(cpus, name=str(uuid.uuid4()).replace("-", ""), id=str(uuid.uuid4()).replace("-", "")):
