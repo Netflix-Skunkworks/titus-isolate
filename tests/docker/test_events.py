@@ -10,15 +10,19 @@ from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.isolate.resource_manager import ResourceManager
+from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.utils import get_cpu, DEFAULT_TOTAL_THREAD_COUNT
+from titus_isolate.utils import config_logs
 
 DEFAULT_CPU_COUNT = 2
+config_logs()
 
 
 def get_event_handlers(cpu):
     resource_manager = ResourceManager(cpu, MockDockerClient())
-    create_event_handler = CreateEventHandler(resource_manager)
-    free_event_handler = FreeEventHandler(resource_manager)
+    workload_manager = WorkloadManager(resource_manager)
+    create_event_handler = CreateEventHandler(workload_manager)
+    free_event_handler = FreeEventHandler(workload_manager)
     return [EventLogger(), create_event_handler, free_event_handler]
 
 
