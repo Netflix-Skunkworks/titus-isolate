@@ -19,5 +19,8 @@ class FreeEventHandler(EventHandler):
 
     def __relevant(self, event):
         action = event[ACTION].lower()
-        self.ignored_event(event, "action: '{}' should not free cpu resources".format(action))
-        return action in self.FREE_ACTIONS
+        if action not in self.FREE_ACTIONS:
+            self.ignored_event(event, "action: '{}' should not free cpu resources".format(action))
+            return False
+
+        return True

@@ -1,6 +1,7 @@
 import unittest
 
 from tests.docker.mock_docker import MockDockerClient, MockContainer
+from titus_isolate.docker.constants import STATIC
 from titus_isolate.docker.utils import get_current_workloads
 from titus_isolate.model.workload import Workload
 
@@ -31,4 +32,4 @@ class TestUtils(unittest.TestCase):
 
     @staticmethod
     def __get_test_container(name, thread_count):
-        return MockContainer(Workload(name, thread_count))
+        return MockContainer(Workload(name, thread_count, STATIC))

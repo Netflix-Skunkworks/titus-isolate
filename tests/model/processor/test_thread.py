@@ -1,10 +1,11 @@
+import logging
 import unittest
 import uuid
 
 from titus_isolate.model.processor.thread import Thread
 from titus_isolate.utils import config_logs
 
-config_logs()
+config_logs(logging.DEBUG)
 
 
 class TestThread(unittest.TestCase):
