@@ -37,10 +37,12 @@ class MockContainer:
             CPU_LABEL_KEY: str(workload.get_thread_count()),
             WORKLOAD_TYPE_LABEL_KEY: workload.get_type()
         }
+        self.update_calls = []
 
-    @staticmethod
-    def update(**kwargs):
+    def update(self, **kwargs):
         log.info("update called with: '{}'".format(kwargs))
+        threads = kwargs["cpuset_cpus"].split(',')
+        self.update_calls.append(threads)
 
 
 class MockContainerList:

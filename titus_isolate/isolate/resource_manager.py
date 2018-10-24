@@ -1,5 +1,6 @@
 import logging
 
+from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.isolate.cpu import assign_threads, free_threads
 
 log = logging.getLogger()
@@ -12,7 +13,12 @@ class ResourceManager:
         self.__docker_client = docker_client
 
     def assign_threads(self, workload):
-        threads = assign_threads(self.__cpu, workload)
+        threads = []
+        if workload.get_type() == STATIC:
+            threads = assign_threads(self.__cpu, workload)
+        elif workload.get_type() == BURST:
+            threads = self.__cpu.get_empty_threads()
+
         thread_ids = self.__get_thread_ids_str(threads)
         log.info("Updating container: '{}' with cpuset_cpus: '{}'".format(workload.get_id(), thread_ids))
         self.__docker_client.containers.get(workload.get_id()).update(cpuset_cpus=thread_ids)
