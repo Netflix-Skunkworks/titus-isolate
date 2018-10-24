@@ -1,8 +1,11 @@
+import copy
 import logging
 from queue import Queue
 from threading import Thread
 
 from titus_isolate.docker.constants import STATIC, BURST
+from titus_isolate.isolate.balance import has_better_isolation
+from titus_isolate.isolate.resource_manager import ResourceManager
 
 log = logging.getLogger()
 
@@ -18,7 +21,7 @@ class WorkloadManager:
         self.__worker_thread.daemon = True
         self.__worker_thread.start()
 
-    def add_workloads(self, workloads):
+    def add_workloads(self, workloads, async=True):
         workload_ids = [w.get_id() for w in workloads]
         log.info("Adding workloads: {}".format(workload_ids))
 
@@ -43,7 +46,10 @@ class WorkloadManager:
             for w in burst_workloads:
                 self.__resource_manager.assign_threads(w)
 
-        self.__q.put(__add_workloads)
+        if async:
+            self.__q.put(__add_workloads)
+        else:
+            __add_workloads()
 
     def remove_workloads(self, workload_ids):
         log.info("Removing workloads: {}".format(workload_ids))
@@ -59,6 +65,38 @@ class WorkloadManager:
     def get_queue_depth(self):
         return self.__q.qsize()
 
+    def __rebalance(self):
+        log.info("Attempting re-balance.")
+        # Clone the CPU and free all its threads
+        sim_cpu = copy.deepcopy(self.__get_cpu())
+        sim_cpu.clear()
+
+        # Simulate placement of all workloads at once to achieve an ideal result
+        sim_wm = WorkloadManager(ResourceManager(cpu=sim_cpu, docker_client=None, dry_run=True))
+        sim_wm.add_workloads(self.__workloads.values(), async=False)
+        new_cpu = sim_wm.__get_cpu()
+
+        if has_better_isolation(self.__get_cpu(), new_cpu):
+            log.info("Found a better placement option, re-adding all workloads.")
+            workloads = self.__workloads.values()
+            self.__workloads = {}
+            self.__get_cpu().clear()
+            self.add_workloads(workloads)
+        else:
+            log.info("Re-balance is a NOOP, due to NOT finding any improvement.")
+
+    def __get_cpu(self):
+        return self.__resource_manager.get_cpu()
+
     def __worker(self):
         while True:
-            self.__q.get()()
+            func = self.__q.get()
+            func_name = func.__name__
+            log.debug("Executing function: '{}'".format(func_name))
+
+            # If all work has been accomplished and we're not doing a re-balance right now,
+            # enqueue a re-balance operation
+            if not func_name == self.__rebalance.__name__ and self.get_queue_depth() == 0:
+                self.__q.put(self.__rebalance)
+
+            func()

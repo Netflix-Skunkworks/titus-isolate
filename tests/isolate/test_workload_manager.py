@@ -5,6 +5,8 @@ import uuid
 from tests.docker.mock_docker import MockDockerClient, MockContainer
 from tests.utils import wait_until
 from titus_isolate.docker.constants import STATIC, BURST
+from titus_isolate.isolate.cpu import assign_threads
+from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.resource_manager import ResourceManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.utils import get_cpu, DEFAULT_TOTAL_THREAD_COUNT
@@ -137,3 +139,82 @@ class TestWorkloadManager(unittest.TestCase):
         workload_manager.remove_workloads([workload.get_id()])
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
+
+    def test_rebalance_by_forcing_bad_placement(self):
+        cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)
+
+        # Adding workloads in this order should force w3 to be split across packages
+        # It should also cause 2 shared core violations
+        w_a = Workload("a", 3, STATIC)
+        w_b = Workload("b", 2, STATIC)
+        w_c = Workload("c", 1, STATIC)
+        w_d = Workload("d", 2, STATIC)
+
+        # We can validate this by manually assigning the workloads to the CPU
+        assign_threads(cpu, w_a)
+        assign_threads(cpu, w_b)
+        assign_threads(cpu, w_c)
+        assign_threads(cpu, w_d)
+
+        # We expect the CPU to look like this in the naive iterative placement case.
+        #
+        #     NOTE: "d" is on both packages and is participating in shared core violations
+        #
+        # package 0
+        #     core 0
+        #         thread 0 --> a
+        #         thread 1 --> a
+        #     core 1
+        #         thread 0 --> a
+        #         thread 1 --> d        <== shared core / cross package violation
+        # package 1
+        #     core 0
+        #         thread 0 --> b
+        #         thread 1 --> b
+        #     core 1
+        #         thread 0 --> c
+        #         thread 1 --> d        <== shared core / cross package violation
+
+        self.assertEqual(1, len(get_cross_package_violations(cpu)))
+        self.assertEqual(2, len(get_shared_core_violations(cpu)))
+
+        # Now we should verify that adding these same workloads incrementally to the workload manager actually
+        # re-balances workloads to improve upon the poor placement from above.
+        cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)
+
+        docker_client = MockDockerClient(
+            [
+                MockContainer(w_a),
+                MockContainer(w_b),
+                MockContainer(w_c),
+                MockContainer(w_d)
+            ])
+        resource_manager = ResourceManager(cpu, docker_client)
+        workload_manager = WorkloadManager(resource_manager)
+        workload_manager.add_workloads([w_a])
+        workload_manager.add_workloads([w_b])
+        workload_manager.add_workloads([w_c])
+        workload_manager.add_workloads([w_d])
+
+        # A better placement after re-balance should look like this
+        #
+        # package 0
+        #     core 0
+        #         thread 0 --> a
+        #         thread 1 --> a
+        #     core 1
+        #         thread 0 --> a
+        #         thread 1 --> c        <== shared core violation
+        # package 1
+        #     core 0
+        #         thread 0 --> b
+        #         thread 1 --> b
+        #     core 1
+        #         thread 0 --> d
+        #         thread 1 --> d
+
+        wait_until(lambda: 0 == len(get_cross_package_violations(cpu)))
+        wait_until(lambda: 1 == len(get_shared_core_violations(cpu)))
+        self.assertEqual(0, workload_manager.get_queue_depth())
+        self.assertEqual(0, len(cpu.get_empty_threads()))
+
