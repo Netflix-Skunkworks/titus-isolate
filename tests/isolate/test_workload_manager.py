@@ -2,7 +2,7 @@ import time
 import unittest
 import uuid
 
-from tests.docker.mock_docker import MockDockerClient
+from tests.docker.mock_docker import MockDockerClient, MockContainer
 from titus_isolate.isolate.resource_manager import ResourceManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.utils import get_cpu, DEFAULT_TOTAL_THREAD_COUNT
@@ -19,7 +19,8 @@ class TestWorkloadManager(unittest.TestCase):
         thread_count = 2
         workload = Workload(uuid.uuid4(), thread_count)
 
-        resource_manager = ResourceManager(cpu, MockDockerClient())
+        docker_client = MockDockerClient([MockContainer(workload)])
+        resource_manager = ResourceManager(cpu, docker_client)
         workload_manager = WorkloadManager(resource_manager)
 
         # Add workload
@@ -33,7 +34,7 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
     @staticmethod
-    def __wait_until_queue_is_empty(workload_manager, timeout, event_count=1, period=0.1):
+    def __wait_until_queue_is_empty(workload_manager, timeout, period=0.1):
         deadline = time.time() + timeout
         while time.time() < deadline:
             if workload_manager.get_queue_depth() == 0:
