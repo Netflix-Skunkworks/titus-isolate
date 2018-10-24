@@ -2,13 +2,14 @@ import logging
 import unittest
 import uuid
 
+from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.cpu import assign_threads
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.model.processor.utils import get_cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.utils import config_logs
 
-config_logs()
+config_logs(logging.DEBUG)
 log = logging.getLogger()
 
 
@@ -16,7 +17,7 @@ class TestDetect(unittest.TestCase):
 
     def test_no_cross_package_violation(self):
         cpu = get_cpu()
-        w = Workload(uuid.uuid4(), 4)
+        w = Workload(uuid.uuid4(), 4, STATIC)
 
         violations = get_cross_package_violations(cpu)
         log.info("cross package violations: {}".format(violations))
@@ -29,7 +30,7 @@ class TestDetect(unittest.TestCase):
 
     def test_one_cross_package_violation(self):
         cpu = get_cpu()
-        w = Workload(uuid.uuid4(), 9)
+        w = Workload(uuid.uuid4(), 9, STATIC)
 
         assign_threads(cpu, w)
         violations = get_cross_package_violations(cpu)
@@ -53,7 +54,7 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(0, len(violations))
 
         # Assign another workload which will force core sharing
-        w = Workload(uuid.uuid4(), 2)
+        w = Workload(uuid.uuid4(), 2, STATIC)
         assign_threads(cpu, w)
         violations = get_shared_core_violations(cpu)
         log.info("shared core violations: {}".format(violations))
