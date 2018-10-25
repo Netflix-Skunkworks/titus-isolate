@@ -31,3 +31,7 @@ class Cpu:
 
     def get_empty_threads(self):
         return utils.get_empty_threads(self.get_threads())
+
+    def clear(self):
+        for t in self.get_threads():
+            t.free()

@@ -41,11 +41,12 @@ def get_shared_core_violations(cpu):
     :return: dictionary mapping core ids to lists of workload ids
     """
     violations = {}
-    cores = reduce(list.__add__, [p.get_cores() for p in cpu.get_packages()])
 
-    for core in cores:
-        unique_workload_ids = set([t.get_workload_id() for t in core.get_threads() if t.is_claimed()])
-        if len(unique_workload_ids) > 1:
-            violations[core.get_id()] = unique_workload_ids
+    for package in cpu.get_packages():
+        for core in package.get_cores():
+            unique_workload_ids = set([t.get_workload_id() for t in core.get_threads() if t.is_claimed()])
+            if len(unique_workload_ids) > 1:
+                violation_key = ':'.join([str(package.get_id()), str(core.get_id())])
+                violations[violation_key] = unique_workload_ids
 
     return violations
