@@ -101,9 +101,8 @@ class WorkloadManager:
         # Update new static workloads
         for workload_id, thread_ids in updates.items():
             if workload_id != BURST:
-                thread_ids_str = self.__get_thread_ids_str(thread_ids)
-                log.info("updating static workload: '{}' to cpuset.cpus: '{}'".format(workload_id, thread_ids_str))
-                self.__docker_client.containers.get(workload_id).update(cpuset_cpus=thread_ids_str)
+                log.info("updating static workload: '{}'".format(workload_id))
+                self.__exec_docker_update(workload_id, thread_ids)
 
         # If the new workloads have burst workloads they should definitely be updated
         empty_thread_ids = [t.get_id() for t in self.__cpu.get_empty_threads()]
@@ -116,10 +115,17 @@ class WorkloadManager:
         self.__update_burst_workloads(burst_workloads_to_update, empty_thread_ids)
 
     def __update_burst_workloads(self, workloads, thread_ids):
-        thread_ids_str = self.__get_thread_ids_str(thread_ids)
         for b_w in workloads:
-            log.info("updating burst workload: '{}' to cpuset.cpus: '{}'".format(b_w.get_id(), thread_ids_str))
-            self.__docker_client.containers.get(b_w.get_id()).update(cpuset_cpus=thread_ids_str)
+            log.info("updating burst workload: '{}'".format(b_w.get_id()))
+            self.__exec_docker_update(b_w.get_id(), thread_ids)
+
+    def __exec_docker_update(self, workload_id, thread_ids):
+        thread_ids_str = self.__get_thread_ids_str(thread_ids)
+        try:
+            log.info("updating workload: '{}' to cpuset.cpus: '{}'".format(workload_id, thread_ids_str))
+            self.__docker_client.containers.get(workload_id).update(cpuset_cpus=thread_ids_str)
+        except:
+            log.exception("Failed to update Docker container: '{}'".format(workload_id))
 
     @staticmethod
     def __get_thread_ids_str(thread_ids):
@@ -132,7 +138,7 @@ class WorkloadManager:
         while True:
             func = self.__q.get()
             func_name = func.__name__
-            log.info("Executing function: '{}'".format(func_name))
+            log.debug("Executing function: '{}'".format(func_name))
 
             # If all work has been accomplished and we're not doing a re-balance right now,
             # enqueue a re-balance operation
@@ -140,5 +146,8 @@ class WorkloadManager:
                 log.info("Enqueuing re-balance")
                 self.__q.put(self.__rebalance)
 
-            func()
-            log.info("Completed function: '{}'".format(func_name))
+            try:
+                func()
+                log.debug("Completed function: '{}'".format(func_name))
+            except:
+                log.exception("Failed to execute function: '{}'".format(func_name))
