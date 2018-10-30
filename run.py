@@ -36,7 +36,7 @@ def main(package_count, cores_per_package, threads_per_core):
     cpu = get_cpu(int(package_count), int(cores_per_package), int(threads_per_core))
 
     # Setup the workload manager
-    log.info("Setting up the resource manager...")
+    log.info("Setting up the workload manager...")
     docker_client = docker.from_env()
     workload_manager = WorkloadManager(cpu, docker_client)
 
