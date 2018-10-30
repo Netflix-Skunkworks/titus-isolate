@@ -1,4 +1,4 @@
-from titus_isolate.docker.constants import WORKLOAD_TYPES
+from titus_isolate.docker.constants import WORKLOAD_TYPES, BURST
 
 
 class Workload:
@@ -13,6 +13,9 @@ class Workload:
         if self.__type not in WORKLOAD_TYPES:
             raise ValueError("Unexpected workload type: '{}', acceptable values are: '{}'".format(
                 self.__type, WORKLOAD_TYPES))
+
+        if self.__identifier == BURST:
+            raise ValueError("The identifier '{}' is reserved".format(BURST))
 
     def get_id(self):
         return self.__identifier

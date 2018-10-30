@@ -23,3 +23,6 @@ class TestWorkload(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             Workload(uuid.uuid4(), -1, BURST)
+
+        with self.assertRaises(ValueError):
+            Workload(BURST, 1, STATIC)

@@ -10,7 +10,6 @@ from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.free_event_handler import FreeEventHandler
-from titus_isolate.isolate.resource_manager import ResourceManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.utils import get_cpu, DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
@@ -24,22 +23,18 @@ log = logging.getLogger()
 
 class TestContext:
     def __init__(self, docker_client=MockDockerClient()):
-        self.__cpu = get_cpu()
+        cpu = get_cpu()
         self.__docker_client = docker_client
-        self.__resource_manager = ResourceManager(self.__cpu, docker_client)
-        self.__workload_manager = WorkloadManager(self.__resource_manager)
+        self.__workload_manager = WorkloadManager(cpu, self.__docker_client)
         self.__event_logger = EventLogger()
         self.__create_event_handler = CreateEventHandler(self.__workload_manager)
         self.__free_event_handler = FreeEventHandler(self.__workload_manager)
 
     def get_cpu(self):
-        return self.__cpu
+        return self.__workload_manager.get_cpu()
 
     def get_docker_client(self):
         return self.__docker_client
-
-    def get_resource_manager(self):
-        return self.__resource_manager
 
     def get_workload_manager(self):
         return self.__workload_manager

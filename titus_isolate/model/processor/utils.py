@@ -63,7 +63,7 @@ def __get_threads(package_index, core_index, package_count, core_count, thread_c
 
 # Workloads
 def get_workload_ids(cpu):
-    return [thread.get_workload_id() for thread in cpu.get_threads() if thread.is_claimed()]
+    return set([thread.get_workload_id() for thread in cpu.get_threads() if thread.is_claimed()])
 
 
 def get_packages_with_workload(cpu, workload_id):

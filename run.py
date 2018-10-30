@@ -10,7 +10,6 @@ from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.docker.utils import get_current_workloads
-from titus_isolate.isolate.resource_manager import ResourceManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.utils import get_cpu
 from titus_isolate.utils import config_logs
@@ -39,7 +38,7 @@ def main(package_count, cores_per_package, threads_per_core):
     # Setup the workload manager
     log.info("Setting up the resource manager...")
     docker_client = docker.from_env()
-    workload_manager = WorkloadManager(ResourceManager(cpu, docker_client))
+    workload_manager = WorkloadManager(cpu, docker_client)
 
     # Setup the event handlers
     log.info("Setting up the Docker event handlers...")
