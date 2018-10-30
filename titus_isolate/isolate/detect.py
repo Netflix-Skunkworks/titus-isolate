@@ -47,6 +47,6 @@ def get_shared_core_violations(cpu):
             unique_workload_ids = set([t.get_workload_id() for t in core.get_threads() if t.is_claimed()])
             if len(unique_workload_ids) > 1:
                 violation_key = ':'.join([str(package.get_id()), str(core.get_id())])
-                violations[violation_key] = unique_workload_ids
+                violations[violation_key] = list(unique_workload_ids)
 
     return violations

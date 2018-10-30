@@ -25,3 +25,10 @@ class Workload:
 
     def get_type(self):
         return self.__type
+
+    def to_dict(self):
+        return {
+            "id": self.get_id(),
+            "type": self.get_type(),
+            "thread_count": self.get_thread_count()
+        }

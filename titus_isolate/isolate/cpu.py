@@ -16,7 +16,7 @@ def assign_threads(cpu, workload):
     log.info("Assigning '{}' thread(s) to workload: '{}'".format(workload.get_thread_count(), workload.get_id()))
 
     if is_cpu_full(cpu):
-        raise ValueError("Cannot assign workload: '{}' to full CPU.", workload.get_id())
+        raise ValueError("Cannot assign workload: '{}' to full CPU.".format(workload.get_id()))
 
     package = cpu.get_emptiest_package()
 

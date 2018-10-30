@@ -34,7 +34,9 @@ Usage: run.py [OPTIONS]
 Options:
   --package-count TEXT        The number of packages in the CPU
   --cores-per-package TEXT    The number of cores per package
-  --threads-per-core INTEGER  The number of threads per core
+  --threads-per-core INTEGER  The number of threads per core (default: 2)
+  --admin-port INTEGER        The port for the HTTP server to listen on
+                              (default: 5000)
   --help                      Show this message and exit.
 ```
 
@@ -132,3 +134,143 @@ get_processors(processor_count):
 
 After all placements have been made for workloads arriving on the Docker event stream a rebalance operaation is performed.  It sorts all static workloads from largest to smallest based on their declared CPU requiremetns and runs the algorithm on each in turn.  Burst workloads get the remaining CPU capacity.
 Needless migration of workloads is avoided by only applying the outcome of the rebalance operation if some improvement in placement is detected.  An improvement is detected when cross package workload placement and the number of shared physical cores is minimized.
+
+## Operations
+`titus-isolate` provides a few read only endpoints to observe the operation of the server.
+
+Unless otherwise stated, in the following examples we started the `titus-isolate` server with the following options.
+```bash
+$ python3 ./run.py --package-count 1 --cores-per-package 4 --threads-per-core 2 --admin-port 5555
+```
+One workload was started as follows.
+```bash
+$ docker run --rm -l com.netflix.titus.cpu=1 -l com.netflix.titus.workload.type=static ubuntu:latest sleep 30
+```
+
+### Workloads
+```
+GET /workloads
+```
+This endpoint provides the `id`, `type` burst or static and `thread count` requested by a workload.
+```bash
+$ curl -s localhost:5555/workloads | jq
+[
+  {
+    "id": "pedantic_hermann",
+    "type": "static",
+    "thread_count": 1
+  }
+]
+```
+
+### CPU
+```
+GET /cpu
+```
+This endpoint describes the structure of the CPU as well as the ids of the static workloads which have claimed particular threads.
+```bash
+$ curl -s localhost:5555/cpu | jq
+{
+  "packages": [
+    {
+      "id": 0,
+      "cores": [
+        {
+          "id": 0,
+          "threads": [
+            {
+              "id": 0,
+              "workload_id": "pedantic_hermann"
+            },
+            {
+              "id": 4,
+              "workload_id": null
+            }
+          ]
+        },
+        ...
+        {
+          "id": 3,
+          "threads": [
+            {
+              "id": 3,
+              "workload_id": null
+            },
+            {
+              "id": 7,
+              "workload_id": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Violations
+```
+GET /violations
+```
+This endpoint reports information regarding sub-optimal mapping of workloads to threads.  Two violation types are reported: `cross package` and `shared_core`.
+* `cross package` indicates that a workload has been assigned threads on more than one package.
+* `shared core` indicates that a physical core is being shared by more than one workload.
+
+In the example output below carefully chosen static workload sizes were chosen to force violations.
+```bash
+$ curl -s localhost:5555/violations | jq
+{
+  "cross_package": {
+    "elastic_poitras": [
+      0,
+      1
+    ]
+  },
+  "shared_core": {
+    "0:3": [
+      "cranky_wright",
+      "elastic_poitras"
+    ],
+    "1:1": [
+      "heuristic_kapitsa",
+      "elastic_poitras"
+    ],
+    "1:3": [
+      "tender_sinoussi",
+      "elastic_poitras"
+    ]
+  }
+}
+```
+
+Cross package violations are a list of key/value pairs where key and value are as follows.
+* key: workload id
+* value: and a list of package ids respectively.
+
+In the example above the workload `elastic_poitras` is running on packages `0` and `1`.
+
+Shared core violations are a list of key/value pairs where key and value are as follows.
+* key: <package_id>:<core_id>
+* value: [workload_id...]
+
+In the example above core `3` on package `0` has two workloads on it: `cranky_wright` and `elastic_poitras`.
+
+### Workload Manager Status
+```
+GET /workload_manager/status
+```
+The workload manager is the core event processing and update generating component of `titus-isolate`.  We expose a status endpoint in order to inspect its status.
+```bash
+$ curl -s localhost:5555/workload_manager/status | jq
+{
+  "queue_depth": 0,
+  "success_count": 8,
+  "error_count": 0
+}
+```
+
+The workload manager is constantly processing a queue of events for adding, removing and re-balancing workloads. 
+* queue depth: goes to zero very quickly in a properly operating system
+* success count: a count of the number of events it has processed successfully
+* error count: indicates how many events it failed to process
+

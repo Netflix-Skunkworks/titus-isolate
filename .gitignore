@@ -8,6 +8,7 @@ titus_isolate.egg-info/
 dist/
 test-reports/
 venv/
+env/
 
 .idea/
 *.swp
