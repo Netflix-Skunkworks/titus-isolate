@@ -114,17 +114,17 @@ get_processors(processor_count):
 	if processor_count == 0:
 		return processor_ids
 
-p = get_emptiest_package()
+    p = get_emptiest_package()
 
-while processor_count > 0 and not is_full(p):
-	core = get_emptiest_core(p)
+    while processor_count > 0 and not is_full(p):
+	    core = get_emptiest_core(p)
 		empty_processors = get_empty_processors(core)
 		
 		# Update the package’s capacity
 		consume_processors(p, empty_processors)
  
 		# Record the processors to be allocated
-processor_ids + empty_processors
+        processor_ids + empty_processors
 		processor_count -= len(empty_processors)
 
 	return processor_ids + get_processors(processor_count)
