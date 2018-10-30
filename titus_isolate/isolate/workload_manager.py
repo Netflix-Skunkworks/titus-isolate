@@ -5,15 +5,18 @@ from threading import Thread
 
 from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.isolate.balance import has_better_isolation
-from titus_isolate.isolate.resource_manager import ResourceManager
+from titus_isolate.isolate.cpu import assign_threads, free_threads
+from titus_isolate.isolate.update import get_updates
 
 log = logging.getLogger()
 
 
 class WorkloadManager:
-    def __init__(self, resource_manager):
+    def __init__(self, cpu, docker_client):
+        log.info("Created workload manager")
         self.__q = Queue()
-        self.__resource_manager = resource_manager
+        self.__cpu = cpu
+        self.__docker_client = docker_client
 
         self.__workloads = {}
 
@@ -21,82 +24,121 @@ class WorkloadManager:
         self.__worker_thread.daemon = True
         self.__worker_thread.start()
 
-    def add_workloads(self, workloads, async=True):
-        workload_ids = [w.get_id() for w in workloads]
-        log.info("Adding workloads: {}".format(workload_ids))
-
-        for w in workloads:
-            self.__workloads[w.get_id()] = w
-
-        static_workloads = [w for w in workloads if w.get_type() == STATIC]
-        static_workloads.sort(key=lambda w: w.get_thread_count(), reverse=True)
-
-        # If any static workloads are being added, then they will change the footprint available to ALL burst
-        # workloads.  In this case, all burst workloads must be updated, AFTER static workloads are placed.
-        #
-        # If only burst workloads are being added, then only the local workloads need to have threads assigned.  This
-        # optimization minimizes the number of calls made to the Docker daemon.
-        burst_workloads = [w for w in workloads if w.get_type() == BURST]
-        if len(static_workloads) > 0:
-            burst_workloads = [w for w in self.__workloads.values() if w.get_type() == BURST]
-
+    def add_workloads(self, workloads):
         def __add_workloads():
-            for w in static_workloads:
-                self.__resource_manager.assign_threads(w)
-            for w in burst_workloads:
-                self.__resource_manager.assign_threads(w)
+            workload_ids = [w.get_id() for w in workloads]
+            log.info("Adding workloads: {}".format(workload_ids))
 
-        if async:
-            self.__q.put(__add_workloads)
-        else:
-            __add_workloads()
+            for w in workloads:
+                self.__workloads[w.get_id()] = w
 
-    def remove_workloads(self, workload_ids):
-        log.info("Removing workloads: {}".format(workload_ids))
+            new_cpu = copy.deepcopy(self.__cpu)
+            self.__assign_workloads(new_cpu, workloads)
+            self.__execute_updates(self.__cpu, new_cpu, workloads)
 
-        def __remove_workloads():
-            for workload_id in workload_ids:
-                self.__resource_manager.free_threads(workload_id)
-                if self.__workloads.pop(workload_id, None) is None:
-                    log.warning("Attempted to remove unknown workload: '{}'".format(workload_id))
-
-        self.__q.put(__remove_workloads)
-
-    def get_queue_depth(self):
-        return self.__q.qsize()
+        self.__q.put(__add_workloads)
 
     def __rebalance(self):
         log.info("Attempting re-balance.")
         # Clone the CPU and free all its threads
-        sim_cpu = copy.deepcopy(self.__get_cpu())
+        sim_cpu = copy.deepcopy(self.__cpu)
         sim_cpu.clear()
 
-        # Simulate placement of all workloads at once to achieve an ideal result
-        sim_wm = WorkloadManager(ResourceManager(cpu=sim_cpu, docker_client=None, dry_run=True))
-        sim_wm.add_workloads(self.__workloads.values(), async=False)
-        new_cpu = sim_wm.__get_cpu()
+        self.__assign_workloads(sim_cpu, self.__workloads.values())
 
-        if has_better_isolation(self.__get_cpu(), new_cpu):
-            log.info("Found a better placement option, re-adding all workloads.")
-            workloads = self.__workloads.values()
-            self.__workloads = {}
-            self.__get_cpu().clear()
-            self.add_workloads(workloads)
+        if has_better_isolation(self.__cpu, sim_cpu):
+            log.info("Found a better placement scenario, updating all workloads.")
+            self.__execute_updates(self.__cpu, sim_cpu, self.__workloads.values())
         else:
-            log.info("Re-balance is a NOOP, due to NOT finding any improvement.")
+            log.info("No improvement in placement found in re-balance, doing nothing.")
 
-    def __get_cpu(self):
-        return self.__resource_manager.get_cpu()
+    def remove_workloads(self, workload_ids):
+        def __remove_workloads():
+            log.info("Removing workloads: {}".format(workload_ids))
+            new_cpu = copy.deepcopy(self.__cpu)
+            for workload_id in workload_ids:
+                free_threads(new_cpu, workload_id)
+                if self.__workloads.pop(workload_id, None) is None:
+                    log.warning("Attempted to remove unknown workload: '{}'".format(workload_id))
+
+            updates = get_updates(self.__cpu, new_cpu)
+            log.info("Found footprint updates: '{}'".format(updates))
+            if BURST in updates:
+                # If the burst footprint changed due to workloads being removed, then burst workloads
+                # must be updated
+                empty_thread_ids = updates[BURST]
+                burst_workloads_to_update = self.__get_burst_workloads()
+                self.__update_burst_workloads(burst_workloads_to_update, empty_thread_ids)
+
+            self.__cpu = new_cpu
+
+        self.__q.put(__remove_workloads)
+
+    def get_cpu(self):
+        return self.__cpu
+
+    def __get_burst_workloads(self):
+        return self.__get_workloads_by_type(self.__workloads.values(), BURST)
+
+    @staticmethod
+    def __get_workloads_by_type(workloads, workload_type):
+        return [w for w in workloads if w.get_type() == workload_type]
+
+    def __assign_workloads(self, new_cpu, workloads):
+        static_workloads = self.__get_workloads_by_type(workloads, STATIC)
+        static_workloads.sort(key=lambda workload: workload.get_thread_count(), reverse=True)
+        for w in static_workloads:
+            assign_threads(new_cpu, w)
+
+    def __execute_updates(self, cur_cpu, new_cpu, workloads):
+        updates = get_updates(cur_cpu, new_cpu)
+        log.info("Found footprint updates: '{}'".format(updates))
+
+        self.__cpu = new_cpu
+        self.__execute_docker_updates(updates, workloads)
+
+    def __execute_docker_updates(self, updates, workloads):
+        # Update new static workloads
+        for workload_id, thread_ids in updates.items():
+            if workload_id != BURST:
+                thread_ids_str = self.__get_thread_ids_str(thread_ids)
+                log.info("updating static workload: '{}' to cpuset.cpus: '{}'".format(workload_id, thread_ids_str))
+                self.__docker_client.containers.get(workload_id).update(cpuset_cpus=thread_ids_str)
+
+        # If the new workloads have burst workloads they should definitely be updated
+        empty_thread_ids = [t.get_id() for t in self.__cpu.get_empty_threads()]
+        burst_workloads_to_update = self.__get_workloads_by_type(workloads, BURST)
+        if BURST in updates:
+            # If the burst footprint has changed ALL burst workloads must be updated
+            empty_thread_ids = updates[BURST]
+            burst_workloads_to_update = self.__get_burst_workloads()
+
+        self.__update_burst_workloads(burst_workloads_to_update, empty_thread_ids)
+
+    def __update_burst_workloads(self, workloads, thread_ids):
+        thread_ids_str = self.__get_thread_ids_str(thread_ids)
+        for b_w in workloads:
+            log.info("updating burst workload: '{}' to cpuset.cpus: '{}'".format(b_w.get_id(), thread_ids_str))
+            self.__docker_client.containers.get(b_w.get_id()).update(cpuset_cpus=thread_ids_str)
+
+    @staticmethod
+    def __get_thread_ids_str(thread_ids):
+        return ",".join([str(t_id) for t_id in thread_ids])
+
+    def get_queue_depth(self):
+        return self.__q.qsize()
 
     def __worker(self):
         while True:
             func = self.__q.get()
             func_name = func.__name__
-            log.debug("Executing function: '{}'".format(func_name))
+            log.info("Executing function: '{}'".format(func_name))
 
             # If all work has been accomplished and we're not doing a re-balance right now,
             # enqueue a re-balance operation
             if not func_name == self.__rebalance.__name__ and self.get_queue_depth() == 0:
+                log.info("Enqueuing re-balance")
                 self.__q.put(self.__rebalance)
 
             func()
+            log.info("Completed function: '{}'".format(func_name))
