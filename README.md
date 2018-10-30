@@ -108,26 +108,26 @@ Each static workload is assigned a set of threads to which they have exclusive a
 The placement algorithm is very simple.  It attempts to place static workloads entirely on a single package if possible and consume whole physical cores.
 ```
 get_processors(processor_count):
-	processor_ids = []
+    processor_ids = []
 	
-	# Return an empty list if no processors were requested
-	if processor_count == 0:
-		return processor_ids
+    # Return an empty list if no processors were requested
+    if processor_count == 0:
+        return processor_ids
 
     p = get_emptiest_package()
 
     while processor_count > 0 and not is_full(p):
-	    core = get_emptiest_core(p)
-		empty_processors = get_empty_processors(core)
-		
-		# Update the package’s capacity
-		consume_processors(p, empty_processors)
+        core = get_emptiest_core(p)
+        empty_processors = get_empty_processors(core)
+	
+        # Update the package’s capacity
+        consume_processors(p, empty_processors)
  
-		# Record the processors to be allocated
+        # Record the processors to be allocated
         processor_ids + empty_processors
-		processor_count -= len(empty_processors)
+        processor_count -= len(empty_processors)
 
-	return processor_ids + get_processors(processor_count)
+    return processor_ids + get_processors(processor_count)
 ```
 
 After all placements have been made for workloads arriving on the Docker event stream a rebalance operaation is performed.  It sorts all static workloads from largest to smallest based on their declared CPU requiremetns and runs the algorithm on each in turn.  Burst workloads get the remaining CPU capacity.
