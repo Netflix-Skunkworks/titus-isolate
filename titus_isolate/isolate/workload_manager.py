@@ -28,18 +28,16 @@ class WorkloadManager:
         self.__worker_thread.start()
 
     def add_workloads(self, workloads):
-        def __add_workloads():
-            workload_ids = [w.get_id() for w in workloads]
-            log.info("Adding workloads: {}".format(workload_ids))
-
-            for w in workloads:
+        for w in workloads:
+            def __add_workload():
+                log.info("Adding workload: {}".format(w.get_id()))
                 self.__workloads[w.get_id()] = w
+                new_cpu = copy.deepcopy(self.__cpu)
+                self.__assign_workload(new_cpu, w)
+                self.__execute_updates(self.__cpu, new_cpu, w)
+                log.info("Added workload: {}".format(w.get_id()))
 
-            new_cpu = copy.deepcopy(self.__cpu)
-            self.__assign_workloads(new_cpu, workloads)
-            self.__execute_updates(self.__cpu, new_cpu, workloads)
-
-        self.__q.put(__add_workloads)
+            self.__q.put(__add_workload)
 
     def __rebalance(self):
         log.info("Attempting re-balance.")
@@ -47,69 +45,75 @@ class WorkloadManager:
         sim_cpu = copy.deepcopy(self.__cpu)
         sim_cpu.clear()
 
-        self.__assign_workloads(sim_cpu, self.__workloads.values())
+        static_workloads = self.__get_static_workloads()
+        static_workloads.sort(key=lambda workload: workload.get_thread_count(), reverse=True)
+
+        for w in static_workloads:
+            self.__assign_workload(sim_cpu, w)
 
         if has_better_isolation(self.__cpu, sim_cpu):
             log.info("Found a better placement scenario, updating all workloads.")
-            self.__execute_updates(self.__cpu, sim_cpu, self.__workloads.values())
+            for w in self.__workloads.values():
+                self.__execute_updates(self.__cpu, sim_cpu, w)
         else:
             log.info("No improvement in placement found in re-balance, doing nothing.")
 
     def remove_workloads(self, workload_ids):
-        def __remove_workloads():
-            log.info("Removing workloads: {}".format(workload_ids))
-            new_cpu = copy.deepcopy(self.__cpu)
-            for workload_id in workload_ids:
+        for workload_id in workload_ids:
+            def __remove_workload():
+                log.info("Removing workload: {}".format(workload_id))
+                new_cpu = copy.deepcopy(self.__cpu)
                 free_threads(new_cpu, workload_id)
                 if self.__workloads.pop(workload_id, None) is None:
                     log.warning("Attempted to remove unknown workload: '{}'".format(workload_id))
 
-            updates = get_updates(self.__cpu, new_cpu)
-            log.info("Found footprint updates: '{}'".format(updates))
-            if BURST in updates:
-                # If the burst footprint changed due to workloads being removed, then burst workloads
-                # must be updated
-                empty_thread_ids = updates[BURST]
-                burst_workloads_to_update = self.__get_burst_workloads()
-                self.__update_burst_workloads(burst_workloads_to_update, empty_thread_ids)
+                updates = get_updates(self.__cpu, new_cpu)
+                log.info("Found footprint updates: '{}'".format(updates))
+                if BURST in updates:
+                    # If the burst footprint changed due to workloads being removed, then burst workloads
+                    # must be updated
+                    empty_thread_ids = updates[BURST]
+                    burst_workloads_to_update = self.__get_burst_workloads()
+                    self.__update_burst_workloads(burst_workloads_to_update, empty_thread_ids)
 
-            self.__cpu = new_cpu
+                self.__cpu = new_cpu
 
-        self.__q.put(__remove_workloads)
+            self.__q.put(__remove_workload)
 
     def __get_burst_workloads(self):
         return self.__get_workloads_by_type(self.__workloads.values(), BURST)
+
+    def __get_static_workloads(self):
+        return self.__get_workloads_by_type(self.__workloads.values(), STATIC)
 
     @staticmethod
     def __get_workloads_by_type(workloads, workload_type):
         return [w for w in workloads if w.get_type() == workload_type]
 
-    def __assign_workloads(self, new_cpu, workloads):
-        static_workloads = self.__get_workloads_by_type(workloads, STATIC)
-        static_workloads.sort(key=lambda workload: workload.get_thread_count(), reverse=True)
-        for w in static_workloads:
-            try:
-                assign_threads(new_cpu, w)
-            except:
-                log.exception("Failed to assign threads to workload: '{}'".format(w.get_id()))
+    @staticmethod
+    def __assign_workload(new_cpu, workload):
+        if workload.get_type() != STATIC:
+            return
 
-    def __execute_updates(self, cur_cpu, new_cpu, workloads):
+        assign_threads(new_cpu, workload)
+
+    def __execute_updates(self, cur_cpu, new_cpu, workload):
         updates = get_updates(cur_cpu, new_cpu)
         log.info("Found footprint updates: '{}'".format(updates))
 
         self.__cpu = new_cpu
-        self.__execute_docker_updates(updates, workloads)
+        self.__execute_docker_updates(updates, workload)
 
-    def __execute_docker_updates(self, updates, workloads):
+    def __execute_docker_updates(self, updates, workload):
         # Update new static workloads
         for workload_id, thread_ids in updates.items():
             if workload_id != BURST:
                 log.info("updating static workload: '{}'".format(workload_id))
                 self.__exec_docker_update(workload_id, thread_ids)
 
-        # If the new workloads have burst workloads they should definitely be updated
+        # If the new workload is a burst workload it should be updated
         empty_thread_ids = [t.get_id() for t in self.__cpu.get_empty_threads()]
-        burst_workloads_to_update = self.__get_workloads_by_type(workloads, BURST)
+        burst_workloads_to_update = [workload]
         if BURST in updates:
             # If the burst footprint has changed ALL burst workloads must be updated
             empty_thread_ids = updates[BURST]
