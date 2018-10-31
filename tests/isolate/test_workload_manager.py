@@ -60,6 +60,31 @@ class TestWorkloadManager(unittest.TestCase):
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
 
+    def test_remove_unknown_workload(self):
+        unknown_workload_id = "unknown"
+        thread_count = 2
+        workload = Workload(uuid.uuid4(), thread_count, STATIC)
+
+        docker_client = MockDockerClient([MockContainer(workload)])
+        workload_manager = WorkloadManager(get_cpu(), docker_client)
+
+        # Remove from empty set
+        workload_manager.remove_workloads([unknown_workload_id])
+
+        # Add workload
+        workload_manager.add_workloads([workload])
+        wait_until(lambda: workload_manager.get_queue_depth() == 0)
+        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - thread_count, len(workload_manager.get_cpu().get_empty_threads()))
+
+        # Removal of an unknown workload should have no effect
+        workload_manager.remove_workloads([unknown_workload_id])
+        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - thread_count, len(workload_manager.get_cpu().get_empty_threads()))
+
+        # Remove workload with unknown workload, real workload should be removed
+        workload_manager.remove_workloads([unknown_workload_id, workload.get_id()])
+        wait_until(lambda: workload_manager.get_queue_depth() == 0)
+        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
+
     def test_alternating_static_burst_workloads(self):
         thread_count = 2
 
@@ -122,30 +147,6 @@ class TestWorkloadManager(unittest.TestCase):
         expected_free_thread_count = expected_free_thread_count + thread_count
         self.assertEqual(expected_free_thread_count, len(workload_manager.get_cpu().get_empty_threads()))
 
-    def test_remove_unknown_workload(self):
-        thread_count = 2
-        workload = Workload(uuid.uuid4(), thread_count, STATIC)
-
-        docker_client = MockDockerClient([MockContainer(workload)])
-        workload_manager = WorkloadManager(get_cpu(), docker_client)
-
-        # Remove from empty set
-        workload_manager.remove_workloads(["unknown_workload_id"])
-
-        # Add workload
-        workload_manager.add_workloads([workload])
-        wait_until(lambda: workload_manager.get_queue_depth() == 0)
-        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - thread_count, len(workload_manager.get_cpu().get_empty_threads()))
-
-        # Removal of an unknown workload should have no effect
-        workload_manager.remove_workloads(["unknown_workload_id"])
-        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - thread_count, len(workload_manager.get_cpu().get_empty_threads()))
-
-        # Remove workload
-        workload_manager.remove_workloads([workload.get_id()])
-        wait_until(lambda: workload_manager.get_queue_depth() == 0)
-        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
-
     def test_rebalance_by_forcing_bad_placement(self):
         cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)
 
@@ -168,18 +169,18 @@ class TestWorkloadManager(unittest.TestCase):
         #
         # package 0
         #     core 0
-        #         thread 0 --> a
-        #         thread 1 --> a
+        #         thread 0 (0) --> a
+        #         thread 1 (4) --> a
         #     core 1
-        #         thread 0 --> a
-        #         thread 1 --> d        <== shared core / cross package violation
+        #         thread 0 (1)--> a
+        #         thread 1 (5)--> d        <== shared core / cross package violation
         # package 1
         #     core 0
-        #         thread 0 --> b
-        #         thread 1 --> b
+        #         thread 0 (2)--> b
+        #         thread 1 (6)--> b
         #     core 1
-        #         thread 0 --> c
-        #         thread 1 --> d        <== shared core / cross package violation
+        #         thread 0 (3)--> c
+        #         thread 1 (7)--> d        <== shared core / cross package violation
 
         self.assertEqual(1, len(get_cross_package_violations(cpu)))
         self.assertEqual(2, len(get_shared_core_violations(cpu)))
@@ -205,18 +206,18 @@ class TestWorkloadManager(unittest.TestCase):
         #
         # package 0
         #     core 0
-        #         thread 0 --> a
-        #         thread 1 --> a
+        #         thread 0 (0) --> a
+        #         thread 1 (4) --> a
         #     core 1
-        #         thread 0 --> a
-        #         thread 1 --> c        <== shared core violation
+        #         thread 0 (1) --> a
+        #         thread 1 (5) --> c        <== shared core violation
         # package 1
         #     core 0
-        #         thread 0 --> b
-        #         thread 1 --> b
+        #         thread 0 (2) --> b
+        #         thread 1 (6) --> b
         #     core 1
-        #         thread 0 --> d
-        #         thread 1 --> d
+        #         thread 0 (3) --> d
+        #         thread 1 (7) --> d
 
         wait_until(lambda: 0 == len(get_cross_package_violations(workload_manager.get_cpu())))
         wait_until(lambda: 1 == len(get_shared_core_violations(workload_manager.get_cpu())))
