@@ -77,6 +77,7 @@ class WorkloadManager:
                     self.__update_burst_workloads(burst_workloads_to_update, empty_thread_ids)
 
                 self.__cpu = new_cpu
+                log.info("Removed workload: {}".format(workload_id))
 
             self.__q.put(__remove_workload)
 
