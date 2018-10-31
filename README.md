@@ -44,8 +44,6 @@ On linux the required information can normally be found using `lscpu`.
 ```bash
 $ lscpu
 ...
-CPU(s):                64
-On-line CPU(s) list:   0-63
 Thread(s) per core:    2
 Core(s) per socket:    16
 Socket(s):             2
