@@ -22,7 +22,7 @@ Successfully installed certifi-2018.10.15 chardet-3.0.4 click-7.0 docker-3.5.1 d
 See `Usage` for starting the `titus-isolate` server.
 
 ## Usage
-In order to use `titus-isolate` two componentes must cooperate.  A server subscribes to events from Docker and workloads adhere to a container labeling convention.
+In order to use `titus-isolate` two components must cooperate.  A server subscribes to events from Docker and workloads adhere to a container labeling convention.
 
 ### Server
 
