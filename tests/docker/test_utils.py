@@ -2,13 +2,20 @@ import logging
 import unittest
 
 from tests.docker.mock_docker import MockDockerClient, MockContainer
-from titus_isolate.docker.constants import STATIC, CPU_LABEL_KEY
+from titus_isolate.docker.constants import STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY
 from titus_isolate.docker.utils import get_current_workloads
 from titus_isolate.model.workload import Workload
 from titus_isolate.utils import config_logs
 
 config_logs(logging.DEBUG)
 log = logging.getLogger()
+
+
+class BadContainer:
+    def update(self, **kwargs):
+        log.info("bad container update called with: '{}'".format(kwargs))
+        threads = kwargs["cpuset_cpus"].split(',')
+        self.update_calls.append(threads)
 
 
 class TestUtils(unittest.TestCase):
@@ -35,7 +42,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(c1_name, workload1.get_id())
         self.assertEqual(c1_thread_count, workload1.get_thread_count())
 
-    def test_get_current_malformed_workloads(self):
+    def test_get_current_missing_label_workload(self):
         # The BadContainer is missing an expected label
         class BadContainer:
             def __init__(self):
@@ -54,6 +61,40 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(0, len(get_current_workloads(docker_client)))
 
         docker_client.add_container(BadContainer())
+
+        current_workloads = get_current_workloads(docker_client)
+        self.assertEqual(0, len(current_workloads))
+
+    def test_get_current_missing_label_workload(self):
+        # The container is missing an expected label
+        class BadLabelContainer(BadContainer):
+            def __init__(self):
+                self.name = "bad-container"
+                self.labels = {
+                    CPU_LABEL_KEY: 2,
+                }
+                self.update_calls = []
+
+        self.__test_get_current_bad_workload(BadLabelContainer())
+
+    def test_get_current_incorrect_type_workload(self):
+        # The BadTypeContainer has a non-integer CPU label
+        class BadTypeContainer(BadContainer):
+            def __init__(self):
+                self.name = "bad-container"
+                self.labels = {
+                    CPU_LABEL_KEY: "x",
+                    WORKLOAD_TYPE_LABEL_KEY: STATIC
+                }
+                self.update_calls = []
+
+        self.__test_get_current_bad_workload(BadTypeContainer())
+
+    def __test_get_current_bad_workload(self, bad_container):
+        docker_client = MockDockerClient()
+        self.assertEqual(0, len(get_current_workloads(docker_client)))
+
+        docker_client.add_container(bad_container)
 
         current_workloads = get_current_workloads(docker_client)
         self.assertEqual(0, len(current_workloads))

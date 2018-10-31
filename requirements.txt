@@ -1,3 +1,4 @@
 -i https://repo.test.netflix.net/artifactory/api/pypi/pypi-netflix/simple
 click
 docker
+flask

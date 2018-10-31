@@ -15,6 +15,9 @@ class WorkloadManager:
     def __init__(self, cpu, docker_client):
         log.info("Created workload manager")
         self.__q = Queue()
+        self.__queue_success_count = 0
+        self.__queue_error_count = 0
+
         self.__cpu = cpu
         self.__docker_client = docker_client
 
@@ -74,9 +77,6 @@ class WorkloadManager:
 
         self.__q.put(__remove_workloads)
 
-    def get_cpu(self):
-        return self.__cpu
-
     def __get_burst_workloads(self):
         return self.__get_workloads_by_type(self.__workloads.values(), BURST)
 
@@ -88,7 +88,10 @@ class WorkloadManager:
         static_workloads = self.__get_workloads_by_type(workloads, STATIC)
         static_workloads.sort(key=lambda workload: workload.get_thread_count(), reverse=True)
         for w in static_workloads:
-            assign_threads(new_cpu, w)
+            try:
+                assign_threads(new_cpu, w)
+            except:
+                log.exception("Failed to assign threads to workload: '{}'".format(w.get_id()))
 
     def __execute_updates(self, cur_cpu, new_cpu, workloads):
         updates = get_updates(cur_cpu, new_cpu)
@@ -121,11 +124,8 @@ class WorkloadManager:
 
     def __exec_docker_update(self, workload_id, thread_ids):
         thread_ids_str = self.__get_thread_ids_str(thread_ids)
-        try:
-            log.info("updating workload: '{}' to cpuset.cpus: '{}'".format(workload_id, thread_ids_str))
-            self.__docker_client.containers.get(workload_id).update(cpuset_cpus=thread_ids_str)
-        except:
-            log.exception("Failed to update Docker container: '{}'".format(workload_id))
+        log.info("updating workload: '{}' to cpuset.cpus: '{}'".format(workload_id, thread_ids_str))
+        self.__docker_client.containers.get(workload_id).update(cpuset_cpus=thread_ids_str)
 
     @staticmethod
     def __get_thread_ids_str(thread_ids):
@@ -133,6 +133,18 @@ class WorkloadManager:
 
     def get_queue_depth(self):
         return self.__q.qsize()
+
+    def get_workloads(self):
+        return self.__workloads.values()
+
+    def get_cpu(self):
+        return self.__cpu
+
+    def get_success_count(self):
+        return self.__queue_success_count
+
+    def get_error_count(self):
+        return self.__queue_error_count
 
     def __worker(self):
         while True:
@@ -148,6 +160,8 @@ class WorkloadManager:
 
             try:
                 func()
+                self.__queue_success_count += 1
                 log.debug("Completed function: '{}'".format(func_name))
             except:
+                self.__queue_error_count += 1
                 log.exception("Failed to execute function: '{}'".format(func_name))
