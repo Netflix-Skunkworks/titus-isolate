@@ -29,6 +29,7 @@ class EventManager:
 
     def __process_events(self):
         for event in self.__events:
+            event = event.decode("utf-8")
             for event_handler in self.__event_handlers:
                 try:
                     event_handler.handle(json.loads(event))
