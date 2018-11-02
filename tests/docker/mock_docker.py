@@ -97,4 +97,4 @@ def get_event(type, action, container_id, attributes):
             ATTRIBUTES: attributes
         },
         TIME: int(time.time())
-    })
+    }).encode("utf-8")

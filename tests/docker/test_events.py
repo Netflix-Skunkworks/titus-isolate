@@ -101,7 +101,7 @@ class TestEvents(unittest.TestCase):
 
     def test_absent_cpu_label(self):
         test_context = TestContext()
-        unknown_event = get_event(CONTAINER, CREATE, uuid.uuid4(), {WORKLOAD_TYPE_LABEL_KEY: STATIC})
+        unknown_event = get_event(CONTAINER, CREATE, "unknown", {WORKLOAD_TYPE_LABEL_KEY: STATIC})
         event_iterable = MockEventProvider([unknown_event])
         manager = EventManager(event_iterable, test_context.get_event_handlers())
 
