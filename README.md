@@ -9,6 +9,7 @@ First we setup a virtual environment.
 $ virtualenv env
 New python executable in <OMITTED>
 Installing setuptools, pip, wheel...done.
+$ . env/bin/activate
 ```
 
 Then we install our dependencies.
@@ -28,8 +29,9 @@ In order to use `titus-isolate` two components must cooperate.  A server subscri
 
 The server must be started with three arguments indicating the structure of the CPU which workloads will consume.
 ```bash
-$ python3 ./run.py --help
-Usage: run.py [OPTIONS]
+$ cp startup/main.py .
+$ ./main.py --help
+Usage: main.py [OPTIONS]
 
 Options:
   --package-count TEXT        The number of packages in the CPU
@@ -52,14 +54,14 @@ Socket(s):             2
 
 Using this information we should start `titus-isolate` as follows.
 ```bash
-$ python3 ./run.py --package-count 2 --cores-per-package 16 --threads-per-core 2
-30-10-2018:11:28:45,934 INFO [run.py:35] Modeling the CPU...
-30-10-2018:11:28:45,934 INFO [run.py:39] Setting up the workload manager...
+$ ./main.py --package-count 2 --cores-per-package 16 --threads-per-core 2
+30-10-2018:11:28:45,934 INFO [main.py:35] Modeling the CPU...
+30-10-2018:11:28:45,934 INFO [main.py:39] Setting up the workload manager...
 30-10-2018:11:28:45,935 INFO [workload_manager.py:16] Created workload manager
-30-10-2018:11:28:45,935 INFO [run.py:44] Setting up the Docker event handlers...
-30-10-2018:11:28:45,935 INFO [run.py:51] Starting Docker event handling...
-30-10-2018:11:28:45,948 INFO [run.py:55] Isolating currently running workloads...
-30-10-2018:11:28:45,961 INFO [run.py:58] Startup complete, waiting for events...
+30-10-2018:11:28:45,935 INFO [main.py:44] Setting up the Docker event handlers...
+30-10-2018:11:28:45,935 INFO [main.py:51] Starting Docker event handling...
+30-10-2018:11:28:45,948 INFO [main.py:55] Isolating currently running workloads...
+30-10-2018:11:28:45,961 INFO [main.py:58] Startup complete, waiting for events...
 ...
 ```
 
@@ -138,7 +140,7 @@ Needless migration of workloads is avoided by only applying the outcome of the r
 
 Unless otherwise stated, in the following examples we started the `titus-isolate` server with the following options.
 ```bash
-$ python3 ./run.py --package-count 1 --cores-per-package 4 --threads-per-core 2 --admin-port 5555
+$ ./main.py --package-count 1 --cores-per-package 4 --threads-per-core 2 --admin-port 5555
 ```
 One workload was started as follows.
 ```bash
@@ -272,3 +274,32 @@ The workload manager is constantly processing a queue of events for adding, remo
 * success count: a count of the number of events it has processed successfully
 * error count: indicates how many events it failed to process
 
+## Build a Debian package
+
+First build the docker image used as a build environment.
+```bash
+$ cd release
+$ docker build -t deb .
+```
+
+Then return to the root of the source code and run an instance of the image.
+```bash
+$ cd ..
+$ docker run --rm -v $PWD:/src deb:latest
+```
+
+The result is a debian package, that when installed creates the elements needed for instantiating a virutal environment with
+all needed dependencies and scripts. For example one could execute the server as follows.
+```bash
+$ sudo dpkg -i titus-isolate_0.1-1_all.deb
+$ /usr/share/python/titus-isolate/bin/python3 /usr/share/python/titus-isolate/bin/main.py --help
+Usage: main.py [OPTIONS]
+
+Options:
+  --package-count TEXT        The number of packages in the CPU
+  --cores-per-package TEXT    The number of cores per package
+  --threads-per-core INTEGER  The number of threads per core (default: 2)
+  --admin-port INTEGER        The port for the HTTP server to listen on
+                              (default: 5000)
+  --help                      Show this message and exit.
+```

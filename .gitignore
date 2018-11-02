@@ -12,3 +12,6 @@ env/
 
 .idea/
 *.swp
+*.deb
+
+MANIFEST
