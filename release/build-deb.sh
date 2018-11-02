@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "Removing old debs"
+rm -f *.deb
+
 echo "Removing dist directory"
 rm -rf dist
 
@@ -26,7 +29,10 @@ echo "Creating debian directory"
 DEBEMAIL=titusops@netflix.com debmake -b':py3'
 
 echo "Overwriting rules file"
-cp /rules debian/rules
+cp /rules debian/
+
+echo "Adding systemd unit file"
+cp /titus-isolate.service debian/
 
 echo "Building debian package"
 dpkg-buildpackage -us -uc
