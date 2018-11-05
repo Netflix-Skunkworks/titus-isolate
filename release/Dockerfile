@@ -7,8 +7,8 @@ RUN apt update && apt install -y \
     dh-virtualenv \
     python3-all \
     python3-pip
-COPY rules /rules
-COPY build-deb.sh /build-deb.sh
-COPY titus-isolate.service /titus-isolate.service
+COPY build-deb.sh /
+COPY rules /
+COPY titus-isolate.service /
 WORKDIR /src
 CMD ["/build-deb.sh"]

@@ -9,4 +9,4 @@ Restart=always
 RestartSec=5
 
 [Install]
-Alias=titus-isolate.service
+Alias=titus-isolate
