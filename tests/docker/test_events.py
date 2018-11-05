@@ -11,7 +11,8 @@ from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
-from titus_isolate.model.processor.utils import get_cpu, DEFAULT_TOTAL_THREAD_COUNT
+from titus_isolate.model.processor.config import get_cpu
+from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 from titus_isolate.utils import config_logs
 

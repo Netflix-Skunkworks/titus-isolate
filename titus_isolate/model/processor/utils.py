@@ -33,34 +33,6 @@ def is_cpu_full(cpu):
     return len(empty_threads) == 0
 
 
-def get_cpu(
-        package_count=DEFAULT_PACKAGE_COUNT,
-        cores_per_package=DEFAULT_CORE_COUNT,
-        threads_per_core=DEFAULT_THREAD_COUNT):
-
-    packages = []
-    for p_i in range(package_count):
-
-        cores = []
-        for c_i in range(cores_per_package):
-            cores.append(
-                Core(c_i, __get_threads(p_i, c_i, package_count, cores_per_package, threads_per_core)))
-
-        packages.append(Package(p_i, cores))
-
-    return Cpu(packages)
-
-
-def __get_threads(package_index, core_index, package_count, core_count, thread_count):
-    threads = []
-    for row_index in range(thread_count):
-        offset = row_index * package_count * core_count
-        index = offset + package_index * core_count + core_index
-        threads.append(Thread(index))
-
-    return threads
-
-
 # Workloads
 def get_workload_ids(cpu):
     return set([thread.get_workload_id() for thread in cpu.get_threads() if thread.is_claimed()])

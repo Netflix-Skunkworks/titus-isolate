@@ -4,7 +4,7 @@ After=docker.service
 Requires=docker.service
 
 [Service]
-ExecStart=/usr/share/python/titus-isolate/bin/python3 /usr/share/python/titus-isolate/bin/main.py --package-count 2 --cores-per-package 16
+ExecStart=/usr/share/python/titus-isolate/bin/titus-isolate
 Restart=always
 RestartSec=5
 

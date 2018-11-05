@@ -8,7 +8,8 @@ from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.isolate.cpu import assign_threads
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.workload_manager import WorkloadManager
-from titus_isolate.model.processor.utils import get_cpu, DEFAULT_TOTAL_THREAD_COUNT
+from titus_isolate.model.processor.config import get_cpu
+from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 from titus_isolate.utils import config_logs
 
