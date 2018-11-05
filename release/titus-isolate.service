@@ -10,3 +10,4 @@ RestartSec=5
 
 [Install]
 Alias=titus-isolate
+WantedBy=multi-user.target
