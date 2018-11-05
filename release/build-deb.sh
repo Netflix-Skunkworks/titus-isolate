@@ -1,5 +1,7 @@
 #!/bin/bash
 set -e
+echo "Removing old tox files"
+rm -rf .tox
 
 echo "Removing old debs"
 rm -f *.deb
@@ -7,10 +9,13 @@ rm -f *.deb
 echo "Removing dist directory"
 rm -rf dist
 
-echo "Setting up virtualenv (env)"
-virtualenv env
+echo "Removing virtualenv (env)"
+rm -rf env
 
-echo "Activating virutalenv (env)"
+echo "Setting up virtualenv (env)"
+virtualenv --python=/usr/bin/python3 env
+
+echo "Activating virtualenv (env)"
 . env/bin/activate
 
 echo "Creating source distribution"
@@ -40,3 +45,9 @@ dpkg-buildpackage -us -uc
 echo "Copying debian package to host"
 cd ..
 cp *.deb ../
+
+echo "Deactivating virtualenv (env)"
+deactivate
+
+echo "Removing virtualenv (env)"
+rm -rf env
