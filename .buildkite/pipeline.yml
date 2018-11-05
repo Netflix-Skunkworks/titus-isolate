@@ -1,6 +1,6 @@
 steps:
   - label: Build titus-isolate debian package
-    command: docker build -t deb release && docker run --rm -e TITUS_ISOLATE_VERSION=$(git rev-parse HEAD) -v $PWD:/src deb:latest && mv *.deb titus-isolate_latest.deb
+    command: docker build -t deb release && docker run --rm -e TITUS_ISOLATE_VERSION=0.$(git rev-parse HEAD) -v $PWD:/src deb:latest && mv *.deb titus-isolate_latest.deb
     artifact_paths: "*.deb"
   - wait
   - trigger: titus-upload-debs
