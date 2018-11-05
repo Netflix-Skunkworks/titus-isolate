@@ -8,7 +8,8 @@ from titus_isolate.api import status
 from titus_isolate.api.status import set_wm, get_workloads, get_violations, get_wm_status
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.workload_manager import WorkloadManager
-from titus_isolate.model.processor.utils import get_cpu, DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT
+from titus_isolate.model.processor.config import get_cpu
+from titus_isolate.model.processor.utils import DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 
 

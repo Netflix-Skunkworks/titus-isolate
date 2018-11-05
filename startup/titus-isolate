@@ -10,20 +10,17 @@ from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.docker.utils import get_current_workloads
 from titus_isolate.isolate.workload_manager import WorkloadManager
-from titus_isolate.model.processor.utils import get_cpu
+from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.utils import config_logs
 
 log = logging.getLogger()
 
 
 @click.command()
-@click.option('--package-count', help="The number of packages in the CPU")
-@click.option('--cores-per-package', help="The number of cores per package")
-@click.option('--threads-per-core', default=2, help="The number of threads per core (default: 2)")
 @click.option('--admin-port', default=5000, help="The port for the HTTP server to listen on (default: 5000)")
-def main(package_count, cores_per_package, threads_per_core, admin_port):
+def main(admin_port):
     log.info("Modeling the CPU...")
-    cpu = get_cpu(int(package_count), int(cores_per_package), int(threads_per_core))
+    cpu = get_cpu_from_env()
 
     # Setup the workload manager
     log.info("Setting up the workload manager...")

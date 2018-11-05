@@ -12,12 +12,20 @@ Installing setuptools, pip, wheel...done.
 $ . env/bin/activate
 ```
 
-Then we install our dependencies.
+Then we install the package.
 ```bash
-$ pip3 install -r requirements.txt
-...
-Installing collected packages: click, idna, certifi, chardet, urllib3, requests, six, docker-pycreds, websocket-client, docker
-Successfully installed certifi-2018.10.15 chardet-3.0.4 click-7.0 docker-3.5.1 docker-pycreds-0.3.0 idna-2.7 requests-2.20.0 six-1.11.0 urllib3-1.24 websocket-client-0.53.0
+$ python3 setup.py install
+running install
+running build
+running build_py
+running build_scripts
+running install_lib
+running install_scripts
+changing mode of <OMITTED>/titus-isolate/venv/bin/titus-isolate to 755
+changing mode of <OMITTED>/titus-isolate/venv/bin/main.py to 755
+running install_egg_info
+Removing <OMITTED>/titus-isolate/venv/lib/python3.7/site-packages/titus_isolate-0.SNAPSHOT-py3.7.egg-info
+Writing <OMITTED>/titus-isolate/venv/lib/python3.7/site-packages/titus_isolate-0.SNAPSHOT-py3.7.egg-info
 ```
 
 See `Usage` for starting the `titus-isolate` server.
@@ -29,40 +37,26 @@ In order to use `titus-isolate` two components must cooperate.  A server subscri
 
 The server must be started with three arguments indicating the structure of the CPU which workloads will consume.
 ```bash
-$ cp startup/main.py .
-$ ./main.py --help
-Usage: main.py [OPTIONS]
+$ titus-isolate --help
+Usage: titus-isolate [OPTIONS]
 
 Options:
-  --package-count TEXT        The number of packages in the CPU
-  --cores-per-package TEXT    The number of cores per package
-  --threads-per-core INTEGER  The number of threads per core (default: 2)
-  --admin-port INTEGER        The port for the HTTP server to listen on
-                              (default: 5000)
-  --help                      Show this message and exit.
+  --admin-port INTEGER  The port for the HTTP server to listen on (default:
+                        5000)
+  --help                Show this message and exit.
 ```
 
-On linux the required information can normally be found using `lscpu`.
-```bash
-$ lscpu
-...
-Thread(s) per core:    2
-Core(s) per socket:    16
-Socket(s):             2
-...
-```
+The server will automatically determine the topology of the CPU on which it is running.  It supports MacOS and Linux systems today.
+It requires that the python method `platform.system()` return either `Darwin` or `Linux`.  For example:
 
-Using this information we should start `titus-isolate` as follows.
 ```bash
-$ ./main.py --package-count 2 --cores-per-package 16 --threads-per-core 2
-30-10-2018:11:28:45,934 INFO [main.py:35] Modeling the CPU...
-30-10-2018:11:28:45,934 INFO [main.py:39] Setting up the workload manager...
-30-10-2018:11:28:45,935 INFO [workload_manager.py:16] Created workload manager
-30-10-2018:11:28:45,935 INFO [main.py:44] Setting up the Docker event handlers...
-30-10-2018:11:28:45,935 INFO [main.py:51] Starting Docker event handling...
-30-10-2018:11:28:45,948 INFO [main.py:55] Isolating currently running workloads...
-30-10-2018:11:28:45,961 INFO [main.py:58] Startup complete, waiting for events...
-...
+$ python
+Python 3.7.0 (default, Oct  2 2018, 09:20:07)
+[Clang 10.0.0 (clang-1000.11.45.2)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import platform
+>>> platform.system()
+'Darwin'
 ```
 
 ### Workloads
@@ -134,6 +128,18 @@ get_processors(processor_count):
 
 After all placements have been made for workloads arriving on the Docker event stream a rebalance operaation is performed.  It sorts all static workloads from largest to smallest based on their declared CPU requiremetns and runs the algorithm on each in turn.  Burst workloads get the remaining CPU capacity.
 Needless migration of workloads is avoided by only applying the outcome of the rebalance operation if some improvement in placement is detected.  An improvement is detected when cross package workload placement and the number of shared physical cores is minimized.
+
+## Test
+We use `tox` to run tests.  After setting up a virtual environment, requirements and `tox` must be installed.
+```bash
+(venv) $ pip3 install -r requirements.txt
+(venv) $ pip3 install tox
+(venv) $ tox
+...
+  py36: commands succeeded
+  linters: commands succeeded
+  congratulations :)
+```
 
 ## Operations
 `titus-isolate` provides a few read only endpoints to observe the operation of the server.
@@ -286,20 +292,22 @@ Then return to the root of the source code and run an instance of the image.
 ```bash
 $ cd ..
 $ docker run --rm -v $PWD:/src deb:latest
+Removing old debs
+Removing dist directory
+Setting up virtualenv (env)
+...
+dpkg-buildpackage: full upload (original source is included)
+Copying debian package to host
+$ ls titus-isolate_*
+titus-isolate_0.SNAPSHOT-1_all.deb
 ```
 
-The result is a debian package, that when installed creates the elements needed for instantiating a virutal environment with
+The result is a debian package that when installed creates the elements needed for instantiating a virtual environment with
 all needed dependencies and scripts. For example one could execute the server as follows.
 ```bash
-$ sudo dpkg -i titus-isolate_0.1-1_all.deb
-$ /usr/share/python/titus-isolate/bin/python3 /usr/share/python/titus-isolate/bin/main.py --help
-Usage: main.py [OPTIONS]
-
-Options:
-  --package-count TEXT        The number of packages in the CPU
-  --cores-per-package TEXT    The number of cores per package
-  --threads-per-core INTEGER  The number of threads per core (default: 2)
-  --admin-port INTEGER        The port for the HTTP server to listen on
-                              (default: 5000)
-  --help                      Show this message and exit.
+$ sudo dpkg -i titus-isolate_0.SNAPSHOT-1_all.deb
+$ /usr/share/python/titus-isolate/bin/titus-isolate
+05-11-2018:19:01:21,265 INFO [titus-isolate:22] Modeling the CPU...
+05-11-2018:19:01:21,307 INFO [titus-isolate:26] Setting up the workload manager...
+...
 ```
