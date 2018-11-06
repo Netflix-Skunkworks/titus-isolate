@@ -15,7 +15,7 @@ setup(name='titus-isolate',
       maintainer_email="ghartmann@netflix.com",
       version=os.getenv("TITUS_ISOLATE_VERSION", "0.SNAPSHOT"),
       packages=["titus_isolate", "titus_isolate/api", "titus_isolate/docker", "titus_isolate/isolate",
-                "titus_isolate/model", "titus_isolate/model/processor"],
+                "titus_isolate/metrics", "titus_isolate/model", "titus_isolate/model/processor"],
       scripts=["startup/titus-isolate"],
       url="https://github.com/Netflix-Skunkworks/titus-isolate"
       )

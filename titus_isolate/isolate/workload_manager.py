@@ -27,17 +27,20 @@ class WorkloadManager:
         self.__worker_thread.daemon = True
         self.__worker_thread.start()
 
+    def __get_add_workload_function(self, workload):
+        def __add_workload():
+            log.info("Adding workload: {}".format(workload.get_id()))
+            self.__workloads[workload.get_id()] = workload
+            new_cpu = copy.deepcopy(self.__cpu)
+            self.__assign_workload(new_cpu, workload)
+            self.__execute_updates(self.__cpu, new_cpu, workload)
+            log.info("Added workload: {}".format(workload.get_id()))
+
+        return __add_workload
+
     def add_workloads(self, workloads):
         for w in workloads:
-            def __add_workload():
-                log.info("Adding workload: {}".format(w.get_id()))
-                self.__workloads[w.get_id()] = w
-                new_cpu = copy.deepcopy(self.__cpu)
-                self.__assign_workload(new_cpu, w)
-                self.__execute_updates(self.__cpu, new_cpu, w)
-                log.info("Added workload: {}".format(w.get_id()))
-
-            self.__q.put(__add_workload)
+            self.__q.put(self.__get_add_workload_function(w))
 
     def __rebalance(self):
         log.info("Attempting re-balance.")

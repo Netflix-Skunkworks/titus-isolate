@@ -28,6 +28,7 @@ def get_current_workloads(docker_client):
                 cpu = int(container.labels[CPU_LABEL_KEY])
                 workload_type = container.labels[WORKLOAD_TYPE_LABEL_KEY]
                 workloads.append(Workload(workload_id, cpu, workload_type))
+                log.info("Found running workload: '{}'".format(workload_id))
             except:
                 log.exception("Failed to parse labels for container: '{}'".format(container.name))
         else:
