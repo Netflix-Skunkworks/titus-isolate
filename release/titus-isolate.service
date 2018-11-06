@@ -4,6 +4,7 @@ After=docker.service
 Requires=docker.service
 
 [Service]
+EnvironmentFile=/run/titus.env
 ExecStart=/usr/share/python/titus-isolate/bin/titus-isolate --admin-port 7500
 Restart=always
 RestartSec=5

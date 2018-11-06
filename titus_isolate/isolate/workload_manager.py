@@ -7,6 +7,7 @@ from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.isolate.balance import has_better_isolation
 from titus_isolate.isolate.cpu import assign_threads, free_threads
 from titus_isolate.isolate.update import get_updates
+from titus_isolate.metrics.report import report_metrics
 
 log = logging.getLogger()
 
@@ -26,6 +27,9 @@ class WorkloadManager:
         self.__worker_thread = Thread(target=self.__worker)
         self.__worker_thread.daemon = True
         self.__worker_thread.start()
+
+        # Report metrics once on construction to clear initial NaN values
+        report_metrics(self)
 
     def add_workloads(self, workloads):
         for w in workloads:
@@ -170,3 +174,5 @@ class WorkloadManager:
             except:
                 self.__queue_error_count += 1
                 log.exception("Failed to execute function: '{}'".format(func_name))
+
+            report_metrics(self)
