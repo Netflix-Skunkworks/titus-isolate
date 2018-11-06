@@ -7,7 +7,6 @@ from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.isolate.balance import has_better_isolation
 from titus_isolate.isolate.cpu import assign_threads, free_threads
 from titus_isolate.isolate.update import get_updates
-from titus_isolate.metrics.report import report_metrics
 
 log = logging.getLogger()
 
@@ -28,20 +27,20 @@ class WorkloadManager:
         self.__worker_thread.daemon = True
         self.__worker_thread.start()
 
-        # Report metrics once on construction to clear initial NaN values
-        report_metrics(self)
+    def __get_add_workload_function(self, workload):
+        def __add_workload():
+            log.info("Adding workload: {}".format(workload.get_id()))
+            self.__workloads[workload.get_id()] = workload
+            new_cpu = copy.deepcopy(self.__cpu)
+            self.__assign_workload(new_cpu, workload)
+            self.__execute_updates(self.__cpu, new_cpu, workload)
+            log.info("Added workload: {}".format(workload.get_id()))
+
+        return __add_workload
 
     def add_workloads(self, workloads):
         for w in workloads:
-            def __add_workload():
-                log.info("Adding workload: {}".format(w.get_id()))
-                self.__workloads[w.get_id()] = w
-                new_cpu = copy.deepcopy(self.__cpu)
-                self.__assign_workload(new_cpu, w)
-                self.__execute_updates(self.__cpu, new_cpu, w)
-                log.info("Added workload: {}".format(w.get_id()))
-
-            self.__q.put(__add_workload)
+            self.__q.put(self.__get_add_workload_function(w))
 
     def __rebalance(self):
         log.info("Attempting re-balance.")
@@ -174,5 +173,3 @@ class WorkloadManager:
             except:
                 self.__queue_error_count += 1
                 log.exception("Failed to execute function: '{}'".format(func_name))
-
-            report_metrics(self)

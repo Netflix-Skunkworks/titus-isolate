@@ -1,0 +1,57 @@
+import logging
+import time
+from threading import Thread
+
+import schedule as schedule
+from spectator import GlobalRegistry
+
+from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
+
+registry = GlobalRegistry
+log = logging.getLogger()
+
+SUCCEEDED_KEY = 'titus-isolate.succeeded'
+FAILED_KEY = 'titus-isolate.failed'
+QUEUE_DEPTH_KEY = 'titus-isolate.queueDepth'
+PACKAGE_VIOLATIONS_KEY = 'titus-isolate.crossPackageViolations'
+CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
+
+
+class MetricsReporter:
+    def __init__(self, workload_manager, reg=registry, report_interval=30, sleep_interval=1):
+        self.__workload_manager = workload_manager
+        self.__reg = reg
+        self.__sleep_interval = sleep_interval
+        schedule.every(report_interval).seconds.do(self.__report_metrics)
+
+        self.__worker_thread = Thread(target=self.__schedule_loop)
+        self.__worker_thread.daemon = True
+        self.__worker_thread.start()
+
+    def __schedule_loop(self):
+        while True:
+            schedule.run_pending()
+            time.sleep(self.__sleep_interval)
+
+    def __report_metrics(self):
+        log.debug("Reporting metrics")
+        try:
+            # Workload manager metrics
+            self.__reg.gauge(SUCCEEDED_KEY).set(self.__workload_manager.get_success_count())
+            self.__reg.gauge(FAILED_KEY).set(self.__workload_manager.get_error_count())
+            self.__reg.gauge(QUEUE_DEPTH_KEY).set(self.__workload_manager.get_queue_depth())
+
+            # CPU metrics
+            cross_package_violation_count = len(get_cross_package_violations(self.__workload_manager.get_cpu()))
+            shared_core_violation_count = len(get_shared_core_violations(self.__workload_manager.get_cpu()))
+            self.__reg.gauge(PACKAGE_VIOLATIONS_KEY).set(cross_package_violation_count)
+            self.__reg.gauge(CORE_VIOLATIONS_KEY).set(shared_core_violation_count)
+            log.debug("Reported metrics")
+
+        except:
+            log.exception("Failed to report metric")
+
+
+def override_registry(reg):
+    global registry
+    registry = reg
