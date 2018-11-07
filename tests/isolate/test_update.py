@@ -2,11 +2,11 @@ import logging
 import unittest
 import uuid
 
+from tests.utils import config_logs
 from titus_isolate.docker.constants import BURST
 from titus_isolate.isolate.update import get_updates
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
-from titus_isolate.utils import config_logs
 
 config_logs(logging.DEBUG)
 

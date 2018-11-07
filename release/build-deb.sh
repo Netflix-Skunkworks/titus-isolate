@@ -18,6 +18,10 @@ virtualenv --python=/usr/bin/python3 env
 echo "Activating virtualenv (env)"
 . env/bin/activate
 
+echo "Appending special requirements to requirements.txt"
+cp /src/requirements.txt /src/req.txt
+echo systemd >> /src/requirements.txt
+
 echo "Creating source distribution"
 python3 setup.py sdist
 
@@ -54,3 +58,6 @@ deactivate
 
 echo "Removing virtualenv (env)"
 rm -rf env
+
+echo "Restoring requirements.txt"
+mv /src/req.txt /src/requirements.txt

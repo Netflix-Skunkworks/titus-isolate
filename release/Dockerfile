@@ -5,6 +5,7 @@ RUN apt update && apt install -y \
     dh-python \
     dh-systemd \
     dh-virtualenv \
+    libsystemd-dev \
     python3-all \
     python3-pip
 COPY build-deb.sh /

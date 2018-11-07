@@ -1,9 +1,8 @@
-import logging
-
 from titus_isolate.docker.constants import BURST
 from titus_isolate.model.processor.utils import get_workload_ids
+from titus_isolate.utils import get_logger
 
-log = logging.getLogger()
+log = get_logger()
 
 
 def get_updates(cur_cpu, new_cpu):

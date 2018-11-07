@@ -1,9 +1,8 @@
-import logging
-
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
 from titus_isolate.model.workload import Workload
+from titus_isolate.utils import get_logger
 
-log = logging.getLogger()
+log = get_logger()
 
 
 def assign_threads(cpu, workload):

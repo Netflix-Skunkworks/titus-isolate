@@ -1,10 +1,9 @@
-import logging
-
 from titus_isolate.docker.constants import ACTOR, ATTRIBUTES, NAME, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, \
     REQUIRED_LABELS
 from titus_isolate.model.workload import Workload
+from titus_isolate.utils import get_logger
 
-log = logging.getLogger()
+log = get_logger()
 
 
 def get_container_name(event):

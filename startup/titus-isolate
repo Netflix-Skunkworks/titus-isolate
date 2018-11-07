@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-import logging
-import os
-
 import click
 import docker
 from titus_isolate.api.status import app, set_wm
@@ -13,9 +10,9 @@ from titus_isolate.docker.utils import get_current_workloads
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.config import get_cpu_from_env
-from titus_isolate.utils import config_logs
+from titus_isolate.utils import get_logger
 
-log = logging.getLogger()
+log = get_logger()
 
 
 @click.command()
@@ -55,5 +52,4 @@ def main(admin_port):
 
 
 if __name__ == "__main__":
-    config_logs()
     main()

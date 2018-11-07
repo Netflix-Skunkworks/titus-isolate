@@ -12,10 +12,9 @@ from titus_isolate.metrics.metrics_reporter import SUCCEEDED_KEY, FAILED_KEY, PA
     CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, override_registry, MetricsReporter
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload
-from titus_isolate.utils import config_logs
+from titus_isolate.utils import get_logger
 
-config_logs(logging.DEBUG)
-log = logging.getLogger()
+log = get_logger(logging.DEBUG)
 
 
 class TestMetricsReporter(unittest.TestCase):

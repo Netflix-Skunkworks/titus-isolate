@@ -2,11 +2,11 @@ import logging
 import unittest
 import uuid
 
+from tests.utils import config_logs
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.package import Package
 from titus_isolate.model.processor.thread import Thread
 from titus_isolate.model.processor.utils import get_emptiest_core
-from titus_isolate.utils import config_logs
 
 config_logs(logging.DEBUG)
 
