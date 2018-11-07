@@ -11,10 +11,9 @@ from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
-from titus_isolate.utils import config_logs
+from titus_isolate.utils import get_logger
 
-config_logs(logging.DEBUG)
-log = logging.getLogger()
+log = get_logger(logging.DEBUG)
 
 
 class TestWorkloadManager(unittest.TestCase):

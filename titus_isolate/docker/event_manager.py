@@ -1,8 +1,9 @@
 import json
-import logging
 from threading import Thread
 
-log = logging.getLogger()
+from titus_isolate.utils import get_logger
+
+log = get_logger()
 
 
 class EventManager:

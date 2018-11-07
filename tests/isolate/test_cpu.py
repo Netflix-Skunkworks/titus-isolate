@@ -2,12 +2,12 @@ import logging
 import unittest
 import uuid
 
+from tests.utils import config_logs
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.cpu import assign_threads, free_threads
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import is_cpu_full, DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
-from titus_isolate.utils import config_logs
 
 config_logs(logging.DEBUG)
 

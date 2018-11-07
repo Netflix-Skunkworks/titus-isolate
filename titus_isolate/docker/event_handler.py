@@ -1,6 +1,6 @@
-import logging
+from titus_isolate.utils import get_logger
 
-log = logging.getLogger()
+log = get_logger()
 
 
 class EventHandler:

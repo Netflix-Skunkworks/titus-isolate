@@ -1,4 +1,3 @@
-import logging
 import time
 from threading import Thread
 
@@ -6,9 +5,10 @@ import schedule as schedule
 from spectator import GlobalRegistry
 
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
+from titus_isolate.utils import get_logger
 
 registry = GlobalRegistry
-log = logging.getLogger()
+log = get_logger()
 
 SUCCEEDED_KEY = 'titus-isolate.succeeded'
 FAILED_KEY = 'titus-isolate.failed'

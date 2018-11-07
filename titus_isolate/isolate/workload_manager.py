@@ -1,5 +1,4 @@
 import copy
-import logging
 from queue import Queue
 from threading import Thread
 
@@ -7,8 +6,9 @@ from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.isolate.balance import has_better_isolation
 from titus_isolate.isolate.cpu import assign_threads, free_threads
 from titus_isolate.isolate.update import get_updates
+from titus_isolate.utils import get_logger
 
-log = logging.getLogger()
+log = get_logger()
 
 
 class WorkloadManager:

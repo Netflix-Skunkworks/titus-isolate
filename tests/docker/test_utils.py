@@ -5,10 +5,9 @@ from tests.docker.mock_docker import MockDockerClient, MockContainer
 from titus_isolate.docker.constants import STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY
 from titus_isolate.docker.utils import get_current_workloads
 from titus_isolate.model.workload import Workload
-from titus_isolate.utils import config_logs
+from titus_isolate.utils import get_logger
 
-config_logs(logging.DEBUG)
-log = logging.getLogger()
+log = get_logger(logging.DEBUG)
 
 
 class BadContainer:
