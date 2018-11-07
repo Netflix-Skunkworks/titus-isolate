@@ -53,6 +53,9 @@ echo "Copying debian package to host"
 cd ..
 cp *.deb ../
 
+echo "Removing dist directory"
+rm -rf dist
+
 echo "Deactivating virtualenv (env)"
 deactivate
 
