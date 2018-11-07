@@ -1,7 +1,7 @@
 import logging
 import time
 
-from titus_isolate.utils import LOG_FMT_STRING
+from titus_isolate import LOG_FMT_STRING
 
 DEFAULT_TIMEOUT_SECONDS = 3
 
