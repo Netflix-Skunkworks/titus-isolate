@@ -43,9 +43,6 @@ cp /rules debian/
 echo "Adding systemd unit file"
 cp /titus-isolate.service debian/
 
-echo "Adding systemd preinst override file"
-cp /titus-isolate.preinst debian/
-
 echo "Building debian package"
 dpkg-buildpackage -us -uc
 
