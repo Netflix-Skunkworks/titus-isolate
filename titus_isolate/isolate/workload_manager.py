@@ -15,8 +15,11 @@ class WorkloadManager:
     def __init__(self, cpu, docker_client):
         log.info("Created workload manager")
         self.__q = Queue()
-        self.__queue_success_count = 0
-        self.__queue_error_count = 0
+        self.__error_count = 0
+        self.__added_count = 0
+        self.__removed_count = 0
+        self.__rebalanced_count = 0
+        self.__rebalanced_noop_count = 0
 
         self.__cpu = cpu
         self.__docker_client = docker_client
@@ -35,6 +38,7 @@ class WorkloadManager:
             self.__assign_workload(new_cpu, workload)
             self.__execute_updates(self.__cpu, new_cpu, workload)
             log.info("Added workload: {}".format(workload.get_id()))
+            self.__added_count += 1
 
         return __add_workload
 
@@ -58,8 +62,10 @@ class WorkloadManager:
             log.info("Found a better placement scenario, updating all workloads.")
             for w in self.__workloads.values():
                 self.__execute_updates(self.__cpu, sim_cpu, w)
+            self.__rebalanced_count += 1
         else:
             log.info("No improvement in placement found in re-balance, doing nothing.")
+            self.__rebalanced_noop_count += 1
 
     def remove_workloads(self, workload_ids):
         for workload_id in workload_ids:
@@ -81,6 +87,7 @@ class WorkloadManager:
 
                 self.__cpu = new_cpu
                 log.info("Removed workload: {}".format(workload_id))
+                self.__removed_count += 1
 
             self.__q.put(__remove_workload)
 
@@ -148,11 +155,26 @@ class WorkloadManager:
     def get_cpu(self):
         return self.__cpu
 
+    def get_added_count(self):
+        return self.__added_count
+
+    def get_removed_count(self):
+        return self.__removed_count
+
+    def get_rebalanced_count(self):
+        return self.__rebalanced_count
+
+    def get_rebalanced_noop_count(self):
+        return self.__rebalanced_noop_count
+
     def get_success_count(self):
-        return self.__queue_success_count
+        return self.get_added_count() + \
+               self.get_removed_count() + \
+               self.get_rebalanced_count() + \
+               self.get_rebalanced_noop_count()
 
     def get_error_count(self):
-        return self.__queue_error_count
+        return self.__error_count
 
     def __worker(self):
         while True:
@@ -168,7 +190,6 @@ class WorkloadManager:
 
             try:
                 func()
-                self.__queue_success_count += 1
                 log.debug("Completed function: '{}'".format(func_name))
             except:
                 self.__queue_error_count += 1

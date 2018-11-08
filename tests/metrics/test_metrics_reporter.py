@@ -5,15 +5,17 @@ import uuid
 from spectator import Registry
 
 from tests.docker.mock_docker import MockDockerClient, MockContainer
-from tests.utils import wait_until
+from tests.utils import wait_until, config_logs
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.workload_manager import WorkloadManager
-from titus_isolate.metrics.metrics_reporter import SUCCEEDED_KEY, FAILED_KEY, PACKAGE_VIOLATIONS_KEY, \
-    CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, override_registry, MetricsReporter
+from titus_isolate.metrics.metrics_reporter import ADDED_KEY, SUCCEEDED_KEY, FAILED_KEY, PACKAGE_VIOLATIONS_KEY, \
+    CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, override_registry, MetricsReporter, REMOVED_KEY, REBALANCED_KEY, \
+    REBALANCED_NOOP_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.utils import get_logger
 
+config_logs(logging.DEBUG)
 log = get_logger(logging.DEBUG)
 
 
@@ -42,7 +44,22 @@ class TestMetricsReporter(unittest.TestCase):
         wait_until(lambda: self.__gauge_value_reached(registry, CORE_VIOLATIONS_KEY, 0))
 
         workload_manager.add_workloads([workload])
+        wait_until(lambda: self.__gauge_value_reached(registry, ADDED_KEY, 1))
+        wait_until(lambda: self.__gauge_value_reached(registry, REMOVED_KEY, 0))
+        wait_until(lambda: self.__gauge_value_reached(registry, REBALANCED_KEY, 0))
+        wait_until(lambda: self.__gauge_value_reached(registry, REBALANCED_NOOP_KEY, 1))
         wait_until(lambda: self.__gauge_value_reached(registry, SUCCEEDED_KEY, 2))
+        wait_until(lambda: self.__gauge_value_reached(registry, FAILED_KEY, 0))
+        wait_until(lambda: self.__gauge_value_reached(registry, QUEUE_DEPTH_KEY, 0))
+        wait_until(lambda: self.__gauge_value_reached(registry, PACKAGE_VIOLATIONS_KEY, 0))
+        wait_until(lambda: self.__gauge_value_reached(registry, CORE_VIOLATIONS_KEY, 0))
+
+        workload_manager.remove_workloads([workload.get_id()])
+        wait_until(lambda: self.__gauge_value_reached(registry, ADDED_KEY, 1))
+        wait_until(lambda: self.__gauge_value_reached(registry, REMOVED_KEY, 1))
+        wait_until(lambda: self.__gauge_value_reached(registry, REBALANCED_KEY, 0))
+        wait_until(lambda: self.__gauge_value_reached(registry, REBALANCED_NOOP_KEY, 2))
+        wait_until(lambda: self.__gauge_value_reached(registry, SUCCEEDED_KEY, 4))
         wait_until(lambda: self.__gauge_value_reached(registry, FAILED_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, QUEUE_DEPTH_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, PACKAGE_VIOLATIONS_KEY, 0))
