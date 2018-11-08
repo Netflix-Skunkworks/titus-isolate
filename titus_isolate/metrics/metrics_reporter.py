@@ -18,6 +18,7 @@ REBALANCED_NOOP_KEY = 'titus-isolate.rebalancedNoop'
 SUCCEEDED_KEY = 'titus-isolate.succeeded'
 FAILED_KEY = 'titus-isolate.failed'
 QUEUE_DEPTH_KEY = 'titus-isolate.queueDepth'
+WORKLOAD_COUNT_KEY = 'titus-isolate.workloadCount'
 
 PACKAGE_VIOLATIONS_KEY = 'titus-isolate.crossPackageViolations'
 CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
@@ -52,6 +53,7 @@ class MetricsReporter:
             self.__reg.gauge(SUCCEEDED_KEY, tags).set(self.__workload_manager.get_success_count())
             self.__reg.gauge(FAILED_KEY, tags).set(self.__workload_manager.get_error_count())
             self.__reg.gauge(QUEUE_DEPTH_KEY, tags).set(self.__workload_manager.get_queue_depth())
+            self.__reg.gauge(WORKLOAD_COUNT_KEY, tags).set(len(self.__workload_manager.get_workloads()))
 
             # CPU metrics
             cross_package_violation_count = len(get_cross_package_violations(self.__workload_manager.get_cpu()))
@@ -63,7 +65,8 @@ class MetricsReporter:
         except:
             log.exception("Failed to report metric")
 
-    def __get_tags(self):
+    @staticmethod
+    def __get_tags():
         ec2_instance_id = 'EC2_INSTANCE_ID'
 
         tags = {}
@@ -71,6 +74,7 @@ class MetricsReporter:
             tags["node"] = os.environ[ec2_instance_id]
 
         return tags
+
 
 def override_registry(reg):
     global registry
