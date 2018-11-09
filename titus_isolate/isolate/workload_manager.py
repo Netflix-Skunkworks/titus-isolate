@@ -186,17 +186,17 @@ class WorkloadManager:
 
     def __worker(self):
         while True:
-            func = self.__q.get()
-            func_name = func.__name__
-            log.debug("Executing function: '{}'".format(func_name))
-
-            # If all work has been accomplished and we're not doing a re-balance right now,
-            # enqueue a re-balance operation
-            if not func_name == self.__rebalance.__name__ and self.get_queue_depth() == 0:
-                log.info("Enqueuing re-balance")
-                self.__q.put(self.__rebalance)
-
             try:
+                func = self.__q.get()
+                func_name = func.__name__
+                log.debug("Executing function: '{}'".format(func_name))
+
+                # If all work has been accomplished and we're not doing a re-balance right now,
+                # enqueue a re-balance operation
+                if not func_name == self.__rebalance.__name__ and self.get_queue_depth() == 0:
+                    log.info("Enqueuing re-balance")
+                    self.__q.put(self.__rebalance)
+
                 func()
                 log.debug("Completed function: '{}'".format(func_name))
             except:
