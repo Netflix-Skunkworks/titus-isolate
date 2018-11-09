@@ -10,6 +10,8 @@ from titus_isolate.utils import get_logger
 
 log = get_logger()
 
+PROCESS_TIMEOUT_SECONDS = 30
+
 
 class WorkloadManager:
     def __init__(self, cpu, docker_client):
@@ -30,13 +32,16 @@ class WorkloadManager:
         self.__worker_thread.daemon = True
         self.__worker_thread.start()
 
+    def join(self):
+        self.__worker_thread.join()
+
     def __get_add_workload_function(self, workload):
         def __add_workload():
             log.info("Adding workload: {}".format(workload.get_id()))
             self.__workloads[workload.get_id()] = workload
-            new_cpu = copy.deepcopy(self.__cpu)
+            new_cpu = copy.deepcopy(self.get_cpu())
             self.__assign_workload(new_cpu, workload)
-            self.__execute_updates(self.__cpu, new_cpu, workload)
+            self.__execute_updates(self.get_cpu(), new_cpu, workload)
             log.info("Added workload: {}".format(workload.get_id()))
             self.__added_count += 1
 
@@ -49,7 +54,7 @@ class WorkloadManager:
     def __rebalance(self):
         log.info("Attempting re-balance.")
         # Clone the CPU and free all its threads
-        sim_cpu = copy.deepcopy(self.__cpu)
+        sim_cpu = copy.deepcopy(self.get_cpu())
         sim_cpu.clear()
 
         static_workloads = self.__get_static_workloads()
@@ -58,10 +63,10 @@ class WorkloadManager:
         for w in static_workloads:
             self.__assign_workload(sim_cpu, w)
 
-        if has_better_isolation(self.__cpu, sim_cpu):
+        if has_better_isolation(self.get_cpu(), sim_cpu):
             log.info("Found a better placement scenario, updating all workloads.")
             for w in self.__workloads.values():
-                self.__execute_updates(self.__cpu, sim_cpu, w)
+                self.__execute_updates(self.get_cpu(), sim_cpu, w)
             self.__rebalanced_count += 1
         else:
             log.info("No improvement in placement found in re-balance, doing nothing.")
@@ -71,12 +76,12 @@ class WorkloadManager:
         for workload_id in workload_ids:
             def __remove_workload():
                 log.info("Removing workload: {}".format(workload_id))
-                new_cpu = copy.deepcopy(self.__cpu)
+                new_cpu = copy.deepcopy(self.get_cpu())
                 free_threads(new_cpu, workload_id)
                 if self.__workloads.pop(workload_id, None) is None:
                     log.warning("Attempted to remove unknown workload: '{}'".format(workload_id))
 
-                updates = get_updates(self.__cpu, new_cpu)
+                updates = get_updates(self.get_cpu(), new_cpu)
                 log.info("Found footprint updates: '{}'".format(updates))
                 if BURST in updates:
                     # If the burst footprint changed due to workloads being removed, then burst workloads
@@ -85,7 +90,7 @@ class WorkloadManager:
                     burst_workloads_to_update = self.__get_burst_workloads()
                     self.__update_burst_workloads(burst_workloads_to_update, empty_thread_ids)
 
-                self.__cpu = new_cpu
+                self.__set_cpu(new_cpu)
                 log.info("Removed workload: {}".format(workload_id))
                 self.__removed_count += 1
 
@@ -112,7 +117,7 @@ class WorkloadManager:
         updates = get_updates(cur_cpu, new_cpu)
         log.info("Found footprint updates: '{}'".format(updates))
 
-        self.__cpu = new_cpu
+        self.__set_cpu(new_cpu)
         self.__execute_docker_updates(updates, workload)
 
     def __execute_docker_updates(self, updates, workload):
@@ -123,7 +128,7 @@ class WorkloadManager:
                 self.__exec_docker_update(workload_id, thread_ids)
 
         # If the new workload is a burst workload it should be updated
-        empty_thread_ids = [t.get_id() for t in self.__cpu.get_empty_threads()]
+        empty_thread_ids = [t.get_id() for t in self.get_cpu().get_empty_threads()]
         burst_workloads_to_update = [workload]
         if BURST in updates:
             # If the burst footprint has changed ALL burst workloads must be updated
@@ -154,6 +159,9 @@ class WorkloadManager:
 
     def get_cpu(self):
         return self.__cpu
+
+    def __set_cpu(self, cpu):
+        self.__cpu = cpu
 
     def get_added_count(self):
         return self.__added_count
