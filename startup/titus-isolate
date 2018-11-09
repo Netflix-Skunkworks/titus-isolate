@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/share/python/titus-isolate/bin/python
+import os
+from threading import Thread
+
 import click
 import docker
 from titus_isolate.api.status import app, set_wm
@@ -45,10 +48,25 @@ def main(admin_port):
     log.info("Isolating currently running workloads...")
     workload_manager.add_workloads(get_current_workloads(docker_client))
 
-    log.info("Startup complete, waiting for events...")
-
     # Starting the HTTP server blocks exit forever
-    app.run(host="0.0.0.0", debug=False, port=admin_port)
+    log.info("Starting HTTP server")
+    __start_http_server(admin_port)
+
+    log.info("Startup complete, waiting for events...")
+    workload_manager.join()
+
+    log.error("The workload manager should never exit, yet here we are...")
+    os._exit(42)
+
+
+def __start_http_server(admin_port):
+    # Starting the HTTP server blocks exit forever
+    def __run_http_server():
+        app.run(host="0.0.0.0", debug=False, port=admin_port)
+
+    http_server_thread = Thread(target=__run_http_server)
+    http_server_thread.daemon = True
+    http_server_thread.start()
 
 
 if __name__ == "__main__":

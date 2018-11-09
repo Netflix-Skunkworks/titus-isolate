@@ -3,7 +3,7 @@ import unittest
 import uuid
 
 from tests.docker.mock_docker import MockDockerClient, MockContainer
-from tests.utils import wait_until
+from tests.utils import wait_until, config_logs
 from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.isolate.cpu import assign_threads
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
@@ -13,6 +13,7 @@ from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 from titus_isolate.utils import get_logger
 
+config_logs(logging.DEBUG)
 log = get_logger(logging.DEBUG)
 
 
