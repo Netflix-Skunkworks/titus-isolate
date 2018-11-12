@@ -2,6 +2,7 @@ import json
 import unittest
 import uuid
 
+from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.docker.mock_docker import MockDockerClient, MockContainer
 from tests.utils import wait_until
 from titus_isolate.api import status
@@ -63,7 +64,5 @@ class TestStatus(unittest.TestCase):
         cpu = get_cpu()
         thread_count = 2
         workload_id = str(uuid.uuid4())
-        workload = Workload(workload_id, thread_count, STATIC)
 
-        docker_client = MockDockerClient([MockContainer(workload)])
-        return WorkloadManager(cpu, docker_client)
+        return WorkloadManager(cpu, MockCgroupManager())

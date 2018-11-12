@@ -4,6 +4,7 @@ import uuid
 
 from spectator import Registry
 
+from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.docker.mock_docker import MockDockerClient, MockContainer
 from tests.utils import wait_until, config_logs
 from titus_isolate.docker.constants import STATIC
@@ -32,8 +33,7 @@ class TestMetricsReporter(unittest.TestCase):
         override_registry(registry)
         thread_count = 2
         workload = Workload(uuid.uuid4(), thread_count, STATIC)
-        docker_client = MockDockerClient([MockContainer(workload)])
-        workload_manager = WorkloadManager(get_cpu(), docker_client)
+        workload_manager = WorkloadManager(get_cpu(), MockCgroupManager())
 
         MetricsReporter(workload_manager, registry, 0.01, 0.01)
 

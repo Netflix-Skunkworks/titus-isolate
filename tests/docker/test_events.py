@@ -2,9 +2,10 @@ import logging
 import unittest
 import uuid
 
+from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.docker.mock_docker import get_container_create_event, MockDockerClient, MockEventProvider, get_event, \
     get_container_die_event, MockContainer
-from tests.utils import wait_until
+from tests.utils import wait_until, config_logs
 from titus_isolate.docker.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
@@ -18,6 +19,7 @@ from titus_isolate.utils import get_logger
 
 DEFAULT_CPU_COUNT = 2
 
+config_logs(logging.DEBUG)
 log = get_logger(logging.DEBUG)
 
 
@@ -25,7 +27,7 @@ class TestContext:
     def __init__(self, docker_client=MockDockerClient()):
         cpu = get_cpu()
         self.__docker_client = docker_client
-        self.__workload_manager = WorkloadManager(cpu, self.__docker_client)
+        self.__workload_manager = WorkloadManager(cpu, MockCgroupManager())
         self.__event_logger = EventLogger()
         self.__create_event_handler = CreateEventHandler(self.__workload_manager)
         self.__free_event_handler = FreeEventHandler(self.__workload_manager)
