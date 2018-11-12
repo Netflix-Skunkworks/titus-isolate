@@ -14,7 +14,7 @@ PROCESS_TIMEOUT_SECONDS = 30
 
 
 class WorkloadManager:
-    def __init__(self, cpu, docker_client):
+    def __init__(self, cpu, cgroup_manager):
         log.info("Created workload manager")
         self.__q = Queue()
         self.__error_count = 0
@@ -24,7 +24,7 @@ class WorkloadManager:
         self.__rebalanced_noop_count = 0
 
         self.__cpu = cpu
-        self.__docker_client = docker_client
+        self.__cgroup_manager = cgroup_manager
 
         self.__workloads = {}
 
@@ -118,14 +118,14 @@ class WorkloadManager:
         log.info("Found footprint updates: '{}'".format(updates))
 
         self.__set_cpu(new_cpu)
-        self.__execute_docker_updates(updates, workload)
+        self.__update_cpusets(updates, workload)
 
-    def __execute_docker_updates(self, updates, workload):
+    def __update_cpusets(self, updates, workload):
         # Update new static workloads
         for workload_id, thread_ids in updates.items():
             if workload_id != BURST:
                 log.info("updating static workload: '{}'".format(workload_id))
-                self.__exec_docker_update(workload_id, thread_ids)
+                self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
 
         # If the new workload is a burst workload it should be updated
         empty_thread_ids = [t.get_id() for t in self.get_cpu().get_empty_threads()]
@@ -140,16 +140,7 @@ class WorkloadManager:
     def __update_burst_workloads(self, workloads, thread_ids):
         for b_w in workloads:
             log.info("updating burst workload: '{}'".format(b_w.get_id()))
-            self.__exec_docker_update(b_w.get_id(), thread_ids)
-
-    def __exec_docker_update(self, workload_id, thread_ids):
-        thread_ids_str = self.__get_thread_ids_str(thread_ids)
-        log.info("updating workload: '{}' to cpuset.cpus: '{}'".format(workload_id, thread_ids_str))
-        self.__docker_client.containers.get(workload_id).update(cpuset_cpus=thread_ids_str)
-
-    @staticmethod
-    def __get_thread_ids_str(thread_ids):
-        return ",".join([str(t_id) for t_id in thread_ids])
+            self.__cgroup_manager.set_cpuset(b_w.get_id(), thread_ids)
 
     def get_queue_depth(self):
         return self.__q.qsize()
@@ -200,5 +191,5 @@ class WorkloadManager:
                 func()
                 log.debug("Completed function: '{}'".format(func_name))
             except:
-                self.__queue_error_count += 1
+                self.__error_count += 1
                 log.exception("Failed to execute function: '{}'".format(func_name))

@@ -2,6 +2,7 @@ import logging
 import unittest
 import uuid
 
+from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.docker.mock_docker import MockDockerClient, MockContainer
 from tests.utils import wait_until, config_logs
 from titus_isolate.docker.constants import STATIC, BURST
@@ -40,18 +41,16 @@ class TestWorkloadManager(unittest.TestCase):
         thread_count = 2
         workload = Workload(uuid.uuid4(), thread_count, BURST)
 
-        docker_container = MockContainer(workload)
-        docker_client = MockDockerClient([docker_container])
-        workload_manager = WorkloadManager(get_cpu(), docker_client)
+        cgroup_manager = MockCgroupManager()
+        workload_manager = WorkloadManager(get_cpu(), cgroup_manager)
 
         # Add workload
         workload_manager.add_workloads([workload])
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
-        wait_until(lambda: len(docker_container.update_calls) == 1)
+        wait_until(lambda: cgroup_manager.container_update_counts[workload.get_id()] == 1)
 
         # All threads should have been assigned to the only burst workload.
-        update_call = docker_container.update_calls[0]
-        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(update_call))
+        wait_until(lambda: len(cgroup_manager.container_update_map[workload.get_id()]) == DEFAULT_TOTAL_THREAD_COUNT)
 
         # No threads should have been consumed from the cpu model perspective.
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
@@ -94,19 +93,16 @@ class TestWorkloadManager(unittest.TestCase):
         static0 = Workload("static0", thread_count, STATIC)
         static1 = Workload("static1", thread_count, STATIC)
 
-        burst_container0 = MockContainer(burst0)
-        burst_container1 = MockContainer(burst1)
-        static_container0 = MockContainer(static0)
-        static_container1 = MockContainer(static1)
-
-        docker_client = MockDockerClient([burst_container0, burst_container1, static_container0, static_container1])
-        workload_manager = WorkloadManager(get_cpu(), docker_client)
+        cgroup_manager = MockCgroupManager()
+        workload_manager = WorkloadManager(get_cpu(), cgroup_manager)
 
         # Add static workload
         log.info("ADDING STATIC0")
         workload_manager.add_workloads([static0])
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
-        wait_until(lambda: len(static_container0.update_calls) == 1)
+        wait_until(lambda: static0.get_id() in cgroup_manager.container_update_map)
+        wait_until(lambda: len(cgroup_manager.container_update_map[static0.get_id()]) == thread_count)
+        wait_until(lambda: cgroup_manager.container_update_counts[static0.get_id()] == 1)
         expected_free_thread_count = DEFAULT_TOTAL_THREAD_COUNT - thread_count
         self.assertEqual(expected_free_thread_count, len(workload_manager.get_cpu().get_empty_threads()))
 
@@ -114,7 +110,8 @@ class TestWorkloadManager(unittest.TestCase):
         log.info("ADDING BURST0")
         workload_manager.add_workloads([burst0])
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
-        wait_until(lambda: len(burst_container0.update_calls) == 1)
+        wait_until(lambda: len(cgroup_manager.container_update_map[burst0.get_id()]) == expected_free_thread_count)
+        wait_until(lambda: cgroup_manager.container_update_counts[burst0.get_id()] == 1)
         # No change in empty threads expected
         self.assertEqual(expected_free_thread_count, len(workload_manager.get_cpu().get_empty_threads()))
 
@@ -122,19 +119,21 @@ class TestWorkloadManager(unittest.TestCase):
         log.info("ADDING STATIC1")
         workload_manager.add_workloads([static1])
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
-        wait_until(lambda: len(static_container1.update_calls) == 1)
+        wait_until(lambda: len(cgroup_manager.container_update_map[static1.get_id()]) == thread_count)
+        wait_until(lambda: cgroup_manager.container_update_counts[static1.get_id()] == 1)
         expected_free_thread_count = expected_free_thread_count - thread_count
         self.assertEqual(expected_free_thread_count, len(workload_manager.get_cpu().get_empty_threads()))
         # The burst0 container should be updated again because the burst footprint changed after the addition of a
         # static workload
-        wait_until(lambda: len(burst_container0.update_calls) == 2)
-        self.assertEqual(expected_free_thread_count, len(burst_container0.update_calls[1]))
+        wait_until(lambda: cgroup_manager.container_update_counts[burst0.get_id()] == 2)
+        self.assertEqual(expected_free_thread_count, len(cgroup_manager.container_update_map[burst0.get_id()]))
 
         # Add burst workload
         log.info("ADDING BURST1")
         workload_manager.add_workloads([burst1])
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
-        wait_until(lambda: len(burst_container1.update_calls) == 1)
+        wait_until(lambda: cgroup_manager.container_update_counts[burst1.get_id()] == 1)
+        wait_until(lambda: len(cgroup_manager.container_update_map[burst1.get_id()]) == expected_free_thread_count)
         # No change in empty threads expected
         self.assertEqual(expected_free_thread_count, len(workload_manager.get_cpu().get_empty_threads()))
 
@@ -142,11 +141,13 @@ class TestWorkloadManager(unittest.TestCase):
         log.info("REMOVING STATIC0")
         workload_manager.remove_workloads([static0.get_id()])
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
-        wait_until(lambda: len(burst_container0.update_calls) == 3)
-        wait_until(lambda: len(burst_container1.update_calls) == 2)
+        wait_until(lambda: cgroup_manager.container_update_counts[burst0.get_id()] == 3)
+        wait_until(lambda: cgroup_manager.container_update_counts[burst1.get_id()] == 2)
         # Empty threads should have increased
         expected_free_thread_count = expected_free_thread_count + thread_count
         self.assertEqual(expected_free_thread_count, len(workload_manager.get_cpu().get_empty_threads()))
+        self.assertEqual(expected_free_thread_count, len(cgroup_manager.container_update_map[burst0.get_id()]))
+        self.assertEqual(expected_free_thread_count, len(cgroup_manager.container_update_map[burst1.get_id()]))
 
     def test_rebalance_by_forcing_bad_placement(self):
         cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)

@@ -5,6 +5,7 @@ from threading import Thread
 import click
 import docker
 from titus_isolate.api.status import app, set_wm
+from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
@@ -26,8 +27,7 @@ def main(admin_port):
 
     # Setup the workload manager
     log.info("Setting up the workload manager...")
-    docker_client = docker.from_env()
-    workload_manager = WorkloadManager(cpu, docker_client)
+    workload_manager = WorkloadManager(cpu, FileCgroupManager())
     set_wm(workload_manager)
 
     # Reporting metrics
@@ -42,11 +42,11 @@ def main(admin_port):
 
     # Start event processing
     log.info("Starting Docker event handling...")
-    EventManager(docker_client.events(), event_handlers)
+    EventManager(docker.from_env().events(), event_handlers)
 
     # Initialize currently running containers as workloads
     log.info("Isolating currently running workloads...")
-    workload_manager.add_workloads(get_current_workloads(docker_client))
+    workload_manager.add_workloads(get_current_workloads(docker.from_env()))
 
     # Starting the HTTP server blocks exit forever
     log.info("Starting HTTP server")
