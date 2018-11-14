@@ -5,13 +5,13 @@ from titus_isolate.utils import get_logger
 
 ROOT_CGROUP_PATH = "/sys/fs/cgroup"
 ROOT_MESOS_INFO_PATH = "/var/lib/titus-inits"
-MAX_FILE_WAIT_S = 10
+MAX_FILE_WAIT_S = 1
 
 
 log = get_logger()
 
 
-def __wait_for_file_to_exist(file_path):
+def wait_for_file_to_exist(file_path):
     start_time = time.time()
 
     while not os.path.exists(file_path):
@@ -21,7 +21,7 @@ def __wait_for_file_to_exist(file_path):
 
         if elapsed_time > MAX_FILE_WAIT_S:
             raise TimeoutError(
-                "Expected file '{}' was not created with '{}' seconds.".format(file_path, MAX_FILE_WAIT_S))
+                "Expected file '{}' was not created in '{}' seconds.".format(file_path, MAX_FILE_WAIT_S))
 
 
 def get_cpuset_path_from_list(cgroups_list):
@@ -38,7 +38,7 @@ def get_cpuset_path_from_list(cgroups_list):
 
 def get_cpuset_path_from_file(file_path):
     log.info("Reading cpuset path from file: '{}'".format(file_path))
-    __wait_for_file_to_exist(file_path)
+    wait_for_file_to_exist(file_path)
 
     with open(file_path, "r") as myfile:
         data = myfile.readlines()
