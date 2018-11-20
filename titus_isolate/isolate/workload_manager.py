@@ -41,7 +41,7 @@ class WorkloadManager:
             self.__workloads[workload.get_id()] = workload
             new_cpu = copy.deepcopy(self.get_cpu())
             self.__assign_workload(new_cpu, workload)
-            self.__execute_updates(self.get_cpu(), new_cpu, workload)
+            self.__execute_updates(self.get_cpu(), new_cpu)
             log.info("Added workload: {}".format(workload.get_id()))
             self.__added_count += 1
 
@@ -65,8 +65,7 @@ class WorkloadManager:
 
         if has_better_isolation(self.get_cpu(), sim_cpu):
             log.info("Found a better placement scenario, updating all workloads.")
-            for w in self.__workloads.values():
-                self.__execute_updates(self.get_cpu(), sim_cpu, w)
+            self.__execute_updates(self.get_cpu(), sim_cpu)
             self.__rebalanced_count += 1
         else:
             log.info("No improvement in placement found in re-balance, doing nothing.")
@@ -81,16 +80,8 @@ class WorkloadManager:
                 if self.__workloads.pop(workload_id, None) is None:
                     log.warning("Attempted to remove unknown workload: '{}'".format(workload_id))
 
-                updates = get_updates(self.get_cpu(), new_cpu)
-                log.info("Found footprint updates: '{}'".format(updates))
-                if BURST in updates:
-                    # If the burst footprint changed due to workloads being removed, then burst workloads
-                    # must be updated
-                    empty_thread_ids = updates[BURST]
-                    burst_workloads_to_update = self.__get_burst_workloads()
-                    self.__update_burst_workloads(burst_workloads_to_update, empty_thread_ids)
-
                 self.__set_cpu(new_cpu)
+                self.__update_burst_cpusets()
                 log.info("Removed workload: {}".format(workload_id))
                 self.__removed_count += 1
 
@@ -113,34 +104,26 @@ class WorkloadManager:
 
         assign_threads(new_cpu, workload)
 
-    def __execute_updates(self, cur_cpu, new_cpu, workload):
+    def __execute_updates(self, cur_cpu, new_cpu):
         updates = get_updates(cur_cpu, new_cpu)
         log.info("Found footprint updates: '{}'".format(updates))
 
         self.__set_cpu(new_cpu)
-        self.__update_cpusets(updates, workload)
+        self.__update_static_cpusets(updates)
+        self.__update_burst_cpusets()
 
-    def __update_cpusets(self, updates, workload):
+    def __update_static_cpusets(self, updates):
         # Update new static workloads
         for workload_id, thread_ids in updates.items():
             if workload_id != BURST:
                 log.info("updating static workload: '{}'".format(workload_id))
                 self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
 
-        # If the new workload is a burst workload it should be updated
+    def __update_burst_cpusets(self):
         empty_thread_ids = [t.get_id() for t in self.get_cpu().get_empty_threads()]
-        burst_workloads_to_update = [workload]
-        if BURST in updates:
-            # If the burst footprint has changed ALL burst workloads must be updated
-            empty_thread_ids = updates[BURST]
-            burst_workloads_to_update = self.__get_burst_workloads()
-
-        self.__update_burst_workloads(burst_workloads_to_update, empty_thread_ids)
-
-    def __update_burst_workloads(self, workloads, thread_ids):
-        for b_w in workloads:
+        for b_w in self.__get_burst_workloads():
             log.info("updating burst workload: '{}'".format(b_w.get_id()))
-            self.__cgroup_manager.set_cpuset(b_w.get_id(), thread_ids)
+            self.__cgroup_manager.set_cpuset(b_w.get_id(), empty_thread_ids)
 
     def get_queue_depth(self):
         return self.__q.qsize()

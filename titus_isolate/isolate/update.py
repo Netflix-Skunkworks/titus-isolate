@@ -14,11 +14,6 @@ def get_updates(cur_cpu, new_cpu):
             log.info("workload: '{}' updated threads from: '{}' to: '{}'".format(workload_id, cur_thread_ids, new_thread_ids))
             updates[workload_id] = new_thread_ids
 
-    cur_empty_thread_ids = [t.get_id() for t in cur_cpu.get_empty_threads()]
-    new_empty_thread_ids = [t.get_id() for t in new_cpu.get_empty_threads()]
-    if set(cur_empty_thread_ids) != set(new_empty_thread_ids):
-        updates[BURST] = new_empty_thread_ids
-
     return updates
 
 

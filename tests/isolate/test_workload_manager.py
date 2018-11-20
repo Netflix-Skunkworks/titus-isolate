@@ -132,6 +132,7 @@ class TestWorkloadManager(unittest.TestCase):
         log.info("ADDING BURST1")
         workload_manager.add_workloads([burst1])
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
+        wait_until(lambda: cgroup_manager.container_update_counts[burst0.get_id()] == 3)
         wait_until(lambda: cgroup_manager.container_update_counts[burst1.get_id()] == 1)
         wait_until(lambda: len(cgroup_manager.container_update_map[burst1.get_id()]) == expected_free_thread_count)
         # No change in empty threads expected
@@ -141,7 +142,7 @@ class TestWorkloadManager(unittest.TestCase):
         log.info("REMOVING STATIC0")
         workload_manager.remove_workloads([static0.get_id()])
         wait_until(lambda: workload_manager.get_queue_depth() == 0)
-        wait_until(lambda: cgroup_manager.container_update_counts[burst0.get_id()] == 3)
+        wait_until(lambda: cgroup_manager.container_update_counts[burst0.get_id()] == 4)
         wait_until(lambda: cgroup_manager.container_update_counts[burst1.get_id()] == 2)
         # Empty threads should have increased
         expected_free_thread_count = expected_free_thread_count + thread_count

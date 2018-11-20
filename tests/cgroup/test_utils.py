@@ -1,12 +1,10 @@
 import copy
 import logging
 import os
-import time
 import unittest
 
 from tests.utils import config_logs
-from titus_isolate.cgroup.utils import get_cpuset_path_from_list, get_cpuset_path_from_file, wait_for_file_to_exist, \
-    MAX_FILE_WAIT_S
+from titus_isolate.cgroup.utils import get_cpuset_path_from_list, get_cpuset_path_from_file, wait_for_file_to_exist
 
 config_logs(logging.DEBUG)
 

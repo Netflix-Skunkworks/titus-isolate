@@ -24,9 +24,8 @@ class TestUpdate(unittest.TestCase):
         new_cpu.get_threads()[0].claim(workload_id)
 
         updates = get_updates(cur_cpu, new_cpu)
-        self.assertEqual(2, len(updates))
+        self.assertEqual(1, len(updates))
         self.assertEqual(updates[workload_id], [0])
-        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 1, len(updates[BURST]))
 
     def test_no_updates_single_new_workload(self):
         workload_id = str(uuid.uuid4())
@@ -52,18 +51,5 @@ class TestUpdate(unittest.TestCase):
         new_cpu.get_threads()[1].claim(workload_id)
 
         updates = get_updates(cur_cpu, new_cpu)
-        self.assertEqual(2, len(updates))
-        self.assertEqual(updates[workload_id], [8])
-        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 1, len(updates[BURST]))
-
-    def test_burst_footprint_increase(self):
-        workload_id = str(uuid.uuid4())
-
-        cur_cpu = get_cpu()
-        new_cpu = get_cpu()
-
-        cur_cpu.get_threads()[0].claim(workload_id)
-        updates = get_updates(cur_cpu, new_cpu)
         self.assertEqual(1, len(updates))
-        self.assertTrue(BURST in updates)
-        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(updates[BURST]))
+        self.assertEqual(updates[workload_id], [8])
