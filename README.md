@@ -284,13 +284,11 @@ The workload manager is constantly processing a queue of events for adding, remo
 
 First build the docker image used as a build environment.
 ```bash
-$ cd release
-$ docker build -t deb .
+$ docker build -t deb release/
 ```
 
 Then return to the root of the source code and run an instance of the image.
 ```bash
-$ cd ..
 $ docker run --rm -v $PWD:/src deb:latest
 Removing old debs
 Removing dist directory

@@ -5,7 +5,7 @@ import uuid
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.docker.mock_docker import get_container_create_event, MockDockerClient, MockEventProvider, get_event, \
     get_container_die_event, MockContainer
-from tests.utils import wait_until, config_logs
+from tests.utils import config_logs, wait_until
 from titus_isolate.docker.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
@@ -58,15 +58,16 @@ class TestEvents(unittest.TestCase):
         workload = Workload(workload_name, DEFAULT_CPU_COUNT, STATIC)
         docker_client = MockDockerClient([MockContainer(workload)])
 
-        event_iterable = MockEventProvider(
-            [get_container_create_event(DEFAULT_CPU_COUNT, STATIC, workload_name, workload_name)])
+        events = [get_container_create_event(DEFAULT_CPU_COUNT, STATIC, workload_name, workload_name)]
+        event_count = len(events)
+        event_iterable = MockEventProvider(events)
 
         test_context = TestContext(docker_client)
         manager = EventManager(event_iterable, test_context.get_event_handlers())
 
-        wait_until(lambda: manager.get_processed_event_count() == 1)
-        wait_until(lambda: test_context.get_workload_manager().get_success_count() > 0)
-        wait_until(lambda: DEFAULT_TOTAL_THREAD_COUNT - DEFAULT_CPU_COUNT == len(test_context.get_cpu().get_empty_threads()))
+        wait_until(lambda: event_count == manager.get_processed_event_count())
+        self.assertEqual(event_count * 2, test_context.get_workload_manager().get_success_count())
+        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - DEFAULT_CPU_COUNT, len(test_context.get_cpu().get_empty_threads()))
         self.assertEqual(1, test_context.get_create_event_handler().get_handled_event_count())
 
         manager.stop_processing_events()
@@ -76,16 +77,18 @@ class TestEvents(unittest.TestCase):
         workload = Workload(workload_name, DEFAULT_CPU_COUNT, STATIC)
         docker_client = MockDockerClient([MockContainer(workload)])
 
-        event_iterable = MockEventProvider([
+        events = [
             get_container_create_event(DEFAULT_CPU_COUNT, STATIC, workload_name, workload_name),
-            get_container_die_event(workload_name)])
+            get_container_die_event(workload_name)]
+        event_count = len(events)
+        event_iterable = MockEventProvider(events)
 
         test_context = TestContext(docker_client)
         manager = EventManager(event_iterable, test_context.get_event_handlers())
 
-        wait_until(lambda: manager.get_processed_event_count() == 2)
-        wait_until(lambda: test_context.get_workload_manager().get_success_count() > 0)
-        wait_until(lambda: DEFAULT_TOTAL_THREAD_COUNT == len(test_context.get_cpu().get_empty_threads()))
+        wait_until(lambda: event_count == manager.get_processed_event_count())
+        self.assertEqual(event_count * 2, test_context.get_workload_manager().get_success_count())
+        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(test_context.get_cpu().get_empty_threads()))
         self.assertEqual(1, test_context.get_create_event_handler().get_handled_event_count())
         self.assertEqual(1, test_context.get_free_event_handler().get_handled_event_count())
 

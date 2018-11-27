@@ -61,7 +61,12 @@ def get_violations():
 @app.route('/workload_manager/status')
 def get_wm_status():
     return json.dumps({
-        "queue_depth": __workload_manager.get_queue_depth(),
         "success_count": __workload_manager.get_success_count(),
         "error_count": __workload_manager.get_error_count()
     })
+
+
+@app.route('/workload_manager/reapply', methods=['PUT'])
+def reapply():
+    __workload_manager.reapply_placement()
+    return "reapplied placement"

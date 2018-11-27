@@ -4,7 +4,6 @@ import uuid
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.docker.mock_docker import MockDockerClient, MockContainer
-from tests.utils import wait_until
 from titus_isolate.api import status
 from titus_isolate.api.status import set_wm, get_workloads, get_violations, get_wm_status
 from titus_isolate.docker.constants import STATIC
@@ -29,8 +28,7 @@ class TestStatus(unittest.TestCase):
         workloads = json.loads(get_workloads())
         self.assertEqual(0, len(workloads))
 
-        workload_manager.add_workloads([workload])
-        wait_until(lambda: len(json.loads(get_workloads())) == 1)
+        workload_manager.add_workload(workload)
         workloads = json.loads(get_workloads())
         self.assertEqual(workload_id, workloads[0]["id"])
         self.assertEqual(STATIC, workloads[0]["type"])
@@ -57,12 +55,9 @@ class TestStatus(unittest.TestCase):
         set_wm(self.__get_default_workload_manager())
 
         s = json.loads(get_wm_status())
-        self.assertEqual(3, len(s))
+        self.assertEqual(2, len(s))
 
     @staticmethod
     def __get_default_workload_manager():
         cpu = get_cpu()
-        thread_count = 2
-        workload_id = str(uuid.uuid4())
-
         return WorkloadManager(cpu, MockCgroupManager())

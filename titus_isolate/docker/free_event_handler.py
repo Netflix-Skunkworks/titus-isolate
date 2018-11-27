@@ -1,10 +1,13 @@
 from titus_isolate.docker.constants import ACTION
 from titus_isolate.docker.event_handler import EventHandler
 from titus_isolate.docker.utils import get_container_name
+from titus_isolate.utils import get_logger
+
+log = get_logger()
 
 
 class FreeEventHandler(EventHandler):
-    FREE_ACTIONS = ["destroy", "die", "kill", "oom", "stop"]
+    FREE_ACTIONS = ["die"]
 
     def __init__(self, workload_manager):
         super().__init__(workload_manager)
@@ -14,7 +17,8 @@ class FreeEventHandler(EventHandler):
             return
 
         workload_id = get_container_name(event)
-        self.workload_manager.remove_workloads([workload_id])
+        self.handling_event(event, "removing workload: '{}'".format(workload_id))
+        self.workload_manager.remove_workload(workload_id)
         self.handled_event(event, "removed workload: '{}'".format(workload_id))
 
     def __relevant(self, event):

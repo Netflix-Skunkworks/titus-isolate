@@ -40,3 +40,4 @@ class EventManager:
                     self.__error_event_count += 1
 
             self.__processed_event_count += 1
+            log.debug("processed event count: {}".format(self.get_processed_event_count()))

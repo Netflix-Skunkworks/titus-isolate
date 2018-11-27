@@ -21,7 +21,8 @@ class CreateEventHandler(EventHandler):
 
         workload = Workload(name, cpus, workload_type)
 
-        self.workload_manager.add_workloads([workload])
+        self.handling_event(event, "adding workload: '{}'".format(workload.get_id()))
+        self.workload_manager.add_workload(workload)
         self.handled_event(event, "added workload: '{}'".format(workload.get_id()))
 
     def __relevant(self, event):
