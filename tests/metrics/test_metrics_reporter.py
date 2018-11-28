@@ -5,11 +5,13 @@ import uuid
 from spectator import Registry
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
+from tests.docker.mock_docker import MockDockerClient, MockContainer, MockEventProvider
 from tests.utils import wait_until, config_logs
 from titus_isolate.docker.constants import STATIC
+from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_reporter import ADDED_KEY, SUCCEEDED_KEY, FAILED_KEY, PACKAGE_VIOLATIONS_KEY, \
-    CORE_VIOLATIONS_KEY, override_registry, MetricsReporter, REMOVED_KEY, REBALANCED_KEY, \
+    CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, override_registry, MetricsReporter, REMOVED_KEY, REBALANCED_KEY, \
     REBALANCED_NOOP_KEY, WORKLOAD_COUNT_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload
@@ -32,9 +34,10 @@ class TestMetricsReporter(unittest.TestCase):
         override_registry(registry)
         thread_count = 2
         workload = Workload(uuid.uuid4(), thread_count, STATIC)
-        workload_manager = WorkloadManager(get_cpu(), MockCgroupManager())
 
-        MetricsReporter(workload_manager, registry, 0.01, 0.01)
+        workload_manager = WorkloadManager(get_cpu(), MockCgroupManager())
+        event_manager = EventManager(MockEventProvider([]), [], 0.01)
+        MetricsReporter(workload_manager, event_manager, registry, 0.01, 0.01)
 
         wait_until(lambda: self.__gauge_value_reached(registry, ADDED_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, REMOVED_KEY, 0))
@@ -42,6 +45,7 @@ class TestMetricsReporter(unittest.TestCase):
         wait_until(lambda: self.__gauge_value_reached(registry, REBALANCED_NOOP_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, SUCCEEDED_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, FAILED_KEY, 0))
+        wait_until(lambda: self.__gauge_value_reached(registry, QUEUE_DEPTH_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, WORKLOAD_COUNT_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, PACKAGE_VIOLATIONS_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, CORE_VIOLATIONS_KEY, 0))
@@ -53,6 +57,7 @@ class TestMetricsReporter(unittest.TestCase):
         wait_until(lambda: self.__gauge_value_reached(registry, REBALANCED_NOOP_KEY, 1))
         wait_until(lambda: self.__gauge_value_reached(registry, SUCCEEDED_KEY, 2))
         wait_until(lambda: self.__gauge_value_reached(registry, FAILED_KEY, 0))
+        wait_until(lambda: self.__gauge_value_reached(registry, QUEUE_DEPTH_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, WORKLOAD_COUNT_KEY, 1))
         wait_until(lambda: self.__gauge_value_reached(registry, PACKAGE_VIOLATIONS_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, CORE_VIOLATIONS_KEY, 0))
@@ -64,6 +69,9 @@ class TestMetricsReporter(unittest.TestCase):
         wait_until(lambda: self.__gauge_value_reached(registry, REBALANCED_NOOP_KEY, 2))
         wait_until(lambda: self.__gauge_value_reached(registry, SUCCEEDED_KEY, 4))
         wait_until(lambda: self.__gauge_value_reached(registry, FAILED_KEY, 0))
+        wait_until(lambda: self.__gauge_value_reached(registry, QUEUE_DEPTH_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, WORKLOAD_COUNT_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, PACKAGE_VIOLATIONS_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, CORE_VIOLATIONS_KEY, 0))
+
+        event_manager.stop_processing_events()

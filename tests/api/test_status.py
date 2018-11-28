@@ -3,10 +3,11 @@ import unittest
 import uuid
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
-from tests.docker.mock_docker import MockDockerClient, MockContainer
+from tests.docker.mock_docker import MockDockerClient, MockContainer, MockEventProvider
 from titus_isolate.api import status
-from titus_isolate.api.status import set_wm, get_workloads, get_violations, get_wm_status
+from titus_isolate.api.status import set_wm, get_workloads, get_violations, get_wm_status, set_em
 from titus_isolate.docker.constants import STATIC
+from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT
@@ -21,8 +22,7 @@ class TestStatus(unittest.TestCase):
         workload_id = str(uuid.uuid4())
         workload = Workload(workload_id, thread_count, STATIC)
 
-        docker_client = MockDockerClient([MockContainer(workload)])
-        workload_manager = WorkloadManager(cpu, docker_client)
+        workload_manager = WorkloadManager(cpu, MockCgroupManager())
         set_wm(workload_manager)
 
         workloads = json.loads(get_workloads())
@@ -54,8 +54,15 @@ class TestStatus(unittest.TestCase):
     def test_get_wm_status_endpoint(self):
         set_wm(self.__get_default_workload_manager())
 
+        event_manager = EventManager(MockEventProvider([]), [], 0.01)
+        set_em(event_manager)
+
         s = json.loads(get_wm_status())
         self.assertEqual(2, len(s))
+        self.assertEqual(1, len(s["event_manager"]))
+        self.assertEqual(2, len(s["workload_manager"]))
+
+        event_manager.stop_processing_events()
 
     @staticmethod
     def __get_default_workload_manager():

@@ -6,11 +6,17 @@ from titus_isolate.isolate.detect import get_cross_package_violations, get_share
 
 app = Flask(__name__)
 __workload_manager = None
+__event_manager = None
 
 
 def set_wm(workload_manager):
     global __workload_manager
     __workload_manager = workload_manager
+
+
+def set_em(event_manager):
+    global __event_manager
+    __event_manager = event_manager
 
 
 @app.route('/workloads')
@@ -58,15 +64,14 @@ def get_violations():
     })
 
 
-@app.route('/workload_manager/status')
+@app.route('/status')
 def get_wm_status():
     return json.dumps({
-        "success_count": __workload_manager.get_success_count(),
-        "error_count": __workload_manager.get_error_count()
+        "event_manager": {
+            "queue_depth": __event_manager.get_queue_depth()
+        },
+        "workload_manager": {
+            "success_count": __workload_manager.get_success_count(),
+            "error_count": __workload_manager.get_error_count()
+        }
     })
-
-
-@app.route('/workload_manager/reapply', methods=['PUT'])
-def reapply():
-    __workload_manager.reapply_placement()
-    return "reapplied placement"
