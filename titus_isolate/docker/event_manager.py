@@ -18,9 +18,9 @@ class EventManager:
         self.__event_handlers = event_handlers
         self.__event_timeout = event_timeout
 
-        self.__processed_event_count = 0
-        self.__handle_event_count = 0
+        self.__success_event_count = 0
         self.__error_event_count = 0
+        self.__processed_event_count = 0
 
         self.__processing_thread = Thread(target=self.__process_events)
         self.__processing_thread.start()
@@ -34,11 +34,14 @@ class EventManager:
         self.__pulling_thread.join()
         self.__processing_thread.join()
 
-    def get_processed_event_count(self):
-        return self.__processed_event_count
+    def get_success_count(self):
+        return self.__success_event_count
 
-    def get_error_event_count(self):
+    def get_error_count(self):
         return self.__error_event_count
+
+    def get_processed_count(self):
+        return self.__processed_event_count
 
     def get_queue_depth(self):
         return self.__q.qsize()
@@ -59,11 +62,12 @@ class EventManager:
             for event_handler in self.__event_handlers:
                 try:
                     event_handler.handle(json.loads(event))
+                    self.__success_event_count += 1
                 except:
                     log.exception("Event handler: '{}' failed to handle event: '{}'".format(
                         type(event_handler).__name__, event))
                     self.__error_event_count += 1
 
-            self.__processed_event_count += 1
             self.__q.task_done()
-            log.debug("processed event count: {}".format(self.get_processed_event_count()))
+            self.__processed_event_count += 1
+            log.debug("processed event count: {}".format(self.get_success_count()))

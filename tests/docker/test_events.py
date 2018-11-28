@@ -67,7 +67,7 @@ class TestEvents(unittest.TestCase):
         test_context = TestContext(docker_client)
         manager = EventManager(event_iterable, test_context.get_event_handlers(), DEFAULT_TEST_EVENT_TIMEOUT_SECS)
 
-        wait_until(lambda: event_count == manager.get_processed_event_count())
+        wait_until(lambda: event_count == manager.get_processed_count())
         self.assertEqual(0, manager.get_queue_depth())
         self.assertEqual(event_count * 2, test_context.get_workload_manager().get_success_count())
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - DEFAULT_CPU_COUNT, len(test_context.get_cpu().get_empty_threads()))
@@ -89,7 +89,7 @@ class TestEvents(unittest.TestCase):
         test_context = TestContext(docker_client)
         manager = EventManager(event_iterable, test_context.get_event_handlers(), DEFAULT_TEST_EVENT_TIMEOUT_SECS)
 
-        wait_until(lambda: event_count == manager.get_processed_event_count())
+        wait_until(lambda: event_count == manager.get_processed_count())
         self.assertEqual(0, manager.get_queue_depth())
         self.assertEqual(event_count * 2, test_context.get_workload_manager().get_success_count())
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(test_context.get_cpu().get_empty_threads()))
@@ -143,8 +143,8 @@ class TestEvents(unittest.TestCase):
         event_iterable = MockEventProvider([unknown_event, valid_event])
         manager = EventManager(event_iterable, test_context.get_event_handlers(), DEFAULT_TEST_EVENT_TIMEOUT_SECS)
 
-        wait_until(lambda: manager.get_error_event_count() == 1)
-        wait_until(lambda: manager.get_processed_event_count() == 2)
+        wait_until(lambda: manager.get_error_count() == 1)
+        wait_until(lambda: manager.get_processed_count() == 2)
         self.assertEqual(0, manager.get_queue_depth())
 
         manager.stop_processing_events()
