@@ -19,6 +19,3 @@ def assign_workload(new_cpu, workload):
         return
 
     return assign_threads(new_cpu, workload)
-    thread_ids = [t.get_id() for t in threads]
-    log.info("Assigned workload: '{}' threads: '{}'".format(workload.get_id(), thread_ids))
-

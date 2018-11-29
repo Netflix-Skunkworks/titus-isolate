@@ -5,7 +5,7 @@ import uuid
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.docker.mock_docker import get_container_create_event, MockDockerClient, MockEventProvider, get_event, \
     get_container_die_event, MockContainer
-from tests.utils import config_logs, wait_until
+from tests.utils import config_logs, wait_until, TestContext
 from titus_isolate.docker.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
@@ -23,34 +23,6 @@ config_logs(logging.DEBUG)
 log = get_logger(logging.DEBUG)
 
 DEFAULT_TEST_EVENT_TIMEOUT_SECS = 0.01
-
-
-class TestContext:
-    def __init__(self, docker_client=MockDockerClient()):
-        cpu = get_cpu()
-        self.__docker_client = docker_client
-        self.__workload_manager = WorkloadManager(cpu, MockCgroupManager())
-        self.__event_logger = EventLogger()
-        self.__create_event_handler = CreateEventHandler(self.__workload_manager)
-        self.__free_event_handler = FreeEventHandler(self.__workload_manager)
-
-    def get_cpu(self):
-        return self.__workload_manager.get_cpu()
-
-    def get_docker_client(self):
-        return self.__docker_client
-
-    def get_workload_manager(self):
-        return self.__workload_manager
-
-    def get_create_event_handler(self):
-        return self.__create_event_handler
-
-    def get_free_event_handler(self):
-        return self.__free_event_handler
-
-    def get_event_handlers(self):
-        return [self.__event_logger, self.__create_event_handler, self.__free_event_handler]
 
 
 class TestEvents(unittest.TestCase):
