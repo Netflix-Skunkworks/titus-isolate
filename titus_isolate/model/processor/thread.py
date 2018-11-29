@@ -21,7 +21,7 @@ class Thread:
         return self.__workload_id
 
     def free(self):
-        log.info("Releasing thread '{}' with workload '{}'".format(self.get_id(), self.__workload_id))
+        log.debug("Releasing thread '{}' with workload '{}'".format(self.get_id(), self.__workload_id))
         self.__workload_id = None
 
     def is_claimed(self):

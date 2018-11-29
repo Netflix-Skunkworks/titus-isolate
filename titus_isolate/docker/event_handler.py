@@ -13,6 +13,9 @@ class EventHandler:
         log.debug("'{}' ignored event. msg: '{}', event: '{}', ".format(self.__class__.__name__, msg, event))
         self.__ignored_event_count += 1
 
+    def handling_event(self, event, msg):
+        log.info("'{}' handling event.  msg: '{}', event: '{}'".format(self.__class__.__name__, msg, event))
+
     def handled_event(self, event, msg):
         log.info("'{}' handled event.  msg: '{}', event: '{}'".format(self.__class__.__name__, msg, event))
         self.__handled_event_count += 1

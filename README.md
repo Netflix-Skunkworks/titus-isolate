@@ -267,12 +267,25 @@ GET /workload_manager/status
 ```
 The workload manager is the core event processing and update generating component of `titus-isolate`.  We expose a status endpoint in order to inspect its status.
 ```bash
-$ curl -s localhost:5555/workload_manager/status | jq
+$ curl -s localhost:5555/status | jq
 {
-  "queue_depth": 0,
-  "success_count": 8,
-  "error_count": 0
+  "workload_manager": {
+    "removed_count": 9,
+    "rebalanced_count": 4,
+    "error_count": 0,
+    "added_count": 13,
+    "success_count": 44,
+    "workload_count": 4,
+    "rebalanced_noop_count": 18
+  },
+  "event_manager": {
+    "error_count": 0,
+    "processed_count": 63,
+    "success_count": 189,
+    "queue_depth": 0
+  }
 }
+
 ```
 
 The workload manager is constantly processing a queue of events for adding, removing and re-balancing workloads. 
@@ -284,13 +297,11 @@ The workload manager is constantly processing a queue of events for adding, remo
 
 First build the docker image used as a build environment.
 ```bash
-$ cd release
-$ docker build -t deb .
+$ docker build -t deb release/
 ```
 
 Then return to the root of the source code and run an instance of the image.
 ```bash
-$ cd ..
 $ docker run --rm -v $PWD:/src deb:latest
 Removing old debs
 Removing dist directory
