@@ -2,3 +2,4 @@ click
 docker
 flask
 schedule
+titus-optimize==0.1.5
