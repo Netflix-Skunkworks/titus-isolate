@@ -133,12 +133,9 @@ Needless migration of workloads is avoided by only applying the outcome of the r
 We use `tox` to run tests.  After setting up a virtual environment, requirements and `tox` must be installed.
 ```bash
 (venv) $ pip3 install -r requirements.txt
-(venv) $ pip3 install tox
-(venv) $ tox
+(venv) $ pip3 install pytest
+(venv) $ pytest
 ...
-  py36: commands succeeded
-  linters: commands succeeded
-  congratulations :)
 ```
 
 ## Operations
