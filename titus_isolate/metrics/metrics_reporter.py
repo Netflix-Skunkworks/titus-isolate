@@ -13,8 +13,6 @@ log = get_logger()
 
 ADDED_KEY = 'titus-isolate.added'
 REMOVED_KEY = 'titus-isolate.removed'
-REBALANCED_KEY = 'titus-isolate.rebalanced'
-REBALANCED_NOOP_KEY = 'titus-isolate.rebalancedNoop'
 SUCCEEDED_KEY = 'titus-isolate.succeeded'
 FAILED_KEY = 'titus-isolate.failed'
 QUEUE_DEPTH_KEY = 'titus-isolate.queueDepth'
@@ -52,8 +50,6 @@ class MetricsReporter:
             # Workload manager metrics
             self.__reg.gauge(ADDED_KEY, tags).set(self.__workload_manager.get_added_count())
             self.__reg.gauge(REMOVED_KEY, tags).set(self.__workload_manager.get_removed_count())
-            self.__reg.gauge(REBALANCED_KEY, tags).set(self.__workload_manager.get_rebalanced_count())
-            self.__reg.gauge(REBALANCED_NOOP_KEY, tags).set(self.__workload_manager.get_rebalanced_noop_count())
             self.__reg.gauge(SUCCEEDED_KEY, tags).set(self.__workload_manager.get_success_count())
             self.__reg.gauge(FAILED_KEY, tags).set(self.__workload_manager.get_error_count())
             self.__reg.gauge(WORKLOAD_COUNT_KEY, tags).set(len(self.__workload_manager.get_workloads()))

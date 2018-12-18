@@ -41,7 +41,7 @@ class TestEvents(unittest.TestCase):
 
         wait_until(lambda: event_count == manager.get_processed_count())
         self.assertEqual(0, manager.get_queue_depth())
-        self.assertEqual(event_count * 2, test_context.get_workload_manager().get_success_count())
+        self.assertEqual(event_count, test_context.get_workload_manager().get_success_count())
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - DEFAULT_CPU_COUNT, len(test_context.get_cpu().get_empty_threads()))
         self.assertEqual(1, test_context.get_create_event_handler().get_handled_event_count())
 
@@ -63,7 +63,7 @@ class TestEvents(unittest.TestCase):
 
         wait_until(lambda: event_count == manager.get_processed_count())
         self.assertEqual(0, manager.get_queue_depth())
-        self.assertEqual(event_count * 2, test_context.get_workload_manager().get_success_count())
+        self.assertEqual(event_count, test_context.get_workload_manager().get_success_count())
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(test_context.get_cpu().get_empty_threads()))
         self.assertEqual(1, test_context.get_create_event_handler().get_handled_event_count())
         self.assertEqual(1, test_context.get_free_event_handler().get_handled_event_count())

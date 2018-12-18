@@ -1,10 +1,12 @@
 import copy
 from threading import Lock
+import time
 
 from titus_isolate.isolate.balance import has_better_isolation
-from titus_isolate.isolate.cpu import free_threads
+from titus_isolate.isolate.cpu import assign_threads, free_threads
+from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.update import get_updates
-from titus_isolate.isolate.utils import get_static_workloads, get_burst_workloads, assign_workload
+from titus_isolate.isolate.utils import get_static_workloads, get_burst_workloads
 from titus_isolate.utils import get_logger
 
 log = get_logger()
@@ -17,12 +19,11 @@ class WorkloadManager:
         self.__error_count = 0
         self.__added_count = 0
         self.__removed_count = 0
-        self.__rebalanced_count = 0
-        self.__rebalanced_noop_count = 0
 
         self.__cpu = cpu
         self.__cgroup_manager = cgroup_manager
         self.__workloads = {}
+        self.__workload_insertion_times = {}
         log.info("Created workload manager")
 
     def add_workload(self, workload):
@@ -36,7 +37,6 @@ class WorkloadManager:
             with self.__lock:
                 log.info("Acquired lock for func: {} on workload: {}".format(func.__name__, workload_id))
                 func(arg)
-                self.__rebalance()
             log.info("Released lock for func: {} on workload: {}".format(func.__name__, workload_id))
         except:
             log.exception("Failed to execute func: {} on workload: {}".format(func.__name__, workload_id))
@@ -44,12 +44,15 @@ class WorkloadManager:
 
     def __add_workload(self, workload):
         log.info("Adding workload: {}".format(workload.get_id()))
-        self.__workloads[workload.get_id()] = workload
         new_cpu = copy.deepcopy(self.get_cpu())
-        assign_workload(new_cpu, workload)
+        self.__workloads[workload.get_id()] = workload
+        if workload.get_type() == STATIC:
+            assign_threads(new_cpu, workload, self.__workload_insertion_times)
+            self.__workload_insertion_times[workload.get_id()] = time.time()
         self.__execute_updates(self.get_cpu(), new_cpu)
         log.info("Added workload: {}".format(workload.get_id()))
         self.__added_count += 1
+        # todo: add metrics
 
     def __remove_workload(self, workload_id):
         log.info("Removing workload: {}".format(workload_id))
@@ -57,38 +60,22 @@ class WorkloadManager:
             raise ValueError("Attempted to remove unknown workload: '{}'".format(workload_id))
 
         new_cpu = copy.deepcopy(self.get_cpu())
-        free_threads(new_cpu, workload_id)
+        free_threads(new_cpu, workload_id, self.__workload_insertion_times)
 
         new_workloads = copy.deepcopy(self.__workloads)
         del new_workloads[workload_id]
 
+        new_workload_insertion_times = self.__workload_insertion_times.copy()
+        del new_workload_insertion_times[workload_id]
+
         self.__set_cpu(new_cpu)
         self.__workloads = new_workloads
+        self.__workload_insertion_times = new_workload_insertion_times
 
         self.__update_burst_cpusets()
         log.info("Removed workload: {}".format(workload_id))
         self.__removed_count += 1
-
-    def __rebalance(self):
-        log.info("Attempting re-balance.")
-
-        new_cpu = copy.deepcopy(self.get_cpu())
-        new_cpu.clear()
-
-        static_workloads = get_static_workloads(self.__workloads.values())
-        static_workloads.sort(key=lambda w: w.get_thread_count(), reverse=True)
-
-        log.info("Assigning workloads.")
-        for workload in static_workloads:
-            assign_workload(new_cpu, workload)
-
-        if has_better_isolation(self.get_cpu(), new_cpu):
-            log.info("Found a better placement scenario, updating all workloads.")
-            self.__execute_updates(self.get_cpu(), new_cpu)
-            self.__rebalanced_count += 1
-        else:
-            log.info("No improvement in placement found in re-balance, doing nothing.")
-            self.__rebalanced_noop_count += 1
+        # todo: add metrics
 
     def __execute_updates(self, cur_cpu, new_cpu):
         updates = get_updates(cur_cpu, new_cpu)
@@ -124,17 +111,9 @@ class WorkloadManager:
     def get_removed_count(self):
         return self.__removed_count
 
-    def get_rebalanced_count(self):
-        return self.__rebalanced_count
-
-    def get_rebalanced_noop_count(self):
-        return self.__rebalanced_noop_count
-
     def get_success_count(self):
         return self.get_added_count() + \
-               self.get_removed_count() + \
-               self.get_rebalanced_count() + \
-               self.get_rebalanced_noop_count()
+               self.get_removed_count()
 
     def get_error_count(self):
         return self.__error_count
