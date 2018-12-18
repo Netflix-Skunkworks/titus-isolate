@@ -8,6 +8,7 @@ from titus_optimize.compute import optimize_ip
 
 log = get_logger()
 
+
 def assign_threads(cpu, workload, workload_insertion_times={}):
     """
     Use the integer -program solver to find the optimal static placement
@@ -40,7 +41,7 @@ def assign_threads(cpu, workload, workload_insertion_times={}):
         requested_cus = [sum(v) for v in curr_placement_vectors]
     requested_cus += [workload.get_thread_count()]
 
-    new_placement_vectors = optimize_ip(requested_cus, n_compute_units, n_packages, curr_placement_vectors)
+    new_placement_vectors = optimize_ip(requested_cus, n_compute_units, n_packages, curr_placement_vectors, verbose=True)
 
     ordered_workload_ids.append(workload.get_id())
 
@@ -96,7 +97,7 @@ def free_threads(cpu, workload_id, workload_insertion_times={}):
 
     requested_cus = [len(curr_ids_per_workload[wid]) if wid != workload_id else 0 for wid in ordered_workload_ids]
 
-    new_placement_vectors = optimize_ip(requested_cus, n_compute_units, n_packages, curr_placement_vectors)
+    new_placement_vectors = optimize_ip(requested_cus, n_compute_units, n_packages, curr_placement_vectors, verbose=True)
 
     thread_id2workload_id = {}
     for w_ind, v in enumerate(new_placement_vectors):
