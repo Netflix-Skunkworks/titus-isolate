@@ -109,8 +109,8 @@ Once all the static workloads have been placed, burst workloads get the remainin
 We use `tox` to run tests.  After setting up a virtual environment, requirements and `tox` must be installed.
 ```bash
 (venv) $ pip3 install -r requirements.txt
-(venv) $ pip3 install pytest
-(venv) $ pytest
+(venv) $ pip3 install tox
+(venv) $ tox
 ...
 ```
 
