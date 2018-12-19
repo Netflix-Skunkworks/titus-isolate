@@ -5,6 +5,7 @@ Requires=docker.service
 
 [Service]
 EnvironmentFile=/run/titus.env
+Environment=PYTHONPATH=/usr/share/python/titus-isolate/lib/python3.5/site-packages:/usr/lib/python3/dist-packages/
 ExecStartPre=/usr/share/python/titus-isolate/bin/pip3 install 'netflix-spectator-pyconf'
 ExecStart=/usr/share/python/titus-isolate/bin/titus-isolate --admin-port 7500
 KillMode=mixed

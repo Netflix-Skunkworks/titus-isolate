@@ -26,7 +26,13 @@ CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
 
 
 class MetricsReporter:
-    def __init__(self, workload_manager, event_manager, reg=registry, report_interval=30, sleep_interval=1):
+    def __init__(
+            self,
+            workload_manager,
+            event_manager,
+            reg=registry,
+            report_interval=30,
+            sleep_interval=1):
         self.__workload_manager = workload_manager
         self.__event_manager = event_manager
         self.__reg = reg
