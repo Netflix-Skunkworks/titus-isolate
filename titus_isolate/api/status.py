@@ -71,15 +71,13 @@ def get_wm_status():
             "queue_depth": __event_manager.get_queue_depth(),
             "success_count": __event_manager.get_success_count(),
             "error_count": __event_manager.get_error_count(),
-            "processed_count": __event_manager.get_processed_count(),
+            "processed_count": __event_manager.get_processed_count()
         },
         "workload_manager": {
             "workload_count": len(__workload_manager.get_workloads()),
             "success_count": __workload_manager.get_success_count(),
             "error_count": __workload_manager.get_error_count(),
             "added_count": __workload_manager.get_added_count(),
-            "removed_count": __workload_manager.get_removed_count(),
-            "rebalanced_count": __workload_manager.get_rebalanced_count(),
-            "rebalanced_noop_count": __workload_manager.get_rebalanced_noop_count(),
+            "removed_count": __workload_manager.get_removed_count()
         }
     })

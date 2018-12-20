@@ -101,40 +101,16 @@ Workloads are categorized into either static or burst categories.  Each choice o
 
 Each static workload is assigned a set of threads to which they have exclusive access.  All burst workloads share all those threads which are not claimed by static workloads.
 
-The placement algorithm is very simple.  It attempts to place static workloads entirely on a single package if possible and consume whole physical cores.
-```
-get_processors(processor_count):
-    processor_ids = []
-	
-    # Return an empty list if no processors were requested
-    if processor_count == 0:
-        return processor_ids
-
-    p = get_emptiest_package()
-
-    while processor_count > 0 and not is_full(p):
-        core = get_emptiest_core(p)
-        empty_processors = get_empty_processors(core)
-	
-        # Update the package’s capacity
-        consume_processors(p, empty_processors)
- 
-        # Record the processors to be allocated
-        processor_ids + empty_processors
-        processor_count -= len(empty_processors)
-
-    return processor_ids + get_processors(processor_count)
-```
-
-After all placements have been made for workloads arriving on the Docker event stream a rebalance operaation is performed.  It sorts all static workloads from largest to smallest based on their declared CPU requiremetns and runs the algorithm on each in turn.  Burst workloads get the remaining CPU capacity.
-Needless migration of workloads is avoided by only applying the outcome of the rebalance operation if some improvement in placement is detected.  An improvement is detected when cross package workload placement and the number of shared physical cores is minimized.
+The placement algorithm is implemented in `titus-optimize` and relies on solving an integer program. Please refer to `titus-optimize`
+for further details.
+Once all the static workloads have been placed, burst workloads get the remaining CPU capacity.
 
 ## Test
 We use `tox` to run tests.  After setting up a virtual environment, requirements and `tox` must be installed.
 ```bash
 (venv) $ pip3 install -r requirements.txt
-(venv) $ pip3 install pytest
-(venv) $ pytest
+(venv) $ pip3 install tox
+(venv) $ tox
 ...
 ```
 
@@ -268,12 +244,10 @@ $ curl -s localhost:5555/status | jq
 {
   "workload_manager": {
     "removed_count": 9,
-    "rebalanced_count": 4,
     "error_count": 0,
     "added_count": 13,
     "success_count": 44,
-    "workload_count": 4,
-    "rebalanced_noop_count": 18
+    "workload_count": 4
   },
   "event_manager": {
     "error_count": 0,

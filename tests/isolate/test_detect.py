@@ -54,7 +54,7 @@ class TestDetect(unittest.TestCase):
 
         # Assign another workload which will force core sharing
         w = Workload(uuid.uuid4(), 2, STATIC)
-        assign_threads(cpu, w)
+        assign_threads(cpu, w, {dummy_workload_id: 0})
         violations = get_shared_core_violations(cpu)
         log.info("shared core violations: {}".format(violations))
         self.assertEqual(2, len(violations))

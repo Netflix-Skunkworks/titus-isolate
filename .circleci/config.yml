@@ -49,8 +49,8 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pip3 install pytest
-            pytest
+            pip3 install tox
+            tox
 
       - store_artifacts:
           path: test-reports

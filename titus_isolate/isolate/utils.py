@@ -12,10 +12,3 @@ def get_static_workloads(workloads):
 
 def get_workloads_by_type(workloads, workload_type):
     return [w for w in workloads if w.get_type() == workload_type]
-
-
-def assign_workload(new_cpu, workload):
-    if workload.get_type() != STATIC:
-        return
-
-    return assign_threads(new_cpu, workload)
