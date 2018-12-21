@@ -28,11 +28,14 @@ class EventManager:
         self.__pulling_thread = Thread(target=self.__pull_events)
         self.__pulling_thread.start()
 
+    def join(self):
+        self.__pulling_thread.join()
+        self.__processing_thread.join()
+
     def stop_processing_events(self):
         self.__stopped = True
         self.__events.close()
-        self.__pulling_thread.join()
-        self.__processing_thread.join()
+        self.join()
 
     def get_success_count(self):
         return self.__success_event_count

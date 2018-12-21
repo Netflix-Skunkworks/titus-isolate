@@ -4,6 +4,7 @@ from threading import Thread
 
 import click
 import docker
+
 from titus_isolate.api.status import app, set_wm, set_em
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 from titus_isolate.docker.create_event_handler import CreateEventHandler
@@ -12,7 +13,11 @@ from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.docker.utils import get_current_workloads
 from titus_isolate.isolate.workload_manager import WorkloadManager
+from titus_isolate.metrics.bpf import get_bpf
+from titus_isolate.metrics.linux_context_provider import LinuxContextProvider
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
+from titus_isolate.metrics.pmc_provider import PmcProvider
+from titus_isolate.metrics.pmc_publisher import PmcPublisher
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.utils import get_logger
 
@@ -42,9 +47,13 @@ def main(admin_port):
     event_manager = EventManager(docker.from_env().events(), event_handlers)
     set_em(event_manager)
 
-    # Reporting metrics
+    # Report metrics
     log.info("Starting metrics reporting...")
     MetricsReporter(workload_manager, event_manager)
+
+    # Publish PMC metrics
+    log.info("Starting PMC publishing...")
+    PmcPublisher(PmcProvider(get_bpf(), LinuxContextProvider()))
 
     # Initialize currently running containers as workloads
     log.info("Isolating currently running workloads...")
@@ -56,7 +65,7 @@ def main(admin_port):
     __start_http_server(admin_port)
 
     log.info("Startup complete, waiting for events...")
-    workload_manager.join()
+    event_manager.join()
 
     log.error("The workload manager should never exit, yet here we are...")
     os._exit(42)
