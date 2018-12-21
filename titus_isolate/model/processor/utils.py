@@ -15,6 +15,10 @@ def get_empty_threads(threads):
     return [t for t in threads if not t.is_claimed()]
 
 
+def get_claimed_threads(threads):
+    return [t for t in threads if t.is_claimed()]
+
+
 def get_emptiest_core(package):
     emptiest_core = package.get_cores()[0]
     curr_empty_thread_count = len(emptiest_core.get_empty_threads())

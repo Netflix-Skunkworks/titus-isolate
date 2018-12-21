@@ -3,7 +3,7 @@ import uuid
 
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.balance import has_better_isolation
-from titus_isolate.isolate.cpu import assign_threads
+from titus_isolate.isolate.cpu import GreedyCpuAllocator
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload
 
@@ -20,8 +20,11 @@ class TestBalance(unittest.TestCase):
         cur_cpu = get_cpu()
         new_cpu = get_cpu()
 
-        assign_threads(cur_cpu, w0)
-        assign_threads(new_cpu, w0)
+        allocator0 = GreedyCpuAllocator(cur_cpu)
+        allocator0.assign_threads(w0)
+
+        allocator1 = GreedyCpuAllocator(new_cpu)
+        allocator1.assign_threads(w0)
 
         self.assertFalse(has_better_isolation(cur_cpu, new_cpu))
 
