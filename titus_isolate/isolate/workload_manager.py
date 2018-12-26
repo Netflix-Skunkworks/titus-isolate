@@ -1,9 +1,8 @@
 import copy
 from threading import Lock
-import time
 
 from titus_isolate.isolate.balance import has_better_isolation
-from titus_isolate.isolate.cpu import assign_threads, free_threads
+from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.update import get_updates
 from titus_isolate.isolate.utils import get_static_workloads, get_burst_workloads
@@ -13,7 +12,7 @@ log = get_logger()
 
 
 class WorkloadManager:
-    def __init__(self, cpu, cgroup_manager):
+    def __init__(self, cpu, cgroup_manager, allocator_class=IntegerProgramCpuAllocator):
         self.__lock = Lock()
 
         self.__error_count = 0
@@ -23,7 +22,7 @@ class WorkloadManager:
         self.__cpu = cpu
         self.__cgroup_manager = cgroup_manager
         self.__workloads = {}
-        self.__workload_insertion_times = {}
+        self.__cpu_allocator = allocator_class(cpu)
         log.info("Created workload manager")
 
     def add_workload(self, workload):
@@ -44,12 +43,20 @@ class WorkloadManager:
 
     def __add_workload(self, workload):
         log.info("Adding workload: {}".format(workload.get_id()))
-        new_cpu = copy.deepcopy(self.get_cpu())
+
         self.__workloads[workload.get_id()] = workload
+
         if workload.get_type() == STATIC:
-            assign_threads(new_cpu, workload, self.__workload_insertion_times)
-            self.__workload_insertion_times[workload.get_id()] = time.time()
-        self.__execute_updates(self.get_cpu(), new_cpu)
+            current_cpu = copy.deepcopy(self.get_cpu())
+            self.__cpu_allocator.assign_threads(workload)
+            updates = get_updates(current_cpu, self.__cpu_allocator.get_cpu())
+            log.info("Found footprint updates: '{}'".format(updates))
+            self.cpu = self.__cpu_allocator.get_cpu()
+            self.__update_static_cpusets(updates)
+        
+        self.cpu = self.__cpu_allocator.get_cpu()
+        self.__update_burst_cpusets()
+
         log.info("Added workload: {}".format(workload.get_id()))
         self.__added_count += 1
         # todo: add metrics
@@ -59,31 +66,15 @@ class WorkloadManager:
         if workload_id not in self.__workloads:
             raise ValueError("Attempted to remove unknown workload: '{}'".format(workload_id))
 
-        new_cpu = copy.deepcopy(self.get_cpu())
-        free_threads(new_cpu, workload_id, self.__workload_insertion_times)
+        self.__cpu_allocator.free_threads(workload_id)
 
-        new_workloads = copy.deepcopy(self.__workloads)
-        del new_workloads[workload_id]
-
-        new_workload_insertion_times = self.__workload_insertion_times.copy()
-        del new_workload_insertion_times[workload_id]
-
-        self.__set_cpu(new_cpu)
-        self.__workloads = new_workloads
-        self.__workload_insertion_times = new_workload_insertion_times
+        self.cpu = self.__cpu_allocator.get_cpu()
+        self.__workloads.pop(workload_id)
 
         self.__update_burst_cpusets()
         log.info("Removed workload: {}".format(workload_id))
         self.__removed_count += 1
         # todo: add metrics
-
-    def __execute_updates(self, cur_cpu, new_cpu):
-        updates = get_updates(cur_cpu, new_cpu)
-        log.info("Found footprint updates: '{}'".format(updates))
-
-        self.__set_cpu(new_cpu)
-        self.__update_static_cpusets(updates)
-        self.__update_burst_cpusets()
 
     def __update_static_cpusets(self, updates):
         for workload_id, thread_ids in updates.items():
@@ -101,9 +92,6 @@ class WorkloadManager:
 
     def get_cpu(self):
         return self.__cpu
-
-    def __set_cpu(self, cpu):
-        self.__cpu = cpu
 
     def get_added_count(self):
         return self.__added_count

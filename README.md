@@ -101,7 +101,7 @@ Workloads are categorized into either static or burst categories.  Each choice o
 
 Each static workload is assigned a set of threads to which they have exclusive access.  All burst workloads share all those threads which are not claimed by static workloads.
 
-The placement algorithm is implemented in `titus-optimize` and relies on solving an integer program. Please refer to `titus-optimize`
+The primary placement algorithm is implemented in `titus-optimize` and relies on solving an integer program. Please refer to `titus-optimize`
 for further details.
 Once all the static workloads have been placed, burst workloads get the remaining CPU capacity.
 

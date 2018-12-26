@@ -1,5 +1,4 @@
 from titus_isolate.docker.constants import BURST, STATIC
-from titus_isolate.isolate.cpu import assign_threads
 
 
 def get_burst_workloads(workloads):

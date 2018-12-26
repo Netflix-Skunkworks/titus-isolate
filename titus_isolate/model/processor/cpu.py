@@ -1,3 +1,4 @@
+from collections import defaultdict
 from functools import reduce
 
 from titus_isolate.model.processor import utils
@@ -32,6 +33,17 @@ class Cpu:
     def get_empty_threads(self):
         return utils.get_empty_threads(self.get_threads())
 
+    def get_claimed_threads(self):
+        return utils.get_claimed_threads(self.get_threads())
+
     def clear(self):
         for t in self.get_threads():
             t.free()
+
+    def get_workload_ids_to_thread_ids(self):
+        res = defaultdict(list)
+        for t in self.get_threads():
+            if t.is_claimed():
+                wid = t.get_workload_id()
+                res[wid] = res[wid] + [t.get_id()]
+        return res
