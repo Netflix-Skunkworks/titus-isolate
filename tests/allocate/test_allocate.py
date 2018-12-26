@@ -4,7 +4,8 @@ import uuid
 
 from tests.utils import config_logs
 from titus_isolate.docker.constants import STATIC
-from titus_isolate.isolate.cpu import GreedyCpuAllocator, IntegerProgramCpuAllocator
+from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
+from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import is_cpu_full, DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload

@@ -4,7 +4,7 @@ import uuid
 
 from tests.utils import config_logs
 from titus_isolate.docker.constants import STATIC
-from titus_isolate.isolate.cpu import IntegerProgramCpuAllocator
+from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload

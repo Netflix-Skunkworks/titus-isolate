@@ -3,7 +3,7 @@ import uuid
 
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.balance import has_better_isolation
-from titus_isolate.isolate.cpu import GreedyCpuAllocator
+from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload
 

@@ -2,7 +2,7 @@ import copy
 from threading import Lock
 
 from titus_isolate.isolate.balance import has_better_isolation
-from titus_isolate.isolate.cpu import IntegerProgramCpuAllocator
+from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.update import get_updates
 from titus_isolate.isolate.utils import get_static_workloads, get_burst_workloads
