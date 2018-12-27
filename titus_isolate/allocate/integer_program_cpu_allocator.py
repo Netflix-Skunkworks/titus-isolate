@@ -1,4 +1,3 @@
-from collections import defaultdict
 import time
 
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
@@ -6,6 +5,7 @@ from titus_isolate.utils import get_logger
 from titus_optimize.compute import optimize_ip
 
 log = get_logger()
+
 
 class IntegerProgramCpuAllocator(CpuAllocator):
 

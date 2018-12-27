@@ -10,7 +10,7 @@ from tests.utils import wait_until, config_logs, TestContext
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.metrics.internal_metrics_reporter import ADDED_KEY, SUCCEEDED_KEY, FAILED_KEY, PACKAGE_VIOLATIONS_KEY, \
-    CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, override_registry, InternalMetricsReporter, REMOVED_KEY, \
+    CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, InternalMetricsReporter, REMOVED_KEY, \
     WORKLOAD_COUNT_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.utils import get_logger
 
@@ -18,7 +18,7 @@ config_logs(logging.DEBUG)
 log = get_logger(logging.DEBUG)
 
 
-class TestMetricsReporter(unittest.TestCase):
+class TestInternalMetricsReporter(unittest.TestCase):
 
     @staticmethod
     def __gauge_value_reached(registry, key, expected_value):
@@ -27,13 +27,14 @@ class TestMetricsReporter(unittest.TestCase):
         return value == expected_value
 
     def test_empty_metrics(self):
-        registry = Registry()
-        override_registry(registry)
 
         test_context = TestContext()
         event_manager = EventManager(MockEventProvider([]), [], 0.01)
 
-        InternalMetricsReporter(test_context.get_workload_manager(), event_manager, registry, 0.01, 0.01)
+        registry = Registry()
+        reporter = InternalMetricsReporter(test_context.get_workload_manager(), event_manager)
+        reporter.set_registry(registry)
+        reporter.report_metrics({})
 
         wait_until(lambda: self.__gauge_value_reached(registry, ADDED_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, REMOVED_KEY, 0))
@@ -50,16 +51,21 @@ class TestMetricsReporter(unittest.TestCase):
         event_manager.stop_processing_events()
 
     def test_add_metrics(self):
-        registry = Registry()
-        override_registry(registry)
 
         test_context = TestContext()
         workload_name = str(uuid.uuid4())
         events = [get_container_create_event(DEFAULT_CPU_COUNT, STATIC, workload_name, workload_name)]
+        event_count = len(events)
         event_manager = EventManager(MockEventProvider(events), test_context.get_event_handlers(), 5.0)
+        wait_until(lambda: event_count == event_manager.get_processed_count())
+
+        log.info("Event manager has processed {} events.".format(event_manager.get_processed_count()))
 
         workload_manager = test_context.get_workload_manager()
-        InternalMetricsReporter(workload_manager, event_manager, registry, 0.1, 0.1)
+        registry = Registry()
+        reporter = InternalMetricsReporter(workload_manager, event_manager)
+        reporter.set_registry(registry)
+        reporter.report_metrics({})
 
         wait_until(lambda: self.__gauge_value_reached(registry, ADDED_KEY, 1))
         wait_until(lambda: self.__gauge_value_reached(registry, REMOVED_KEY, 0))
