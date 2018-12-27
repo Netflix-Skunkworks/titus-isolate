@@ -16,6 +16,7 @@ setup(name='titus-isolate',
       version=os.getenv("TITUS_ISOLATE_VERSION", "0.SNAPSHOT"),
       packages=[
           "titus_isolate",
+          "titus_isolate/allocate",
           "titus_isolate/api",
           "titus_isolate/cgroup",
           "titus_isolate/docker",

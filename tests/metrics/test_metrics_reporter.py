@@ -9,8 +9,8 @@ from tests.docker.test_events import DEFAULT_CPU_COUNT
 from tests.utils import wait_until, config_logs, TestContext
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.docker.event_manager import EventManager
-from titus_isolate.metrics.metrics_reporter import ADDED_KEY, SUCCEEDED_KEY, FAILED_KEY, PACKAGE_VIOLATIONS_KEY, \
-    CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, override_registry, MetricsReporter, REMOVED_KEY, \
+from titus_isolate.metrics.internal_metrics_reporter import ADDED_KEY, SUCCEEDED_KEY, FAILED_KEY, PACKAGE_VIOLATIONS_KEY, \
+    CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, override_registry, InternalMetricsReporter, REMOVED_KEY, \
     WORKLOAD_COUNT_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.utils import get_logger
 
@@ -33,7 +33,7 @@ class TestMetricsReporter(unittest.TestCase):
         test_context = TestContext()
         event_manager = EventManager(MockEventProvider([]), [], 0.01)
 
-        MetricsReporter(test_context.get_workload_manager(), event_manager, registry, 0.01, 0.01)
+        InternalMetricsReporter(test_context.get_workload_manager(), event_manager, registry, 0.01, 0.01)
 
         wait_until(lambda: self.__gauge_value_reached(registry, ADDED_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, REMOVED_KEY, 0))
@@ -59,7 +59,7 @@ class TestMetricsReporter(unittest.TestCase):
         event_manager = EventManager(MockEventProvider(events), test_context.get_event_handlers(), 5.0)
 
         workload_manager = test_context.get_workload_manager()
-        MetricsReporter(workload_manager, event_manager, registry, 0.1, 0.1)
+        InternalMetricsReporter(workload_manager, event_manager, registry, 0.1, 0.1)
 
         wait_until(lambda: self.__gauge_value_reached(registry, ADDED_KEY, 1))
         wait_until(lambda: self.__gauge_value_reached(registry, REMOVED_KEY, 0))

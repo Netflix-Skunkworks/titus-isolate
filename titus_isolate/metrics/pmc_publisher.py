@@ -10,8 +10,9 @@ log = get_logger()
 
 class PmcPublisher:
 
-    def __init__(self, pmc_provider, publish_interval=10, sleep_interval=1):
+    def __init__(self, pmc_provider, subscribers, publish_interval=10, sleep_interval=1):
         self.__provider = pmc_provider
+        self.__subscribers = subscribers
         self.__publish_interval = publish_interval
         self.__sleep_interval = sleep_interval
         schedule.every(publish_interval).seconds.do(self.__publish_metrics)
@@ -26,9 +27,13 @@ class PmcPublisher:
             time.sleep(self.__sleep_interval)
 
     def __publish_metrics(self):
-        log.info("Getting metrics")
-        metrics = self.__provider.get_metrics(self.__publish_interval)
-        log.info("Publishing {} PMC metrics".format(len(metrics)))
+        try:
+            metrics = self.__provider.get_metrics(self.__publish_interval)
+            log.info("Publishing {} PMC metrics to {} subscribers".format(len(metrics), len(self.__subscribers)))
 
-        for metric in metrics:
-            log.info(metric)
+            for metric in metrics:
+                log.debug(metric)
+                for subscriber in self.__subscribers:
+                    subscriber.handle_nowait(metric)
+        except:
+            log.exception("Failed to publish PMC metrics.")

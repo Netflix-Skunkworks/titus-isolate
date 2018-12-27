@@ -45,9 +45,9 @@ int on_cache_ref(struct bpf_perf_event_data *ctx) {
 }
 """
 
-# The sample period designates how frequently the callback method will be called.  e.g. Every 100 cache miss events for
+# The sample period designates how frequently the callback method will be called.  e.g. Every 1000 cache miss events for
 # a given pid will call the on_cache_miss function
-SAMPLE_PERIOD = 100
+SAMPLE_PERIOD = 1000
 
 log = get_logger(logging.DEBUG)
 
