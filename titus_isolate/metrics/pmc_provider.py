@@ -3,8 +3,8 @@ import time
 from titus_isolate.metrics.titus_pmc import TitusPmc
 from titus_isolate.utils import get_logger
 
-MISS_COUNT_TABLE_NAME = 'miss_count'
-REF_COUNT_TABLE_NAME = 'ref_count'
+MISS_COUNT_TABLE_NAME = 'llc_miss_count'
+REF_COUNT_TABLE_NAME = 'llc_ref_count'
 
 log = get_logger()
 
@@ -46,12 +46,12 @@ class PmcProvider:
                         timestamp=timestamp,
                         duration=duration,
                         name=metric_name,
-                        value=v.value,
+                        value=int(v.value),
                         pid=k.pid,
                         cpu_id=k.cpu,
                         job_id=job_id,
                         task_id=task_id)
-                    log.info("Constructed TitusPMC object for pid: {}, object: {}".format(k.pid, metric))
+                    log.debug("Constructed TitusPMC object for pid: {}, object: {}".format(k.pid, metric))
                     metrics.append(metric)
         except:
             log.exception("Failed to process the metric table: {}".format(metric_name))
