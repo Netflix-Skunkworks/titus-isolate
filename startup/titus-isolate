@@ -7,15 +7,19 @@ import docker
 
 from titus_isolate.api.status import app, set_wm, set_em
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
+from titus_isolate.config.config_manager import ConfigManager
+from titus_isolate.constants import FAILURE_EXIT_CODE
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.docker.utils import get_current_workloads
+from titus_isolate.isolate.utils import get_allocator_class
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.internal_metrics_reporter import InternalMetricsReporter
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.model.processor.config import get_cpu_from_env
+from titus_isolate.real_exit_handler import RealExitHandler
 from titus_isolate.utils import get_logger, start_periodic_scheduling
 
 log = get_logger()
@@ -27,13 +31,16 @@ def main(admin_port):
     log.info("Modeling the CPU...")
     cpu = get_cpu_from_env()
 
+    log.info("Monitoring configuration...")
+    config_manager = ConfigManager()
+
     # Start period scheduling
     log.info("Starting periodic event scheduling...")
     start_periodic_scheduling()
 
     # Setup the workload manager
     log.info("Setting up the workload manager...")
-    workload_manager = WorkloadManager(cpu, FileCgroupManager())
+    workload_manager = WorkloadManager(cpu, FileCgroupManager(), get_allocator_class(config_manager))
     set_wm(workload_manager)
 
     # Setup the event handlers
@@ -66,7 +73,7 @@ def main(admin_port):
     event_manager.join()
 
     log.error("The workload manager should never exit, yet here we are...")
-    os._exit(42)
+    RealExitHandler().exit(FAILURE_EXIT_CODE)
 
 
 def __start_http_server(admin_port):
