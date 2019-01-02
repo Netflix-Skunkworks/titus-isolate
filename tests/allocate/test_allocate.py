@@ -3,14 +3,16 @@ import unittest
 import uuid
 
 from tests.utils import config_logs
-from titus_isolate.docker.constants import STATIC
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
+from titus_isolate.docker.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import is_cpu_full, DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 
 config_logs(logging.DEBUG)
+
+ALLOCATORS = [IntegerProgramCpuAllocator, GreedyCpuAllocator]
 
 
 class TestCpu(unittest.TestCase):
@@ -19,7 +21,7 @@ class TestCpu(unittest.TestCase):
         """
         Workload 0: 1 thread --> (p:0 c:0 t:0)
         """
-        for allocator_class in [IntegerProgramCpuAllocator, GreedyCpuAllocator]:
+        for allocator_class in ALLOCATORS:
             cpu = get_cpu()
             allocator = allocator_class(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
@@ -168,7 +170,7 @@ class TestCpu(unittest.TestCase):
         --------------------
         Total:      16 cores
         """
-        for allocator_class in [IntegerProgramCpuAllocator, GreedyCpuAllocator]:
+        for allocator_class in ALLOCATORS:
             cpu = get_cpu()
             allocator = allocator_class(cpu)
             workloads = [
@@ -234,7 +236,7 @@ class TestCpu(unittest.TestCase):
             self.assertListEqual(ids, [wa.get_id()] * 8)
 
     def test_assign_to_full_cpu_fails(self):
-        for allocator_class in [IntegerProgramCpuAllocator, GreedyCpuAllocator]:
+        for allocator_class in ALLOCATORS:
             # Fill the CPU
             cpu = get_cpu()
             allocator = allocator_class(cpu)
@@ -248,7 +250,7 @@ class TestCpu(unittest.TestCase):
                 allocator.assign_threads(w1)
 
     def test_free_cpu(self):
-        for allocator_class in [IntegerProgramCpuAllocator, GreedyCpuAllocator]:
+        for allocator_class in ALLOCATORS:
             cpu = get_cpu()
             allocator = allocator_class(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
@@ -264,7 +266,7 @@ class TestCpu(unittest.TestCase):
 
     def test_free_cpu_3_workloads(self):
         # Add 3 workloads sequentially, and then remove the 2nd one added.
-        for allocator_class in [IntegerProgramCpuAllocator, GreedyCpuAllocator]:
+        for allocator_class in ALLOCATORS:
             cpu = get_cpu()
             allocator = allocator_class(cpu)
 

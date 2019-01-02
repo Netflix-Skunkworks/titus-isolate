@@ -32,3 +32,6 @@ class Workload:
             "type": self.get_type(),
             "thread_count": self.get_thread_count()
         }
+
+    def __str__(self):
+        return "id: {}, type: {}, thread_count: {}".format(self.get_id(), self.get_type(), self.get_thread_count())
