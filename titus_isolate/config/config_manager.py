@@ -37,12 +37,12 @@ class ConfigManager:
     def __handle_allocator_update(self, value):
         old_value = self.get(ALLOCATOR_KEY)
         self.__config_map[ALLOCATOR_KEY] = value
-        log.info("Handling allocator change from: '{} to: '{}'".format(old_value, value))
 
         if old_value == value:
             self.ignored_iteration_count += 1
             return
 
+        log.info("Handling allocator change from: '{} to: '{}'".format(old_value, value))
         self.__exit_handler.exit(ALLOCATOR_CONFIG_CHANGE_EXIT)
 
     def update(self, key, value):

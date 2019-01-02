@@ -50,7 +50,6 @@ class IntegerProgramCpuAllocator(CpuAllocator):
             self.__cache[cache_key] = placement
         return placement
 
-
     def assign_threads(self, workload):
         """
         Use the integer -program solver to find the optimal static placement
@@ -91,7 +90,6 @@ class IntegerProgramCpuAllocator(CpuAllocator):
 
         self.__assign_new_mapping(thread_id2workload_id)
         self.__workload_insertion_times[workload.get_id()] = time.time()
-
 
     def free_threads(self, workload_id):
         """
