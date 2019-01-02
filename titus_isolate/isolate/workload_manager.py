@@ -22,7 +22,7 @@ class WorkloadManager:
         self.__cgroup_manager = cgroup_manager
         self.__workloads = {}
         self.__cpu_allocator = allocator_class(cpu)
-        log.info("Created workload manager")
+        log.info("Created workload manager with allocator: '{}'".format(self.__cpu_allocator.__class__.__name__))
 
     def add_workload(self, workload):
         self.__update_workload(self.__add_workload, workload, workload.get_id())

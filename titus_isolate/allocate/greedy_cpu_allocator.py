@@ -5,6 +5,7 @@ from titus_isolate.utils import get_logger
 
 log = get_logger()
 
+
 class GreedyCpuAllocator(CpuAllocator):
 
     def __init__(self, cpu):
@@ -39,7 +40,6 @@ class GreedyCpuAllocator(CpuAllocator):
                 thread_count -= 1
 
         return claimed_threads + self.assign_threads(Workload(workload.get_id(), thread_count, workload.get_type()))
-
 
     def free_threads(self, workload_id):
         for t in self.__cpu.get_threads():
