@@ -1,13 +1,11 @@
 import copy
 from threading import Lock
 
+from titus_isolate import log
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.update import get_updates
 from titus_isolate.isolate.utils import get_burst_workloads
-from titus_isolate.utils import get_logger
-
-log = get_logger()
 
 
 class WorkloadManager:

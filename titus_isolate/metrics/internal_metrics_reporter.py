@@ -1,8 +1,6 @@
+from titus_isolate import log
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
-from titus_isolate.utils import get_logger
-
-log = get_logger()
 
 ADDED_KEY = 'titus-isolate.added'
 REMOVED_KEY = 'titus-isolate.removed'

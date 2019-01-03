@@ -1,7 +1,5 @@
+from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_isolate.utils import get_logger
-
-log = get_logger()
 
 
 class NoopCpuAllocator(CpuAllocator):

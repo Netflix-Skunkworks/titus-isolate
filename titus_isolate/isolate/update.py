@@ -1,7 +1,5 @@
+from titus_isolate import log
 from titus_isolate.model.processor.utils import get_workload_ids
-from titus_isolate.utils import get_logger
-
-log = get_logger()
 
 
 def get_updates(cur_cpu, new_cpu):

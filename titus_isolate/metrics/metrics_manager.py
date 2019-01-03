@@ -3,15 +3,9 @@ import os
 import schedule
 from spectator import GlobalRegistry
 
-from titus_isolate.utils import get_logger
+from titus_isolate import log
 
 registry = GlobalRegistry
-log = get_logger()
-
-
-def override_registry(reg):
-    global registry
-    registry = reg
 
 
 class MetricsManager:

@@ -2,9 +2,7 @@ import json
 from queue import Queue, Empty
 from threading import Thread
 
-from titus_isolate.utils import get_logger
-
-log = get_logger()
+from titus_isolate import log
 
 DEFAULT_EVENT_TIMEOUT_SECS = 60
 

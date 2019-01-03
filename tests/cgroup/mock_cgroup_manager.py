@@ -1,9 +1,5 @@
-import logging
-
+from titus_isolate import log
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
-from titus_isolate.utils import get_logger
-
-log = get_logger(logging.DEBUG)
 
 
 class MockCgroupManager(CgroupManager):

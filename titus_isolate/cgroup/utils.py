@@ -1,27 +1,27 @@
 import os
 import time
 
-from titus_isolate.utils import get_logger
+from titus_isolate import log
+from titus_isolate.config.constants import DEFAULT_WAIT_CGROUP_FILE_SEC, WAIT_CGROUP_FILE_KEY
+from titus_isolate.utils import get_config_manager
 
 ROOT_CGROUP_PATH = "/sys/fs/cgroup"
 ROOT_MESOS_INFO_PATH = "/var/lib/titus-inits"
-MAX_FILE_WAIT_S = 1
-
-
-log = get_logger()
 
 
 def wait_for_file_to_exist(file_path):
     start_time = time.time()
+    file_wait_str = get_config_manager().get(WAIT_CGROUP_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC)
+    file_wait_sec = int(file_wait_str)
 
     while not os.path.exists(file_path):
         log.debug("Waiting for file to exist: '{}'".format(file_path))
         time.sleep(0.1)
         elapsed_time = time.time() - start_time
 
-        if elapsed_time > MAX_FILE_WAIT_S:
+        if elapsed_time > file_wait_sec:
             raise TimeoutError(
-                "Expected file '{}' was not created in '{}' seconds.".format(file_path, MAX_FILE_WAIT_S))
+                "Expected file '{}' was not created in '{}' seconds.".format(file_path, file_wait_sec))
 
 
 def get_cpuset_path_from_list(cgroups_list):

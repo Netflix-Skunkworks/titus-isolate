@@ -7,15 +7,14 @@ from spectator import Registry
 from tests.docker.mock_docker import MockEventProvider, get_container_create_event
 from tests.docker.test_events import DEFAULT_CPU_COUNT
 from tests.utils import wait_until, config_logs, TestContext
+from titus_isolate import log
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.metrics.internal_metrics_reporter import ADDED_KEY, SUCCEEDED_KEY, FAILED_KEY, PACKAGE_VIOLATIONS_KEY, \
     CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, InternalMetricsReporter, REMOVED_KEY, \
     WORKLOAD_COUNT_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
-from titus_isolate.utils import get_logger
 
 config_logs(logging.DEBUG)
-log = get_logger(logging.DEBUG)
 
 
 class TestInternalMetricsReporter(unittest.TestCase):

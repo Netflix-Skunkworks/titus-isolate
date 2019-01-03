@@ -1,13 +1,13 @@
 #!/usr/share/python/titus-isolate/bin/python
-import os
+import logging
 from threading import Thread
 
 import click
 import docker
 
+from titus_isolate import log
 from titus_isolate.api.status import app, set_wm, set_em
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.constants import FAILURE_EXIT_CODE
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.event_logger import EventLogger
@@ -20,19 +20,17 @@ from titus_isolate.metrics.internal_metrics_reporter import InternalMetricsRepor
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.real_exit_handler import RealExitHandler
-from titus_isolate.utils import get_logger, start_periodic_scheduling
-
-log = get_logger()
+from titus_isolate.utils import start_periodic_scheduling, get_config_manager
 
 
 @click.command()
 @click.option('--admin-port', default=5000, help="The port for the HTTP server to listen on (default: 5000)")
 def main(admin_port):
+    # Set the schedule library's logging level higher so it doesn't spam messages every time it schedules a task
+    logging.getLogger('schedule').setLevel(logging.WARN)
+
     log.info("Modeling the CPU...")
     cpu = get_cpu_from_env()
-
-    log.info("Monitoring configuration...")
-    config_manager = ConfigManager()
 
     # Start period scheduling
     log.info("Starting periodic event scheduling...")
@@ -40,7 +38,7 @@ def main(admin_port):
 
     # Setup the workload manager
     log.info("Setting up the workload manager...")
-    workload_manager = WorkloadManager(cpu, FileCgroupManager(), get_allocator_class(config_manager))
+    workload_manager = WorkloadManager(cpu, FileCgroupManager(), get_allocator_class(get_config_manager()))
     set_wm(workload_manager)
 
     # Setup the event handlers
