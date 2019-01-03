@@ -2,25 +2,17 @@ import logging
 import unittest
 import uuid
 
-from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.docker.mock_docker import get_container_create_event, MockDockerClient, MockEventProvider, get_event, \
     get_container_die_event, MockContainer
 from tests.utils import config_logs, wait_until, TestContext
 from titus_isolate.docker.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME
-from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.event_manager import EventManager
-from titus_isolate.docker.create_event_handler import CreateEventHandler
-from titus_isolate.docker.free_event_handler import FreeEventHandler
-from titus_isolate.isolate.workload_manager import WorkloadManager
-from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
-from titus_isolate.utils import get_logger
 
 DEFAULT_CPU_COUNT = 2
 
 config_logs(logging.DEBUG)
-log = get_logger(logging.DEBUG)
 
 DEFAULT_TEST_EVENT_TIMEOUT_SECS = 0.01
 
@@ -120,4 +112,3 @@ class TestEvents(unittest.TestCase):
         self.assertEqual(0, manager.get_queue_depth())
 
         manager.stop_processing_events()
-

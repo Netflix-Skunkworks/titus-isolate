@@ -3,8 +3,11 @@ import logging
 import os
 import unittest
 
+from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs
 from titus_isolate.cgroup.utils import get_cpuset_path_from_list, get_cpuset_path_from_file, wait_for_file_to_exist
+from titus_isolate.config.config_manager import ConfigManager
+from titus_isolate.utils import override_config_manager
 
 config_logs(logging.DEBUG)
 
@@ -37,10 +40,12 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(None, get_cpuset_path_from_list(cgroups_list))
 
     def test_parse_from_file(self):
+        override_config_manager(ConfigManager(TestPropertyProvider({})))
         dir = os.path.dirname(os.path.abspath(__file__))
         self.assertEqual(expected_path, get_cpuset_path_from_file(dir + "/test_cgroup_file"))
 
     def test_wait_for_file_to_exist(self):
+        override_config_manager(ConfigManager(TestPropertyProvider({})))
         with self.assertRaises(TimeoutError) as context:
             wait_for_file_to_exist("/tmp/foo")
 

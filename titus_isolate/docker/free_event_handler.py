@@ -1,9 +1,6 @@
 from titus_isolate.docker.constants import ACTION
 from titus_isolate.docker.event_handler import EventHandler
 from titus_isolate.docker.utils import get_container_name
-from titus_isolate.utils import get_logger
-
-log = get_logger()
 
 
 class FreeEventHandler(EventHandler):

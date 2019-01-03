@@ -1,11 +1,9 @@
+from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.config.constants import ALLOCATOR_KEY, CPU_ALLOCATORS, IP, DEFAULT_ALLOCATOR, GREEDY, NOOP
 from titus_isolate.docker.constants import BURST, STATIC
-from titus_isolate.utils import get_logger
-
-log = get_logger()
 
 
 def get_burst_workloads(workloads):

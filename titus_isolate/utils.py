@@ -1,20 +1,34 @@
-import logging
 import time
 from threading import Thread, Lock
 
 import schedule
 
 from titus_isolate import log
+from titus_isolate.config.agent_property_provider import AgentPropertyProvider
+from titus_isolate.config.config_manager import ConfigManager
 
 SCHEDULING_SLEEP_INTERVAL = 1.0
 
 scheduling_lock = Lock()
 scheduling_started = False
 
+config_manager_lock = Lock()
+config_manager = None
 
-def get_logger(level=logging.INFO):
-    log.setLevel(level)
-    return log
+
+def get_config_manager(property_provider=AgentPropertyProvider()):
+    global config_manager
+
+    with config_manager_lock:
+        if config_manager is None:
+            config_manager = ConfigManager(property_provider)
+
+        return config_manager
+
+
+def override_config_manager(cfg_manager):
+    global config_manager
+    config_manager = cfg_manager
 
 
 def start_periodic_scheduling():

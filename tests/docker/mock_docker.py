@@ -1,13 +1,10 @@
 import json
-import logging
 import time
 import uuid
 
+from titus_isolate import log
 from titus_isolate.docker.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, CPU_LABEL_KEY, CREATE, ID, \
     LOWERCASE_ID, NAME, TIME, TYPE, DIE, WORKLOAD_TYPE_LABEL_KEY, STATIC
-from titus_isolate.utils import get_logger
-
-log = get_logger()
 
 
 class MockEventProvider:

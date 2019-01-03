@@ -1,7 +1,5 @@
+from titus_isolate import log
 from titus_isolate.exit_handler import ExitHandler
-from titus_isolate.utils import get_logger
-
-log = get_logger()
 
 
 class TestExitHandler(ExitHandler):

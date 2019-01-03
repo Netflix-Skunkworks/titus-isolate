@@ -1,8 +1,6 @@
 import schedule
 
-from titus_isolate.utils import get_logger
-
-log = get_logger()
+from titus_isolate import log
 
 
 class PropertyChangeHandler:

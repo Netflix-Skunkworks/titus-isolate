@@ -1,9 +1,7 @@
+from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
 from titus_isolate.model.workload import Workload
-from titus_isolate.utils import get_logger
-
-log = get_logger()
 
 
 class GreedyCpuAllocator(CpuAllocator):
