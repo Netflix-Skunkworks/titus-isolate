@@ -3,5 +3,5 @@ docker
 flask
 requests
 schedule
-titus-optimize>=0.1.8
+titus-optimize>=0.1.9
 netflix-spectator-py
