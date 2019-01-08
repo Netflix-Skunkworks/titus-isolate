@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 from titus_isolate import log
 
 
@@ -23,4 +25,8 @@ class EventHandler:
 
     def get_handled_event_count(self):
         return self.__handled_event_count
+
+    @abstractmethod
+    def handle(self, event):
+        pass
 

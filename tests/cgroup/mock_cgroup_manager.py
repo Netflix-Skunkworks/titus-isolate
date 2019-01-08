@@ -8,7 +8,7 @@ class MockCgroupManager(CgroupManager):
         self.container_update_map = {}
         self.container_update_counts = {}
 
-    def set_cpuset(self, container_name, thread_ids, timeout):
+    def set_cpuset(self, container_name, thread_ids):
         log.debug("Updating container: '{}' to cpuset: '{}'".format(container_name, thread_ids))
         self.container_update_map[container_name] = thread_ids
 
@@ -17,5 +17,5 @@ class MockCgroupManager(CgroupManager):
         else:
             self.container_update_counts[container_name] += 1
 
-    def set_quota(self, container_name, value, timeout):
+    def set_quota(self, container_name, value):
         log.debug("Updating container: '{}' to quota: '{}'".format(container_name, value))

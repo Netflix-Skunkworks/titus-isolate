@@ -8,8 +8,9 @@ from titus_isolate.docker.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER,
 
 
 class MockEventProvider:
-    def __init__(self, events):
+    def __init__(self, events, sleep=0):
         self.__events = events
+        self.__sleep = sleep
         self.__closed = False
 
     def __iter__(self):
@@ -22,6 +23,7 @@ class MockEventProvider:
                 raise StopIteration("Event stream has been closed")
             time.sleep(0.01)
 
+        time.sleep(self.__sleep)
         return self.__events.pop(0)
 
     def close(self):
@@ -92,7 +94,7 @@ def get_event(type, action, container_id, attributes):
         ACTION: str(action),
         ACTOR: {
             ID: str(container_id),
-            ATTRIBUTES: attributes
+            ATTRIBUTES: attributes,
         },
         TIME: int(time.time())
     }).encode("utf-8")
