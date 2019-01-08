@@ -2,59 +2,113 @@ import os
 import time
 
 from titus_isolate import log
-from titus_isolate.config.constants import DEFAULT_WAIT_CGROUP_FILE_SEC, WAIT_CGROUP_FILE_KEY
-from titus_isolate.utils import get_config_manager
 
 ROOT_CGROUP_PATH = "/sys/fs/cgroup"
-ROOT_MESOS_INFO_PATH = "/var/lib/titus-inits"
+TITUS_INITS_PATH = "/var/lib/titus-inits"
+TITUS_ENVIRONMENTS_PATH = "/var/lib/titus-environments"
+
+CPUSET = "cpuset"
+CPU_CPUACCT = "cpu,cpuacct"
+
+JSON_WAIT_TIME = 1
 
 
-def wait_for_file_to_exist(file_path):
+def __get_info_path(container_name):
+    return "{}/{}/cgroup".format(TITUS_INITS_PATH, container_name)
+
+
+def __get_json_path(container_name):
+    return "{}/{}.json".format(TITUS_ENVIRONMENTS_PATH, container_name)
+
+
+def __noop():
+    pass
+
+
+def _wait_for_file_to_exist(path, timeout, check_func=__noop):
     start_time = time.time()
-    file_wait_str = get_config_manager().get(WAIT_CGROUP_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC)
-    file_wait_sec = int(file_wait_str)
-
-    while not os.path.exists(file_path):
-        log.debug("Waiting for file to exist: '{}'".format(file_path))
+    while not os.path.exists(path):
+        log.debug("Waiting for file to exist: '{}'".format(path))
         time.sleep(0.1)
+
+        check_func()
+
         elapsed_time = time.time() - start_time
-
-        if elapsed_time > file_wait_sec:
+        if elapsed_time > timeout:
             raise TimeoutError(
-                "Expected file '{}' was not created in '{}' seconds.".format(file_path, file_wait_sec))
+                "Expected file '{}' was not created in '{}' seconds.".format(path, timeout))
 
 
-def get_cpuset_path_from_list(cgroups_list):
+def wait_for_files(container_name, timeout):
+    info_file_path = __get_info_path(container_name)
+    json_file_path = __get_json_path(container_name)
+
+    def __raise_if_json_file_gone():
+        if not os.path.exists(json_file_path):
+            raise RuntimeError("JSON file: '{}' disappeared, meaning the task exited.".format(json_file_path))
+
+    _wait_for_file_to_exist(json_file_path, JSON_WAIT_TIME)
+    _wait_for_file_to_exist(info_file_path, timeout, __raise_if_json_file_gone)
+
+
+def _get_cgroup_path_from_list(cgroups_list, cgroup_name):
     for row in cgroups_list:
         r = row.split(":")
         name = r[1]
         path = r[2]
 
-        if name == "cpuset":
+        if name == cgroup_name:
             return path.strip()
 
     return None
 
 
-def get_cpuset_path_from_file(file_path):
-    log.info("Reading cpuset path from file: '{}'".format(file_path))
-    wait_for_file_to_exist(file_path)
-
+def get_cgroup_path_from_file(file_path, cgroup_name):
+    log.debug("Reading '{}' path from file: '{}'".format(cgroup_name, file_path))
     with open(file_path, "r") as myfile:
         data = myfile.readlines()
-        return get_cpuset_path_from_list(data)
+        return _get_cgroup_path_from_list(data, cgroup_name)
 
 
-def get_cpuset_path(container_name):
-    info_file_path = "{}/{}/cgroup".format(ROOT_MESOS_INFO_PATH, container_name)
-    cpuset_file_path = get_cpuset_path_from_file(info_file_path)
+def get_cpuset_path(container_name, timeout):
+    wait_for_files(container_name, timeout)
+    file_path = __get_info_path(container_name)
+    cgroup_path = get_cgroup_path_from_file(file_path, CPUSET)
+    return "{}/cpuset{}/cpuset.cpus".format(ROOT_CGROUP_PATH, cgroup_path)
 
-    return "{}/cpuset{}/cpuset.cpus".format(ROOT_CGROUP_PATH, cpuset_file_path)
+
+def get_quota_path(container_name, timeout):
+    wait_for_files(container_name, timeout)
+    file_path = __get_info_path(container_name)
+    cgroup_path = get_cgroup_path_from_file(file_path, CPU_CPUACCT)
+    return "{}/cpu,cpuacct{}/cpu.cfs_quota_us".format(ROOT_CGROUP_PATH, cgroup_path)
 
 
-def set_cpuset(container_name, threads_str):
-    path = get_cpuset_path(container_name)
+def set_cpuset(container_name, threads_str, timeout):
+    path = get_cpuset_path(container_name, timeout)
+
+    orig_quota = get_quota(container_name, timeout)
+    log.info("Saved quota: '{}' for: '{}'".format(orig_quota, container_name))
+    set_quota(container_name, -1, timeout)
+
     log.info("Writing '{}' to path '{}'".format(threads_str, path))
-
     with open(path, 'w') as f:
         f.write(threads_str)
+
+    set_quota(container_name, orig_quota, timeout)
+
+
+def set_quota(container_name, value, timeout):
+    path = get_quota_path(container_name, timeout)
+
+    log.info("Writing '{}' to path '{}'".format(value, path))
+    with open(path, 'w') as f:
+        f.write(str(value))
+
+
+def get_quota(container_name, timeout):
+    path = get_quota_path(container_name, timeout)
+
+    log.info("Reading from path '{}'".format(path))
+    with open(path, 'r') as f:
+        return int(f.readline().strip())

@@ -3,11 +3,12 @@ from titus_isolate.cgroup.cgroup_manager import CgroupManager
 
 
 class MockCgroupManager(CgroupManager):
+
     def __init__(self):
         self.container_update_map = {}
         self.container_update_counts = {}
 
-    def set_cpuset(self, container_name, thread_ids):
+    def set_cpuset(self, container_name, thread_ids, timeout):
         log.debug("Updating container: '{}' to cpuset: '{}'".format(container_name, thread_ids))
         self.container_update_map[container_name] = thread_ids
 
@@ -16,3 +17,5 @@ class MockCgroupManager(CgroupManager):
         else:
             self.container_update_counts[container_name] += 1
 
+    def set_quota(self, container_name, value, timeout):
+        log.debug("Updating container: '{}' to quota: '{}'".format(container_name, value))

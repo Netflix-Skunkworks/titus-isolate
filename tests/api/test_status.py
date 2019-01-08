@@ -3,20 +3,25 @@ import unittest
 import uuid
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
+from tests.config.test_property_provider import TestPropertyProvider
 from tests.docker.mock_docker import MockDockerClient, MockContainer, MockEventProvider
 from titus_isolate.api import status
 from titus_isolate.api.status import set_wm, get_workloads, get_violations, get_wm_status, set_em
+from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT
 from titus_isolate.model.workload import Workload
+from titus_isolate.utils import override_config_manager
 
 
 class TestStatus(unittest.TestCase):
 
     def test_get_workloads_endpoint(self):
+        override_config_manager(ConfigManager(TestPropertyProvider({})))
+
         cpu = get_cpu()
         thread_count = 2
         workload_id = str(uuid.uuid4())
