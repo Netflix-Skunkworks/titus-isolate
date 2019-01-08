@@ -70,44 +70,42 @@ def get_cgroup_path_from_file(file_path, cgroup_name):
         return _get_cgroup_path_from_list(data, cgroup_name)
 
 
-def get_cpuset_path(container_name, timeout):
-    wait_for_files(container_name, timeout)
+def get_cpuset_path(container_name):
     file_path = __get_info_path(container_name)
     cgroup_path = get_cgroup_path_from_file(file_path, CPUSET)
     return "{}/cpuset{}/cpuset.cpus".format(ROOT_CGROUP_PATH, cgroup_path)
 
 
-def get_quota_path(container_name, timeout):
-    wait_for_files(container_name, timeout)
+def get_quota_path(container_name):
     file_path = __get_info_path(container_name)
     cgroup_path = get_cgroup_path_from_file(file_path, CPU_CPUACCT)
     return "{}/cpu,cpuacct{}/cpu.cfs_quota_us".format(ROOT_CGROUP_PATH, cgroup_path)
 
 
-def set_cpuset(container_name, threads_str, timeout):
-    path = get_cpuset_path(container_name, timeout)
+def set_cpuset(container_name, threads_str):
+    path = get_cpuset_path(container_name)
 
-    orig_quota = get_quota(container_name, timeout)
+    orig_quota = get_quota(container_name)
     log.info("Saved quota: '{}' for: '{}'".format(orig_quota, container_name))
-    set_quota(container_name, -1, timeout)
+    set_quota(container_name, -1)
 
     log.info("Writing '{}' to path '{}'".format(threads_str, path))
     with open(path, 'w') as f:
         f.write(threads_str)
 
-    set_quota(container_name, orig_quota, timeout)
+    set_quota(container_name, orig_quota)
 
 
-def set_quota(container_name, value, timeout):
-    path = get_quota_path(container_name, timeout)
+def set_quota(container_name, value):
+    path = get_quota_path(container_name)
 
     log.info("Writing '{}' to path '{}'".format(value, path))
     with open(path, 'w') as f:
         f.write(str(value))
 
 
-def get_quota(container_name, timeout):
-    path = get_quota_path(container_name, timeout)
+def get_quota(container_name):
+    path = get_quota_path(container_name)
 
     log.info("Reading from path '{}'".format(path))
     with open(path, 'r') as f:

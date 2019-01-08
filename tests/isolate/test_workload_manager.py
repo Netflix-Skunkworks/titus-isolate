@@ -69,8 +69,7 @@ class TestWorkloadManager(unittest.TestCase):
             thread_count = 2
             workload = Workload(uuid.uuid4(), thread_count, STATIC)
 
-            docker_client = MockDockerClient([MockContainer(workload)])
-            workload_manager = WorkloadManager(get_cpu(), docker_client, allocator_class=allocator_class)
+            workload_manager = WorkloadManager(get_cpu(), MockCgroupManager(), allocator_class=allocator_class)
 
             # Remove from empty set
             workload_manager.remove_workload([unknown_workload_id])

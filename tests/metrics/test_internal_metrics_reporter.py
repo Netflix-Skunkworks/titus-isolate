@@ -8,6 +8,7 @@ from tests.docker.mock_docker import MockEventProvider, get_container_create_eve
 from tests.docker.test_events import DEFAULT_CPU_COUNT
 from tests.utils import wait_until, config_logs, TestContext
 from titus_isolate import log
+from titus_isolate.cgroup.fake_file_manager import FakeFileManager
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.metrics.internal_metrics_reporter import ADDED_KEY, SUCCEEDED_KEY, FAILED_KEY, PACKAGE_VIOLATIONS_KEY, \
@@ -28,7 +29,7 @@ class TestInternalMetricsReporter(unittest.TestCase):
     def test_empty_metrics(self):
 
         test_context = TestContext()
-        event_manager = EventManager(MockEventProvider([]), [], 0.01)
+        event_manager = EventManager(MockEventProvider([]), [], FakeFileManager(), 0.01)
 
         registry = Registry()
         reporter = InternalMetricsReporter(test_context.get_workload_manager(), event_manager)
@@ -55,7 +56,11 @@ class TestInternalMetricsReporter(unittest.TestCase):
         workload_name = str(uuid.uuid4())
         events = [get_container_create_event(DEFAULT_CPU_COUNT, STATIC, workload_name, workload_name)]
         event_count = len(events)
-        event_manager = EventManager(MockEventProvider(events), test_context.get_event_handlers(), 5.0)
+        event_manager = EventManager(
+            MockEventProvider(events),
+            test_context.get_event_handlers(),
+            FakeFileManager(),
+            5.0)
         wait_until(lambda: event_count == event_manager.get_processed_count())
 
         log.info("Event manager has processed {} events.".format(event_manager.get_processed_count()))
