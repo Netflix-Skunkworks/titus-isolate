@@ -85,15 +85,9 @@ def get_quota_path(container_name):
 def set_cpuset(container_name, threads_str):
     path = get_cpuset_path(container_name)
 
-    orig_quota = get_quota(container_name)
-    log.info("Saved quota: '{}' for: '{}'".format(orig_quota, container_name))
-    set_quota(container_name, -1)
-
     log.info("Writing '{}' to path '{}'".format(threads_str, path))
     with open(path, 'w') as f:
         f.write(threads_str)
-
-    set_quota(container_name, orig_quota)
 
 
 def set_quota(container_name, value):
