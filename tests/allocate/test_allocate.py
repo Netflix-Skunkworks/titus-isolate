@@ -153,7 +153,7 @@ class TestCpu(unittest.TestCase):
         allocator.assign_threads(w)
         self.assertEqual(10, len(cpu.get_claimed_threads()))
 
-        expected_thread_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        expected_thread_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12]
 
         thread_ids = [thread.get_id() for thread in cpu.get_claimed_threads()]
         thread_ids.sort()
