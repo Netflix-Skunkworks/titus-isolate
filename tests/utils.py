@@ -29,8 +29,6 @@ def config_logs(level):
         format=LOG_FMT_STRING,
         datefmt='%d-%m-%Y:%H:%M:%S',
         level=level)
-    import titus_optimize.compute
-    titus_optimize.compute._USE_STDOUT_REDIRECTOR = False
 
 
 class TestContext:
