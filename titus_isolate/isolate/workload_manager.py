@@ -100,6 +100,9 @@ class WorkloadManager:
     def __get_empty_thread_ids(self):
         return [t.get_id() for t in self.get_cpu().get_empty_threads()]
 
+    def get_allocator_name(self):
+        return self.__cpu_allocator.__class__.__name__
+
     def get_workloads(self):
         return self.__workloads.values()
 
