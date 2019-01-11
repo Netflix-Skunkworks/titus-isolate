@@ -74,6 +74,7 @@ def get_wm_status():
             "processed_count": __event_manager.get_processed_count()
         },
         "workload_manager": {
+            "cpu_allocator": __workload_manager.get_allocator_name(),
             "workload_count": len(__workload_manager.get_workloads()),
             "success_count": __workload_manager.get_success_count(),
             "error_count": __workload_manager.get_error_count(),
