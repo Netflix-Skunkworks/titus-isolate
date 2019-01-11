@@ -1,3 +1,7 @@
+from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
+from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
+from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
+
 PROPERTY_URL_ROOT = 'http://localhost:3002/properties'
 
 # CPU ALLOCATOR CONSTANTS
@@ -8,6 +12,11 @@ GREEDY = 'GREEDY'
 NOOP = 'NOOP'
 DEFAULT_ALLOCATOR = NOOP
 CPU_ALLOCATORS = [AB_TEST, IP, GREEDY, NOOP]
+CPU_ALLOCATOR_CLASS_MAP = {
+    IntegerProgramCpuAllocator.__name__: IP,
+    GreedyCpuAllocator.__name__: GREEDY,
+    NoopCpuAllocator.__name__: NOOP
+}
 
 ALLOCATOR_A = 'ALLOCATOR_A'
 ALLOCATOR_B = 'ALLOCATOR_B'
