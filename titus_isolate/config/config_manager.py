@@ -2,7 +2,7 @@ from threading import Lock
 
 from titus_isolate import log
 from titus_isolate.config.agent_property_provider import AgentPropertyProvider
-from titus_isolate.config.constants import PROPERTIES, ALLOCATOR_KEY, WAIT_CGROUP_FILE_KEY
+from titus_isolate.config.constants import PROPERTIES, ALLOCATOR_KEY, WAIT_CGROUP_FILE_KEY, WAIT_JSON_FILE_KEY
 from titus_isolate.config.property_change_handler import PropertyChangeHandler
 from titus_isolate.constants import ALLOCATOR_CONFIG_CHANGE_EXIT
 from titus_isolate.real_exit_handler import RealExitHandler
@@ -27,6 +27,7 @@ class ConfigManager:
 
         PropertyChangeHandler(ALLOCATOR_KEY, self.__handle_allocator_update, property_provider, property_change_interval)
         PropertyChangeHandler(WAIT_CGROUP_FILE_KEY, self.__handle_cgroup_file_wait_update, property_provider, property_change_interval)
+        PropertyChangeHandler(WAIT_JSON_FILE_KEY, self.__handle_json_file_wait_update, property_provider, property_change_interval)
 
     def __handle_allocator_update(self, value):
         updated = self.update(ALLOCATOR_KEY, value)
@@ -38,6 +39,9 @@ class ConfigManager:
 
     def __handle_cgroup_file_wait_update(self, value):
         self.update(WAIT_CGROUP_FILE_KEY, value)
+
+    def __handle_json_file_wait_update(self, value):
+        self.update(WAIT_JSON_FILE_KEY, value)
 
     def update(self, key, value):
         with self.__lock:
