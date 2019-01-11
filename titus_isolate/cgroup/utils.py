@@ -10,8 +10,6 @@ TITUS_ENVIRONMENTS_PATH = "/var/lib/titus-environments"
 CPUSET = "cpuset"
 CPU_CPUACCT = "cpu,cpuacct"
 
-JSON_WAIT_TIME = 1
-
 
 def __get_info_path(container_name):
     return "{}/{}/cgroup".format(TITUS_INITS_PATH, container_name)
@@ -39,7 +37,7 @@ def _wait_for_file_to_exist(path, timeout, check_func=__noop):
                 "Expected file '{}' was not created in '{}' seconds.".format(path, timeout))
 
 
-def wait_for_files(container_name, timeout):
+def wait_for_files(container_name, cgroup_timeout, json_timeout):
     info_file_path = __get_info_path(container_name)
     json_file_path = __get_json_path(container_name)
 
@@ -47,8 +45,8 @@ def wait_for_files(container_name, timeout):
         if not os.path.exists(json_file_path):
             raise RuntimeError("JSON file: '{}' disappeared, meaning the task exited.".format(json_file_path))
 
-    _wait_for_file_to_exist(json_file_path, JSON_WAIT_TIME)
-    _wait_for_file_to_exist(info_file_path, timeout, __raise_if_json_file_gone)
+    _wait_for_file_to_exist(json_file_path, json_timeout)
+    _wait_for_file_to_exist(info_file_path, cgroup_timeout, __raise_if_json_file_gone)
 
 
 def _get_cgroup_path_from_list(cgroups_list, cgroup_name):

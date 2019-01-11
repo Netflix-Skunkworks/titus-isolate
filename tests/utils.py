@@ -1,9 +1,11 @@
 import logging
 import time
+from unittest.mock import MagicMock
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.docker.mock_docker import MockDockerClient
 from titus_isolate import LOG_FMT_STRING
+from titus_isolate.cgroup.file_manager import FileManager
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.free_event_handler import FreeEventHandler
@@ -29,6 +31,12 @@ def config_logs(level):
         format=LOG_FMT_STRING,
         datefmt='%d-%m-%Y:%H:%M:%S',
         level=level)
+
+
+def get_mock_file_manager():
+    file_manager = FileManager()
+    file_manager.wait_for_files = MagicMock(return_value=True)
+    return file_manager
 
 
 class TestContext:
