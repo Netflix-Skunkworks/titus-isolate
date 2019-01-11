@@ -56,5 +56,7 @@ class TestConfigManager(unittest.TestCase):
         config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL, exit_handler)
         self.assertEqual(IP, config_manager.get(ALLOCATOR_KEY))
 
+        original_update_count = config_manager.update_count
         start_periodic_scheduling()
-        wait_until(lambda: config_manager.ignored_iteration_count > 0)
+        wait_until(lambda: config_manager.update_count > original_update_count)
+        self.assertTrue(exit_handler.last_code is None)

@@ -3,7 +3,7 @@ from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.config.constants import ALLOCATOR_KEY, CPU_ALLOCATORS, IP, DEFAULT_ALLOCATOR, GREEDY, NOOP, \
-    ALLOCATOR_A, ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID
+    CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID
 from titus_isolate.docker.constants import BURST, STATIC
 
 BUCKETS = ["A", "B"]
@@ -43,8 +43,8 @@ def __get_allocator_class(allocator_str):
 
 
 def __get_ab_allocator_class(config_manager):
-    a_allocator_str = config_manager.get(ALLOCATOR_A)
-    b_allocator_str = config_manager.get(ALLOCATOR_B)
+    a_allocator_str = config_manager.get(CPU_ALLOCATOR_A)
+    b_allocator_str = config_manager.get(CPU_ALLOCATOR_B)
 
     a_allocator_class = __get_allocator_class(a_allocator_str)
     b_allocator_class = __get_allocator_class(b_allocator_str)
