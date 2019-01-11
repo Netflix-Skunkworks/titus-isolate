@@ -3,7 +3,7 @@ from queue import Queue, Empty
 from threading import Thread
 
 from titus_isolate import log
-from titus_isolate.cgroup.real_file_manager import RealFileManager
+from titus_isolate.cgroup.file_manager import FileManager
 from titus_isolate.config.constants import WAIT_CGROUP_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC
 from titus_isolate.docker.constants import ACTION, CREATE
 from titus_isolate.docker.event_logger import EventLogger
@@ -14,7 +14,7 @@ DEFAULT_EVENT_TIMEOUT_SECS = 60
 
 
 class EventManager:
-    def __init__(self, event_iterable, event_handlers, file_manager=RealFileManager(), event_timeout=DEFAULT_EVENT_TIMEOUT_SECS):
+    def __init__(self, event_iterable, event_handlers, file_manager=FileManager(), event_timeout=DEFAULT_EVENT_TIMEOUT_SECS):
         self.__stopped = False
         self.__raw_q = Queue()
         self.__groomed_q = Queue()
@@ -87,8 +87,7 @@ class EventManager:
             name = get_container_name(event)
             log.info("Grooming create event for: '{}'".format(name))
 
-            file_wait_timeout = int(get_config_manager().get(WAIT_CGROUP_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC))
-            self.__file_manger.wait_for_files(name, file_wait_timeout)
+            self.__file_manger.wait_for_files(name)
             log.info("Groomed create event for: '{}'".format(name))
             self.__groomed_q.put_nowait(event)
         except:
