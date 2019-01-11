@@ -1,4 +1,6 @@
 from titus_isolate import log
+from titus_isolate.config.constants import CPU_ALLOCATORS
+from titus_isolate.config.utils import get_cpu_allocator_index
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
@@ -15,6 +17,8 @@ EVENT_PROCESSED_KEY = 'titus-isolate.eventProcessed'
 PACKAGE_VIOLATIONS_KEY = 'titus-isolate.crossPackageViolations'
 CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
 
+CPU_ALLOCATOR_KEY = 'titus-isolate.cpu_allocator'
+
 
 class InternalMetricsReporter(MetricsReporter):
 
@@ -30,6 +34,9 @@ class InternalMetricsReporter(MetricsReporter):
         log.debug("Reporting metrics")
         try:
             # Workload manager metrics
+            allocator_index = get_cpu_allocator_index(self.__workload_manager.get_allocator_name())
+            self.__reg.gauge(CPU_ALLOCATOR_KEY, tags).set(allocator_index)
+
             self.__reg.gauge(ADDED_KEY, tags).set(self.__workload_manager.get_added_count())
             self.__reg.gauge(REMOVED_KEY, tags).set(self.__workload_manager.get_removed_count())
             self.__reg.gauge(SUCCEEDED_KEY, tags).set(self.__workload_manager.get_success_count())
