@@ -17,13 +17,34 @@ config_logs(logging.DEBUG)
 
 class TestCpuAllocatorWatcher(unittest.TestCase):
 
+    def test_none_to_something_update(self):
+        property_provider = TestPropertyProvider({})
+        exit_handler = TestExitHandler()
+        config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL)
+        self.assertEqual(None, config_manager.get(ALLOCATOR_KEY))
+        watcher = CpuAllocatorWatcher(config_manager, exit_handler, CONFIG_CHANGE_INTERVAL)
+
+        property_provider.map[ALLOCATOR_KEY] = IP
+        watcher.detect_allocator_change()
+        self.assertEqual(ALLOCATOR_CONFIG_CHANGE_EXIT, exit_handler.last_code)
+
+    def test_something_to_no_change_update(self):
+        property_provider = TestPropertyProvider({})
+        exit_handler = TestExitHandler()
+        config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL)
+        self.assertEqual(None, config_manager.get(ALLOCATOR_KEY))
+        watcher = CpuAllocatorWatcher(config_manager, exit_handler, CONFIG_CHANGE_INTERVAL)
+
+        watcher.detect_allocator_change()
+        self.assertEqual(None, exit_handler.last_code)
+
     def test_noop_to_ip_update(self):
         property_provider = TestPropertyProvider(
             {
                 ALLOCATOR_KEY: NOOP
             })
         exit_handler = TestExitHandler()
-        config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL, exit_handler)
+        config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL)
         watcher = CpuAllocatorWatcher(config_manager, exit_handler, CONFIG_CHANGE_INTERVAL)
 
         # No change yet
@@ -45,7 +66,7 @@ class TestCpuAllocatorWatcher(unittest.TestCase):
                 EC2_INSTANCE_ID: even_instance_id
             })
         exit_handler = TestExitHandler()
-        config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL, exit_handler)
+        config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL)
         watcher = CpuAllocatorWatcher(config_manager, exit_handler, CONFIG_CHANGE_INTERVAL)
 
         # No change yet

@@ -5,7 +5,6 @@ import schedule
 from titus_isolate import log
 from titus_isolate.config.agent_property_provider import AgentPropertyProvider
 from titus_isolate.config.constants import PROPERTIES
-from titus_isolate.real_exit_handler import RealExitHandler
 
 PROPERTY_CHANGE_DETECTION_INTERVAL_SEC = 10
 
@@ -15,13 +14,11 @@ class ConfigManager:
     def __init__(
             self,
             property_provider=AgentPropertyProvider(),
-            property_change_interval=PROPERTY_CHANGE_DETECTION_INTERVAL_SEC,
-            exit_handler=RealExitHandler()):
+            property_change_interval=PROPERTY_CHANGE_DETECTION_INTERVAL_SEC):
 
         self.update_count = 0
 
         self.__property_provider = property_provider
-        self.__exit_handler = exit_handler
         self.__config_map = {}
         self.__lock = RLock()
 
