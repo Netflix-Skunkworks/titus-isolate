@@ -1,10 +1,5 @@
 from functools import reduce
 
-from titus_isolate.model.processor.core import Core
-from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.processor.package import Package
-from titus_isolate.model.processor.thread import Thread
-
 DEFAULT_PACKAGE_COUNT = 2
 DEFAULT_CORE_COUNT = 4
 DEFAULT_THREAD_COUNT = 2
