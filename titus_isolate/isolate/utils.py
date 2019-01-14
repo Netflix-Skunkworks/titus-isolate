@@ -1,10 +1,6 @@
 from titus_isolate import log
-from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
-from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
-from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
-from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
-from titus_isolate.config.constants import ALLOCATOR_KEY, CPU_ALLOCATORS, IP, DEFAULT_ALLOCATOR, GREEDY, NOOP, \
-    CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, NOOP_RESET, CPU_ALLOCATOR_NAME_TO_CLASS_MAP
+from titus_isolate.config.constants import ALLOCATOR_KEY, CPU_ALLOCATORS, DEFAULT_ALLOCATOR, \
+    CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, CPU_ALLOCATOR_NAME_TO_CLASS_MAP
 from titus_isolate.docker.constants import BURST, STATIC
 
 BUCKETS = ["A", "B"]
