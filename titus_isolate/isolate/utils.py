@@ -2,8 +2,9 @@ from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
+from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.constants import ALLOCATOR_KEY, CPU_ALLOCATORS, IP, DEFAULT_ALLOCATOR, GREEDY, NOOP, \
-    CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID
+    CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, NOOP_RESET, CPU_ALLOCATOR_NAME_TO_CLASS_MAP
 from titus_isolate.docker.constants import BURST, STATIC
 
 BUCKETS = ["A", "B"]
@@ -35,11 +36,7 @@ def __get_allocator_class(allocator_str):
         log.error("Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(allocator_str, DEFAULT_ALLOCATOR))
         allocator_str = DEFAULT_ALLOCATOR
 
-    return {
-        IP: IntegerProgramCpuAllocator,
-        GREEDY: GreedyCpuAllocator,
-        NOOP: NoopCpuAllocator
-    }[allocator_str]
+    return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str]
 
 
 def __get_ab_allocator_class(config_manager):

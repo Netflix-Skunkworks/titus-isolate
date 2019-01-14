@@ -59,7 +59,10 @@ def main(admin_port):
     # Initialize currently running containers as workloads
     log.info("Isolating currently running workloads...")
     for workload in get_current_workloads(docker.from_env()):
-        workload_manager.add_workload(workload)
+        try:
+            workload_manager.add_workload(workload)
+        except:
+            log.exception("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
 
     # Starting the HTTP server blocks exit forever
     log.info("Starting HTTP server")
