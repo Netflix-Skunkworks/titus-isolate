@@ -15,13 +15,6 @@ NOOP_RESET = 'NOOP_RESET'
 DEFAULT_ALLOCATOR = NOOP
 CPU_ALLOCATORS = [AB_TEST, IP, GREEDY, NOOP, NOOP_RESET]
 
-CPU_ALLOCATOR_CLASS_TO_NAME_MAP = {
-    IntegerProgramCpuAllocator.__name__: IP,
-    GreedyCpuAllocator.__name__: GREEDY,
-    NoopCpuAllocator.__name__: NOOP,
-    NoopResetCpuAllocator.__name__: NOOP_RESET
-}
-
 CPU_ALLOCATOR_NAME_TO_CLASS_MAP = {
     IP: IntegerProgramCpuAllocator,
     GREEDY: GreedyCpuAllocator,

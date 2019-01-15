@@ -13,7 +13,7 @@ from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.metrics.internal_metrics_reporter import ADDED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     PACKAGE_VIOLATIONS_KEY, \
     CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, InternalMetricsReporter, REMOVED_KEY, \
-    WORKLOAD_COUNT_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY, CPU_ALLOCATOR_KEY
+    WORKLOAD_COUNT_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY, RUNNING
 
 config_logs(logging.DEBUG)
 
@@ -36,7 +36,7 @@ class TestInternalMetricsReporter(unittest.TestCase):
         reporter.set_registry(registry)
         reporter.report_metrics({})
 
-        wait_until(lambda: self.__gauge_value_reached(registry, CPU_ALLOCATOR_KEY, 1))
+        wait_until(lambda: self.__gauge_value_reached(registry, RUNNING, 1))
         wait_until(lambda: self.__gauge_value_reached(registry, ADDED_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, REMOVED_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, SUCCEEDED_KEY, 0))
@@ -72,7 +72,7 @@ class TestInternalMetricsReporter(unittest.TestCase):
         reporter.set_registry(registry)
         reporter.report_metrics({})
 
-        wait_until(lambda: self.__gauge_value_reached(registry, CPU_ALLOCATOR_KEY, 1))
+        wait_until(lambda: self.__gauge_value_reached(registry, RUNNING, 1))
         wait_until(lambda: self.__gauge_value_reached(registry, ADDED_KEY, 1))
         wait_until(lambda: self.__gauge_value_reached(registry, REMOVED_KEY, 0))
         wait_until(lambda: self.__gauge_value_reached(registry, SUCCEEDED_KEY, 1))
