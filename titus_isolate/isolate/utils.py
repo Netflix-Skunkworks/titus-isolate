@@ -20,7 +20,10 @@ def get_workloads_by_type(workloads, workload_type):
     return [w for w in workloads if w.get_type() == workload_type]
 
 
-def get_allocator_class(config_manager, hour=datetime.datetime.utcnow().hour):
+def get_allocator_class(config_manager, hour=None):
+    if hour is None:
+        hour = datetime.datetime.utcnow().hour
+
     alloc_str = config_manager.get(ALLOCATOR_KEY)
 
     if alloc_str == AB_TEST:
