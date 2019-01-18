@@ -6,6 +6,9 @@ ADDED_KEY = 'titus-isolate.added'
 REMOVED_KEY = 'titus-isolate.removed'
 SUCCEEDED_KEY = 'titus-isolate.succeeded'
 FAILED_KEY = 'titus-isolate.failed'
+ALLOCATOR_CALL_DURATION = 'titus-isolate.allocatorCallDurationSecs'
+FALLBACK_ALLOCATOR_COUNT = 'titus-isolate.fallbackCount'
+IP_ALLOCATOR_TIMEBOUND_COUNT = 'titus-isolate.ipAllocatorTimeBoundSolutionCount'
 QUEUE_DEPTH_KEY = 'titus-isolate.queueDepth'
 WORKLOAD_COUNT_KEY = 'titus-isolate.workloadCount'
 EVENT_SUCCEEDED_KEY = 'titus-isolate.eventSucceeded'
@@ -39,6 +42,11 @@ class InternalMetricsReporter(MetricsReporter):
             self.__reg.gauge(SUCCEEDED_KEY, tags).set(self.__workload_manager.get_success_count())
             self.__reg.gauge(FAILED_KEY, tags).set(self.__workload_manager.get_error_count())
             self.__reg.gauge(WORKLOAD_COUNT_KEY, tags).set(len(self.__workload_manager.get_workloads()))
+
+            # Allocator metrics
+            self.__reg.gauge(ALLOCATOR_CALL_DURATION, tags).set(self.__workload_manager.get_allocator_call_duration_sum_secs())
+            self.__reg.gauge(FALLBACK_ALLOCATOR_COUNT, tags).set(self.__workload_manager.get_fallback_allocator_calls_count())
+            self.__reg.gauge(IP_ALLOCATOR_TIMEBOUND_COUNT, tags).set(self.__workload_manager.get_time_bound_ip_allocator_solution_count())
 
             # Event manager metrics
             self.__reg.gauge(QUEUE_DEPTH_KEY, tags).set(self.__event_manager.get_queue_depth())
