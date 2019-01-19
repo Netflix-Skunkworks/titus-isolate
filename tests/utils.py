@@ -12,6 +12,7 @@ from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
 
+
 DEFAULT_TIMEOUT_SECONDS = 3
 
 
@@ -40,8 +41,9 @@ def get_mock_file_manager():
 
 
 class TestContext:
-    def __init__(self, docker_client=MockDockerClient()):
-        cpu = get_cpu()
+    def __init__(self, docker_client=MockDockerClient(), cpu=None):
+        if cpu is None:
+            cpu = get_cpu()
         self.__docker_client = docker_client
         self.__workload_manager = WorkloadManager(cpu, MockCgroupManager())
         self.__event_logger = EventLogger()

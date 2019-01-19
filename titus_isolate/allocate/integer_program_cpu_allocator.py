@@ -2,15 +2,17 @@ import time
 
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_optimize.compute import optimize_ip
+from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
 
 class IntegerProgramCpuAllocator(CpuAllocator):
 
-    def __init__(self, cpu):
+    def __init__(self, cpu, solver_max_runtime_secs = 1.5):
         self.__cpu = cpu
         self.__workload_insertion_times = {}
         self.__cache = {}  # TODO: use @functools.lru_cache instead
+        self.__solver_max_runtime_secs = solver_max_runtime_secs
+        self.__last_call_time_bound = False
 
         curr_ids_per_workload = self.__cpu.get_workload_ids_to_thread_ids()
         if len(curr_ids_per_workload) > 0:
@@ -38,14 +40,18 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         if current_placement is not None: 
             cache_key += '&' + '%'.join(['|'.join([str(e) for e in v]) for v in current_placement])
 
-        placement = self.__cache.get(cache_key, None)
-        if placement is None:
-            placement = optimize_ip(requested_units,
+        cache_val = self.__cache.get(cache_key, None)
+        if cache_val is None:
+            placement, status = optimize_ip(requested_units,
                             len(self.__cpu.get_threads()),
                             len(self.__cpu.get_packages()),
                             current_placement,
-                            verbose=False)
-            self.__cache[cache_key] = placement
+                            verbose=False,
+                            max_runtime_secs=self.__solver_max_runtime_secs)
+            self.__cache[cache_key] = (placement, status)
+        else:
+            placement, status = cache_val[0], cache_val[1]
+        self.__last_call_time_bound = status == IP_SOLUTION_TIME_BOUND
         return placement
 
     def assign_threads(self, workload):
@@ -126,3 +132,12 @@ class IntegerProgramCpuAllocator(CpuAllocator):
 
         self.__assign_new_mapping(thread_id2workload_id)
         self.__workload_insertion_times.pop(workload_id)
+    
+    def is_last_call_time_bound(self):
+        return self.__last_call_time_bound
+    
+    def set_solver_max_runtime_secs(self, val):
+        self.__solver_max_runtime_secs = val
+
+    def set_cpu(self, cpu):
+        self.__cpu = cpu    
