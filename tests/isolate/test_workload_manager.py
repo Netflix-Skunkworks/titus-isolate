@@ -5,7 +5,7 @@ import uuid
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.docker.mock_docker import MockDockerClient, MockContainer
-from tests.allocate.crashing_allocator import CrashingAllocator
+from tests.allocate.crashing_allocators import CrashingAllocator, CrashingAssignAllocator
 from tests.utils import config_logs
 from titus_isolate import log
 from titus_isolate.config.config_manager import ConfigManager
@@ -189,3 +189,13 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertEqual(3, len(wm.get_cpu().get_claimed_threads()))
         self.assertEqual(3, len(wm.get_allocator().get_cpu().get_claimed_threads()))
         self.assertEqual(6, wm.get_fallback_allocator_calls_count())
+
+    def test_no_fallback_should_error(self):
+
+        wm = WorkloadManager(get_cpu(2,2,2), MockCgroupManager(),
+            allocator_class=CrashingAssignAllocator,
+            fallback_allocator_class=None)
+
+        wm.add_workload(Workload("foo", 1, STATIC))
+
+        self.assertEqual(1, wm.get_error_count())
