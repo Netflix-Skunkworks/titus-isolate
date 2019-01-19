@@ -11,10 +11,6 @@ from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
-from titus_isolate.model.processor.core import Core
-from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.processor.package import Package
-from titus_isolate.model.processor.thread import Thread
 
 
 DEFAULT_TIMEOUT_SECONDS = 3
@@ -42,21 +38,6 @@ def get_mock_file_manager():
     file_manager = FileManager()
     file_manager.wait_for_files = MagicMock(return_value=True)
     return file_manager
-
-
-def get_fake_cpu(num_packages, num_cpus):
-    b = num_cpus // num_packages
-    c = b // 2
-    packages = []
-    for i in range(num_packages):
-        cores = []
-        for j in range(c):
-            core = Core(j, [Thread(b * i + 2 * j), Thread(b * i + 2 * j + 1)])
-            cores.append(core)
-        packages.append(Package(i, cores))
-    cpu = Cpu(packages)
-    cpu.clear()
-    return cpu
 
 
 class TestContext:

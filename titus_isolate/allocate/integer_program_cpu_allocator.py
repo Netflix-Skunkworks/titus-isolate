@@ -7,7 +7,7 @@ from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
 class IntegerProgramCpuAllocator(CpuAllocator):
 
-    def __init__(self, cpu, solver_max_runtime_secs = 2):
+    def __init__(self, cpu, solver_max_runtime_secs = 1.5):
         self.__cpu = cpu
         self.__workload_insertion_times = {}
         self.__cache = {}  # TODO: use @functools.lru_cache instead

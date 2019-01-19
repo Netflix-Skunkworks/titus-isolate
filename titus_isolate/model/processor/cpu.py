@@ -47,3 +47,16 @@ class Cpu:
                 wid = t.get_workload_id()
                 res[wid] = res[wid] + [t.get_id()]
         return res
+
+    def __str__(self):
+        n_packages = len(self.get_packages())
+        n_cores = n_packages * len(self.get_packages()[0].get_cores())
+        return ('%i packages, %i cores per package, %i threads per core\n'
+            '%i threads claimed\n'
+            '%s') % (
+                n_packages,
+                n_cores,
+                int(len(self.get_threads()) / n_cores),
+                len(self.get_claimed_threads()),
+                utils.visualize(self)
+            )

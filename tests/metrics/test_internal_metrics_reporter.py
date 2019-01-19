@@ -6,7 +6,7 @@ from spectator import Registry
 
 from tests.docker.mock_docker import MockEventProvider, get_container_create_event, get_container_die_event
 from tests.docker.test_events import DEFAULT_CPU_COUNT
-from tests.utils import wait_until, config_logs, TestContext, get_fake_cpu, get_mock_file_manager
+from tests.utils import wait_until, config_logs, TestContext, get_mock_file_manager
 from titus_isolate import log
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.docker.event_manager import EventManager
@@ -15,6 +15,7 @@ from titus_isolate.metrics.internal_metrics_reporter import ADDED_KEY, SUCCEEDED
     CORE_VIOLATIONS_KEY, QUEUE_DEPTH_KEY, InternalMetricsReporter, REMOVED_KEY, \
     WORKLOAD_COUNT_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY, RUNNING, \
     FALLBACK_ALLOCATOR_COUNT, IP_ALLOCATOR_TIMEBOUND_COUNT, ALLOCATOR_CALL_DURATION
+from titus_isolate.model.processor.config import get_cpu
 
 config_logs(logging.DEBUG)
 
@@ -102,7 +103,7 @@ class TestInternalMetricsReporter(unittest.TestCase):
         # this is a specific scenario causing troubles to the solver.
         # we should hit the time-bound limit and report it.
 
-        cpu = get_fake_cpu(2,64)
+        cpu = get_cpu(2, 16, 2)
         test_context = TestContext(cpu=cpu)
         test_context.get_workload_manager().get_allocator().set_solver_max_runtime_secs(0.01)
         events = []
@@ -155,11 +156,11 @@ class TestInternalMetricsReporter(unittest.TestCase):
 
     def test_crash_ip_allocator_metrics(self):
 
-        cpu = get_fake_cpu(2,64)
+        cpu = get_cpu(2, 16, 2)
         test_context = TestContext(cpu=cpu)
 
         # now override the cpu seen by the allocator to crash it
-        test_context.get_workload_manager().get_allocator().set_cpu(get_fake_cpu(2, 8))
+        test_context.get_workload_manager().get_allocator().set_cpu(get_cpu(2, 2, 2))
 
         events = [get_container_create_event(10, name="foo", id="bar")]
         event_count = len(events)

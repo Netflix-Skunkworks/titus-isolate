@@ -5,6 +5,7 @@ import uuid
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.docker.mock_docker import MockDockerClient, MockContainer
+from tests.allocate.crashing_allocator import CrashingAllocator
 from tests.utils import config_logs
 from titus_isolate import log
 from titus_isolate.config.config_manager import ConfigManager
@@ -167,3 +168,24 @@ class TestWorkloadManager(unittest.TestCase):
         #self.assertEqual(1, len(get_shared_core_violations(workload_manager.get_cpu())))  # todo: fix me
         self.assertEqual(0, len(workload_manager.get_cpu().get_empty_threads()))
 
+    def test_ip_fallback(self):
+
+        w_a = Workload("a", 3, STATIC)
+        w_b = Workload("b", 2, STATIC)
+        w_c = Workload("c", 1, STATIC)
+        w_d = Workload("d", 2, STATIC)
+
+        cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)
+
+        wm = WorkloadManager(cpu, MockCgroupManager(), allocator_class=CrashingAllocator)
+
+        wm.add_workload(w_a)
+        wm.add_workload(w_b)
+        wm.remove_workload("a")
+        wm.add_workload(w_c)
+        wm.remove_workload("b")
+        wm.add_workload(w_d)
+
+        self.assertEqual(3, len(wm.get_cpu().get_claimed_threads()))
+        self.assertEqual(3, len(wm.get_allocator().get_cpu().get_claimed_threads()))
+        self.assertEqual(6, wm.get_fallback_allocator_calls_count())

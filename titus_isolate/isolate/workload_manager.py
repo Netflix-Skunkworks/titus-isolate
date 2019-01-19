@@ -11,7 +11,9 @@ from titus_isolate.isolate.utils import get_burst_workloads
 
 
 class WorkloadManager:
-    def __init__(self, cpu, cgroup_manager, allocator_class=IntegerProgramCpuAllocator):
+    def __init__(self, cpu, cgroup_manager,
+            allocator_class=IntegerProgramCpuAllocator,
+            fallback_allocator_class=GreedyCpuAllocator):
         self.__lock = Lock()
 
         self.__error_count = 0
@@ -29,7 +31,8 @@ class WorkloadManager:
         self.__fallback_cpu_allocator = None
         if isinstance(self.__cpu_allocator, IntegerProgramCpuAllocator):
             self.__is_ip_allocator_used = True
-            self.__fallback_cpu_allocator = GreedyCpuAllocator(cpu)
+        if fallback_allocator_class is not None:
+            self.__fallback_cpu_allocator = fallback_allocator_class(cpu)
         log.info("Created workload manager with allocator: '{}'".format(self.__cpu_allocator.__class__.__name__))
 
     def add_workload(self, workload):
@@ -55,6 +58,22 @@ class WorkloadManager:
             log.exception("Failed to execute func: {} on workload: {}".format(func.__name__, workload_id))
             return False
 
+    def __call_allocator(self, func_name, *args):
+        allocator = self.__cpu_allocator
+        try:
+            getattr(allocator, func_name)(*args)
+            if self.__is_ip_allocator_used and allocator.is_last_call_time_bound():
+                self.__time_bound_ip_allocator_solution_count += 1
+        except Exception as e:
+            if self.__fallback_cpu_allocator is not None:
+                allocator = self.__fallback_cpu_allocator
+                getattr(allocator, func_name)(*args)
+                self.__fallback_allocator_calls_count += 1
+            else:
+                raise e
+        return allocator
+
+
     def __add_workload(self, workload):
         log.info("Adding workload: {}".format(workload.get_id()))
 
@@ -64,54 +83,30 @@ class WorkloadManager:
         allocator = self.__cpu_allocator
         if workload.get_type() == STATIC:
             current_cpu = copy.deepcopy(self.get_cpu())
-            try:
-                allocator.assign_threads(workload)
-                if self.__is_ip_allocator_used and allocator.is_last_call_time_bound():
-                    self.__time_bound_ip_allocator_solution_count += 1
-            except Exception as e:
-                if self.__fallback_cpu_allocator is not None:
-                    # todo: make sure fallback allocator kept track of everything (right state)
-                    allocator = self.__fallback_cpu_allocator
-                    allocator.assign_threads(workload)
-                    self.__fallback_allocator_calls_count += 1
-                else:
-                    raise e
+            allocator = self.__call_allocator('assign_threads', workload)
             updates = get_updates(current_cpu, allocator.get_cpu())
             log.info("Found footprint updates: '{}'".format(updates))
-            self.cpu = allocator.get_cpu()
             self.__update_static_cpusets(updates)
 
         if workload.get_type() == BURST:
             self.__cgroup_manager.set_cpuset(workload.get_id(), self.__get_empty_thread_ids())
 
-        self.cpu = allocator.get_cpu()
+        self.__cpu = allocator.get_cpu()
         self.__update_burst_cpusets()
 
         log.info("Added workload: {}".format(workload.get_id()))
         self.__added_count += 1
+
 
     def __remove_workload(self, workload_id):
         log.info("Removing workload: {}".format(workload_id))
         if workload_id not in self.__workloads:
             raise ValueError("Attempted to remove unknown workload: '{}'".format(workload_id))
 
-        allocator = self.__cpu_allocator
-        try: 
-            allocator.free_threads(workload_id)
-            if self.__is_ip_allocator_used and allocator.is_last_call_time_bound():
-                self.__time_bound_ip_allocator_solution_count += 1
-        except Exception as e:
-            if self.__fallback_cpu_allocator is not None:
-                # todo: make sure fallback allocator kept track of everything (right state)
-                allocator = self.__fallback_cpu_allocator
-                allocator.free_threads(workload_id)
-                self.__fallback_allocator_calls_count += 1
-            else:
-                raise e
-
-        self.cpu = allocator.get_cpu()
+        allocator = self.__call_allocator('free_threads', workload_id)
         self.__workloads.pop(workload_id)
 
+        self.__cpu = allocator.get_cpu()
         self.__update_burst_cpusets()
         log.info("Removed workload: {}".format(workload_id))
         self.__removed_count += 1
