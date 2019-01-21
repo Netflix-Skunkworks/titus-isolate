@@ -6,34 +6,47 @@ from titus_isolate import log
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.docker.constants import STATIC, BURST
+from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.update import get_updates
 from titus_isolate.isolate.utils import get_burst_workloads
+from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
+    WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, FALLBACK_ALLOCATOR_COUNT, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY
+from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
 
-class WorkloadManager:
-    def __init__(self, cpu, cgroup_manager,
-            allocator_class=IntegerProgramCpuAllocator,
-            fallback_allocator_class=GreedyCpuAllocator):
+class WorkloadManager(MetricsReporter):
+    def __init__(self,
+                 cpu,
+                 cgroup_manager,
+                 primary_cpu_allocator_class=IntegerProgramCpuAllocator,
+                 fallback_cpu_allocator_class=GreedyCpuAllocator):
+
+        if primary_cpu_allocator_class is None:
+            raise ValueError("The workload manager must be provided a primary cpu allocator.")
+
+        if fallback_cpu_allocator_class is None:
+            raise ValueError("The workload manager must be provided a fallback cpu allocator.")
+
+        self.__reg = None
         self.__lock = Lock()
 
         self.__error_count = 0
         self.__added_count = 0
         self.__removed_count = 0
+
+        self.__primary_cpu_allocator = primary_cpu_allocator_class(cpu)
+        self.__fallback_cpu_allocator = fallback_cpu_allocator_class(cpu)
         self.__allocator_call_duration_sum_secs = 0
+        self.__primary_allocator_calls_count = 0
         self.__fallback_allocator_calls_count = 0
-        self.__time_bound_ip_allocator_solution_count = 0
 
         self.__cpu = cpu
         self.__cgroup_manager = cgroup_manager
         self.__workloads = {}
-        self.__cpu_allocator = allocator_class(cpu)
-        self.__is_ip_allocator_used = False
-        self.__fallback_cpu_allocator = None
-        if isinstance(self.__cpu_allocator, IntegerProgramCpuAllocator):
-            self.__is_ip_allocator_used = True
-        if fallback_allocator_class is not None:
-            self.__fallback_cpu_allocator = fallback_allocator_class(cpu)
-        log.info("Created workload manager with allocator: '{}'".format(self.__cpu_allocator.__class__.__name__))
+
+        log.info("Created workload manager with primary cpu allocator: '{}' and fallback cpu allocator: '{}'".format(
+            self.__primary_cpu_allocator.__class__.__name__,
+            self.__fallback_cpu_allocator.__class__.__name__))
 
     def add_workload(self, workload):
         succeeded = self.__update_workload(self.__add_workload, workload, workload.get_id())
@@ -59,11 +72,9 @@ class WorkloadManager:
             return False
 
     def __call_allocator(self, func_name, *args):
-        allocator = self.__cpu_allocator
+        allocator = self.__primary_cpu_allocator
         try:
             getattr(allocator, func_name)(*args)
-            if self.__is_ip_allocator_used and allocator.is_last_call_time_bound():
-                self.__time_bound_ip_allocator_solution_count += 1
         except Exception as e:
             if self.__fallback_cpu_allocator is not None:
                 allocator = self.__fallback_cpu_allocator
@@ -73,14 +84,13 @@ class WorkloadManager:
                 raise e
         return allocator
 
-
     def __add_workload(self, workload):
         log.info("Adding workload: {}".format(workload.get_id()))
 
         workload_id = workload.get_id()
         self.__workloads[workload_id] = workload
 
-        allocator = self.__cpu_allocator
+        allocator = self.__primary_cpu_allocator
         if workload.get_type() == STATIC:
             current_cpu = copy.deepcopy(self.get_cpu())
             allocator = self.__call_allocator('assign_threads', workload)
@@ -96,7 +106,6 @@ class WorkloadManager:
 
         log.info("Added workload: {}".format(workload.get_id()))
         self.__added_count += 1
-
 
     def __remove_workload(self, workload_id):
         log.info("Removing workload: {}".format(workload_id))
@@ -133,10 +142,10 @@ class WorkloadManager:
         return [t.get_id() for t in self.get_cpu().get_empty_threads()]
 
     def get_allocator_name(self):
-        return self.__cpu_allocator.__class__.__name__
-    
+        return self.__primary_cpu_allocator.__class__.__name__
+
     def get_allocator(self):
-        return self.__cpu_allocator
+        return self.__primary_cpu_allocator
 
     def get_workloads(self):
         return self.__workloads.values()
@@ -156,12 +165,35 @@ class WorkloadManager:
 
     def get_error_count(self):
         return self.__error_count
-    
+
     def get_fallback_allocator_calls_count(self):
         return self.__fallback_allocator_calls_count
-    
+
     def get_allocator_call_duration_sum_secs(self):
         return self.__allocator_call_duration_sum_secs
 
-    def get_time_bound_ip_allocator_solution_count(self):
-        return self.__time_bound_ip_allocator_solution_count
+    def set_registry(self, registry):
+        self.__reg = registry
+        self.__primary_cpu_allocator.set_registry(registry)
+        self.__fallback_cpu_allocator.set_registry(registry)
+
+    def report_metrics(self, tags):
+        self.__reg.gauge(RUNNING, tags).set(1)
+
+        self.__reg.gauge(ADDED_KEY, tags).set(self.get_added_count())
+        self.__reg.gauge(REMOVED_KEY, tags).set(self.get_removed_count())
+        self.__reg.gauge(SUCCEEDED_KEY, tags).set(self.get_success_count())
+        self.__reg.gauge(FAILED_KEY, tags).set(self.get_error_count())
+        self.__reg.gauge(WORKLOAD_COUNT_KEY, tags).set(len(self.get_workloads()))
+
+        self.__reg.gauge(ALLOCATOR_CALL_DURATION, tags).set(self.get_allocator_call_duration_sum_secs())
+        self.__reg.gauge(FALLBACK_ALLOCATOR_COUNT, tags).set(self.get_fallback_allocator_calls_count())
+
+        cross_package_violation_count = len(get_cross_package_violations(self.get_cpu()))
+        shared_core_violation_count = len(get_shared_core_violations(self.get_cpu()))
+        self.__reg.gauge(PACKAGE_VIOLATIONS_KEY, tags).set(cross_package_violation_count)
+        self.__reg.gauge(CORE_VIOLATIONS_KEY, tags).set(shared_core_violation_count)
+
+        # Have the allocators report metrics
+        self.__primary_cpu_allocator.report_metrics(tags)
+        self.__fallback_cpu_allocator.report_metrics(tags)

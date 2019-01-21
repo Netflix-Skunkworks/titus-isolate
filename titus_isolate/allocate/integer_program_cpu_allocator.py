@@ -4,15 +4,19 @@ from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
+from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
+
 
 class IntegerProgramCpuAllocator(CpuAllocator):
 
     def __init__(self, cpu, solver_max_runtime_secs = 1.5):
+        self.__reg = None
+
         self.__cpu = cpu
         self.__workload_insertion_times = {}
         self.__cache = {}  # TODO: use @functools.lru_cache instead
         self.__solver_max_runtime_secs = solver_max_runtime_secs
-        self.__last_call_time_bound = False
+        self.__time_bound_call_count = 0
 
         curr_ids_per_workload = self.__cpu.get_workload_ids_to_thread_ids()
         if len(curr_ids_per_workload) > 0:
@@ -51,12 +55,15 @@ class IntegerProgramCpuAllocator(CpuAllocator):
             self.__cache[cache_key] = (placement, status)
         else:
             placement, status = cache_val[0], cache_val[1]
-        self.__last_call_time_bound = status == IP_SOLUTION_TIME_BOUND
+
+        if status == IP_SOLUTION_TIME_BOUND:
+            self.__time_bound_call_count += 1
+
         return placement
 
     def assign_threads(self, workload):
         """
-        Use the integer -program solver to find the optimal static placement
+        Use the integer-program solver to find the optimal static placement
         when adding the given workload on the cpu.
 
         `workload_insertion_times` is a workload_id --> integer dict
@@ -133,11 +140,15 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         self.__assign_new_mapping(thread_id2workload_id)
         self.__workload_insertion_times.pop(workload_id)
     
-    def is_last_call_time_bound(self):
-        return self.__last_call_time_bound
-    
     def set_solver_max_runtime_secs(self, val):
         self.__solver_max_runtime_secs = val
 
     def set_cpu(self, cpu):
-        self.__cpu = cpu    
+        self.__cpu = cpu
+
+    def set_registry(self, registry):
+        self.__reg = registry
+
+    def report_metrics(self, tags):
+        self.__reg.gauge(IP_ALLOCATOR_TIMEBOUND_COUNT, tags).set(self.__time_bound_call_count)
+

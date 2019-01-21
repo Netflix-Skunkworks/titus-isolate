@@ -43,3 +43,10 @@ class GreedyCpuAllocator(CpuAllocator):
         for t in self.__cpu.get_threads():
             if t.get_workload_id() == workload_id:
                 t.free()
+
+    def set_registry(self, registry):
+        pass
+
+    def report_metrics(self, tags):
+        pass
+

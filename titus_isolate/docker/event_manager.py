@@ -4,17 +4,19 @@ from threading import Thread
 
 from titus_isolate import log
 from titus_isolate.cgroup.file_manager import FileManager
-from titus_isolate.config.constants import WAIT_CGROUP_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC
 from titus_isolate.docker.constants import ACTION, CREATE
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.utils import get_container_name
-from titus_isolate.utils import get_config_manager
+from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
+from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
 DEFAULT_EVENT_TIMEOUT_SECS = 60
 
 
-class EventManager:
+class EventManager(MetricsReporter):
+
     def __init__(self, event_iterable, event_handlers, file_manager=FileManager(), event_timeout=DEFAULT_EVENT_TIMEOUT_SECS):
+        self.__reg = None
         self.__stopped = False
         self.__raw_q = Queue()
         self.__groomed_q = Queue()
@@ -114,3 +116,13 @@ class EventManager:
             self.__raw_q.task_done()
             self.__processed_event_count += 1
             log.debug("processed event count: {}".format(self.get_success_count()))
+
+    def set_registry(self, registry):
+        self.__reg = registry
+
+    def report_metrics(self, tags):
+        self.__reg.gauge(QUEUE_DEPTH_KEY, tags).set(self.get_queue_depth())
+        self.__reg.gauge(EVENT_SUCCEEDED_KEY, tags).set(self.get_success_count())
+        self.__reg.gauge(EVENT_FAILED_KEY, tags).set(self.get_error_count())
+        self.__reg.gauge(EVENT_PROCESSED_KEY, tags).set(self.get_processed_count())
+

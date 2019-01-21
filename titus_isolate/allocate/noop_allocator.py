@@ -15,3 +15,9 @@ class NoopCpuAllocator(CpuAllocator):
 
     def free_threads(self, workload_id):
         log.info("Ignoring attempt to free threads for workload: '{}'".format(workload_id))
+
+    def set_registry(self, registry):
+        pass
+
+    def report_metrics(self, tags):
+        pass
