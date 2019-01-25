@@ -1,5 +1,6 @@
 import logging
 import time
+from asyncio import TimeoutError
 from unittest.mock import MagicMock
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager

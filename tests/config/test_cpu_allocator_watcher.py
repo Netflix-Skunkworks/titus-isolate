@@ -9,10 +9,12 @@ from titus_isolate.config.constants import ALLOCATOR_KEY, NOOP, IP, AB_TEST, CPU
     EC2_INSTANCE_ID
 from titus_isolate.config.cpu_allocator_watcher import CpuAllocatorWatcher
 from titus_isolate.constants import ALLOCATOR_CONFIG_CHANGE_EXIT
+from titus_isolate.utils import override_config_manager
 
 CONFIG_CHANGE_INTERVAL = 0.1
 
 config_logs(logging.DEBUG)
+override_config_manager(ConfigManager(TestPropertyProvider({})))
 
 
 class TestCpuAllocatorWatcher(unittest.TestCase):
