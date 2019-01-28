@@ -4,8 +4,7 @@ from asyncio import TimeoutError
 from unittest.mock import MagicMock
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
-from tests.docker.mock_docker import MockDockerClient
-from titus_isolate import LOG_FMT_STRING
+from titus_isolate import LOG_FMT_STRING, log
 from titus_isolate.cgroup.file_manager import FileManager
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.event_logger import EventLogger
@@ -28,6 +27,18 @@ def wait_until(func, timeout=DEFAULT_TIMEOUT_SECONDS, period=0.01):
         "Function did not succeed within timeout: '{}'.".format(timeout))
 
 
+def gauge_value_equals(registry, key, expected_value, tags={}):
+    value = registry.gauge(key, tags).get()
+    log.debug("gauge: '{}'='{}' expected: '{}'".format(key, value, expected_value))
+    return value == expected_value
+
+
+def gauge_value_reached(registry, key, min_expected_value):
+    value = registry.gauge(key).get()
+    log.debug("gauge: '{}'='{}' min expected: '{}'".format(key, value, min_expected_value))
+    return value >= min_expected_value
+
+
 def config_logs(level):
     logging.basicConfig(
         format=LOG_FMT_STRING,
@@ -42,10 +53,9 @@ def get_mock_file_manager():
 
 
 class TestContext:
-    def __init__(self, docker_client=MockDockerClient(), cpu=None):
+    def __init__(self, cpu=None):
         if cpu is None:
             cpu = get_cpu()
-        self.__docker_client = docker_client
         self.__workload_manager = WorkloadManager(cpu, MockCgroupManager())
         self.__event_logger = EventLogger()
         self.__create_event_handler = CreateEventHandler(self.__workload_manager)
@@ -53,9 +63,6 @@ class TestContext:
 
     def get_cpu(self):
         return self.__workload_manager.get_cpu()
-
-    def get_docker_client(self):
-        return self.__docker_client
 
     def get_workload_manager(self):
         return self.__workload_manager
