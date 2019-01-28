@@ -1,7 +1,9 @@
 import abc
 
+from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
-class CpuAllocator(abc.ABC):
+
+class CpuAllocator(abc.ABC, MetricsReporter):
 
     @abc.abstractmethod
     def get_cpu(self):
