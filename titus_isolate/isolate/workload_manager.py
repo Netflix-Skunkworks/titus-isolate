@@ -10,8 +10,10 @@ from titus_isolate.isolate.detect import get_cross_package_violations, get_share
 from titus_isolate.isolate.update import get_updates
 from titus_isolate.isolate.utils import get_burst_workloads
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
-    WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, FALLBACK_ALLOCATOR_COUNT, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY
+    WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, FALLBACK_ALLOCATOR_COUNT, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
+    ADDED_TO_FULL_CPU_ERROR_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
+from titus_isolate.model.processor.utils import is_cpu_full
 
 
 class WorkloadManager(MetricsReporter):
@@ -33,6 +35,7 @@ class WorkloadManager(MetricsReporter):
         self.__error_count = 0
         self.__added_count = 0
         self.__removed_count = 0
+        self.__added_to_full_cpu_count = 0
 
         self.__primary_cpu_allocator = primary_cpu_allocator_class(cpu)
         self.__fallback_cpu_allocator = fallback_cpu_allocator_class(cpu)
@@ -85,7 +88,11 @@ class WorkloadManager(MetricsReporter):
         return allocator
 
     def __add_workload(self, workload):
-        log.info("Adding workload: {}".format(workload.get_id()))
+        log.info("Assigning '{}' thread(s) to workload: '{}'".format(workload.get_thread_count(), workload.get_id()))
+
+        if is_cpu_full(self.get_cpu()):
+            self.__added_to_full_cpu_count += 1
+            raise ValueError("Cannot assign workload: '{}' to full CPU.".format(workload.get_id()))
 
         workload_id = workload.get_id()
         self.__workloads[workload_id] = workload
@@ -176,6 +183,7 @@ class WorkloadManager(MetricsReporter):
         self.__reg = registry
         self.__primary_cpu_allocator.set_registry(registry)
         self.__fallback_cpu_allocator.set_registry(registry)
+        self.__cgroup_manager.set_registry(registry)
 
     def report_metrics(self, tags):
         self.__reg.gauge(RUNNING, tags).set(1)
@@ -185,6 +193,7 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(SUCCEEDED_KEY, tags).set(self.get_success_count())
         self.__reg.gauge(FAILED_KEY, tags).set(self.get_error_count())
         self.__reg.gauge(WORKLOAD_COUNT_KEY, tags).set(len(self.get_workloads()))
+        self.__reg.gauge(ADDED_TO_FULL_CPU_ERROR_KEY, tags).set(self.__added_to_full_cpu_count)
 
         self.__reg.gauge(ALLOCATOR_CALL_DURATION, tags).set(self.get_allocator_call_duration_sum_secs())
         self.__reg.gauge(FALLBACK_ALLOCATOR_COUNT, tags).set(self.get_fallback_allocator_calls_count())
@@ -194,6 +203,7 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(PACKAGE_VIOLATIONS_KEY, tags).set(cross_package_violation_count)
         self.__reg.gauge(CORE_VIOLATIONS_KEY, tags).set(shared_core_violation_count)
 
-        # Have the allocators report metrics
+        # Have the sub-components report metrics
         self.__primary_cpu_allocator.report_metrics(tags)
         self.__fallback_cpu_allocator.report_metrics(tags)
+        self.__cgroup_manager.report_metrics(tags)

@@ -17,5 +17,8 @@ class MockCgroupManager(CgroupManager):
         else:
             self.container_update_counts[container_name] += 1
 
-    def set_quota(self, container_name, value):
-        log.debug("Updating container: '{}' to quota: '{}'".format(container_name, value))
+    def set_registry(self, registry):
+        pass
+
+    def report_metrics(self, tags):
+        pass

@@ -7,7 +7,7 @@ from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
-from titus_isolate.model.processor.utils import is_cpu_full, DEFAULT_TOTAL_THREAD_COUNT
+from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 
 config_logs(logging.DEBUG)
@@ -234,20 +234,6 @@ class TestCpu(unittest.TestCase):
                 continue
             ids = [t.get_workload_id() for core in package.get_cores() for t in core.get_threads()]
             self.assertListEqual(ids, [wa.get_id()] * 8)
-
-    def test_assign_to_full_cpu_fails(self):
-        for allocator_class in ALLOCATORS:
-            # Fill the CPU
-            cpu = get_cpu()
-            allocator = allocator_class(cpu)
-            w0 = Workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
-            allocator.assign_threads(w0)
-            self.assertTrue(is_cpu_full(cpu))
-
-            # Fail to claim one more thread
-            w1 = Workload(uuid.uuid4(), 1, STATIC)
-            with self.assertRaises(ValueError):
-                allocator.assign_threads(w1)
 
     def test_free_cpu(self):
         for allocator_class in ALLOCATORS:

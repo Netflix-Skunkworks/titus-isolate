@@ -6,33 +6,33 @@ from spectator import Registry
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.docker.mock_docker import MockDockerClient, MockContainer, get_container_create_event
 from tests.allocate.crashing_allocators import CrashingAllocator, CrashingAssignAllocator
-from tests.docker.test_events import DEFAULT_CPU_COUNT
-from tests.utils import config_logs, TestContext, wait_until, gauge_value_equals, gauge_value_reached
+from tests.utils import config_logs, TestContext, gauge_value_equals, gauge_value_reached
 from titus_isolate import log
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
-from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
+from titus_isolate.isolate.detect import get_cross_package_violations
 from titus_isolate.isolate.workload_manager import WorkloadManager
-from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, QUEUE_DEPTH_KEY, \
-    WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, \
-    EVENT_PROCESSED_KEY, FALLBACK_ALLOCATOR_COUNT, IP_ALLOCATOR_TIMEBOUND_COUNT, ALLOCATOR_CALL_DURATION
+from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
+    WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
+    FALLBACK_ALLOCATOR_COUNT, IP_ALLOCATOR_TIMEBOUND_COUNT, ALLOCATOR_CALL_DURATION
 from titus_isolate.model.processor.config import get_cpu
-from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
+from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
 from titus_isolate.model.workload import Workload
 from titus_isolate.utils import override_config_manager
 
 config_logs(logging.DEBUG)
 override_config_manager(ConfigManager(TestPropertyProvider({})))
 
+ALLOCATORS = [IntegerProgramCpuAllocator, GreedyCpuAllocator]
+
 
 class TestWorkloadManager(unittest.TestCase):
 
     def test_single_static_workload_lifecycle(self):
-        for allocator_class in [GreedyCpuAllocator, IntegerProgramCpuAllocator]:
+        for allocator_class in ALLOCATORS:
             thread_count = 2
             workload = Workload(uuid.uuid4(), thread_count, STATIC)
 
@@ -49,7 +49,7 @@ class TestWorkloadManager(unittest.TestCase):
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
 
     def test_single_burst_workload_lifecycle(self):
-        for allocator_class in [GreedyCpuAllocator, IntegerProgramCpuAllocator]:
+        for allocator_class in ALLOCATORS:
             thread_count = 2
             workload = Workload(uuid.uuid4(), thread_count, BURST)
 
@@ -71,7 +71,7 @@ class TestWorkloadManager(unittest.TestCase):
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
 
     def test_remove_unknown_workload(self):
-        for allocator_class in [GreedyCpuAllocator, IntegerProgramCpuAllocator]:
+        for allocator_class in ALLOCATORS:
             unknown_workload_id = "unknown"
             thread_count = 2
             workload = Workload(uuid.uuid4(), thread_count, STATIC)
@@ -95,7 +95,7 @@ class TestWorkloadManager(unittest.TestCase):
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
 
     def test_alternating_static_burst_workloads(self):
-        for allocator_class in [GreedyCpuAllocator, IntegerProgramCpuAllocator]:
+        for allocator_class in ALLOCATORS:
             thread_count = 2
 
             burst0 = Workload("burst0", thread_count, BURST)
@@ -307,3 +307,19 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, FAILED_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, WORKLOAD_COUNT_KEY, 1))
         self.assertTrue(gauge_value_equals(registry, FALLBACK_ALLOCATOR_COUNT, 1))
+
+    def test_assign_to_full_cpu_fails(self):
+        for allocator_class in ALLOCATORS:
+            # Fill the CPU
+            w0 = Workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
+
+            cgroup_manager = MockCgroupManager()
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, primary_cpu_allocator_class=allocator_class)
+            workload_manager.add_workload(w0)
+
+            self.assertTrue(is_cpu_full(workload_manager.get_cpu()))
+
+            # Fail to claim one more thread
+            w1 = Workload(uuid.uuid4(), 1, STATIC)
+            with self.assertRaises(ValueError):
+                workload_manager.add_workload(w1)

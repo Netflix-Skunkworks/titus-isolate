@@ -5,15 +5,13 @@ import uuid
 from spectator import Registry
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.docker.mock_docker import get_container_create_event, MockDockerClient, MockEventProvider, get_event, \
-    get_container_die_event, MockContainer
-from tests.utils import config_logs, wait_until, TestContext, get_mock_file_manager, gauge_value_equals
+from tests.docker.mock_docker import get_container_create_event, MockEventProvider, get_event, get_container_die_event
+from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.docker.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
-from titus_isolate.model.workload import Workload
 from titus_isolate.utils import override_config_manager
 
 DEFAULT_CPU_COUNT = 2
@@ -38,7 +36,6 @@ class TestEvents(unittest.TestCase):
         manager = EventManager(
             event_iterable,
             test_context.get_event_handlers(),
-            get_mock_file_manager(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
 
@@ -72,7 +69,6 @@ class TestEvents(unittest.TestCase):
         manager = EventManager(
             event_iterable,
             test_context.get_event_handlers(),
-            get_mock_file_manager(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
 
@@ -98,7 +94,6 @@ class TestEvents(unittest.TestCase):
         manager = EventManager(
             event_iterable,
             test_context.get_event_handlers(),
-            get_mock_file_manager(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
 
@@ -128,7 +123,6 @@ class TestEvents(unittest.TestCase):
         manager = EventManager(
             event_iterable,
             test_context.get_event_handlers(),
-            get_mock_file_manager(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
 
@@ -157,7 +151,7 @@ class TestEvents(unittest.TestCase):
             })
         event_handlers = test_context.get_event_handlers()
         event_iterable = MockEventProvider([unknown_event])
-        manager = EventManager(event_iterable, event_handlers, get_mock_file_manager(), DEFAULT_TEST_EVENT_TIMEOUT_SECS)
+        manager = EventManager(event_iterable, event_handlers, DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
 
         wait_until(lambda: test_context.get_create_event_handler().get_ignored_event_count() == 1)
@@ -184,7 +178,6 @@ class TestEvents(unittest.TestCase):
         manager = EventManager(
             event_iterable,
             test_context.get_event_handlers(),
-            get_mock_file_manager(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
 
@@ -199,4 +192,3 @@ class TestEvents(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, 5))
         self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 1))
         self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, 2))
-

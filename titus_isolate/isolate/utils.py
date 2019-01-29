@@ -1,11 +1,23 @@
 import datetime
 
 from titus_isolate import log
+from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
+from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
+from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
+from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.constants import ALLOCATOR_KEY, CPU_ALLOCATORS, DEFAULT_ALLOCATOR, \
-    CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, CPU_ALLOCATOR_NAME_TO_CLASS_MAP
+    CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, IP, GREEDY, NOOP, \
+    NOOP_RESET
 from titus_isolate.docker.constants import BURST, STATIC
 
 BUCKETS = ["A", "B"]
+
+CPU_ALLOCATOR_NAME_TO_CLASS_MAP = {
+    IP: IntegerProgramCpuAllocator,
+    GREEDY: GreedyCpuAllocator,
+    NOOP: NoopCpuAllocator,
+    NOOP_RESET: NoopResetCpuAllocator,
+}
 
 
 def get_burst_workloads(workloads):

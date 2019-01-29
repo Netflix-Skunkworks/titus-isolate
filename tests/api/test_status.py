@@ -5,7 +5,6 @@ import uuid
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.docker.mock_docker import MockEventProvider
-from tests.utils import get_mock_file_manager
 from titus_isolate.api import status
 from titus_isolate.api.status import set_wm, get_workloads, get_violations, get_wm_status, set_em
 from titus_isolate.config.config_manager import ConfigManager
@@ -60,7 +59,7 @@ class TestStatus(unittest.TestCase):
     def test_get_wm_status_endpoint(self):
         set_wm(self.__get_default_workload_manager())
 
-        event_manager = EventManager(MockEventProvider([]), [], get_mock_file_manager(), 0.01)
+        event_manager = EventManager(MockEventProvider([]), [], 0.01)
         set_em(event_manager)
 
         s = json.loads(get_wm_status())
