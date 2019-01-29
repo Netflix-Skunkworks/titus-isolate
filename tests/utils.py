@@ -2,13 +2,15 @@ import logging
 import time
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
+from tests.docker.mock_docker import MockContainer
 from titus_isolate import LOG_FMT_STRING, log
+from titus_isolate.docker.constants import STATIC
 from titus_isolate.docker.start_event_handler import StartEventHandler
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
-
+from titus_isolate.model.workload import Workload
 
 DEFAULT_TIMEOUT_SECONDS = 3
 
@@ -41,6 +43,10 @@ def config_logs(level):
         format=LOG_FMT_STRING,
         datefmt='%d-%m-%Y:%H:%M:%S',
         level=level)
+
+
+def get_test_container(name, thread_count):
+    return MockContainer(Workload(name, thread_count, STATIC))
 
 
 class TestContext:

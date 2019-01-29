@@ -8,12 +8,14 @@ import docker
 from titus_isolate import log
 from titus_isolate.api.status import app, set_wm, set_em
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
+from titus_isolate.config.constants import WORKLOAD_GC_INTERVAL_SEC, DEFAULT_WORKLOAD_GC_INTERVAL_SEC
 from titus_isolate.config.cpu_allocator_watcher import CpuAllocatorWatcher
 from titus_isolate.constants import FAILURE_EXIT_CODE
 from titus_isolate.docker.start_event_handler import StartEventHandler
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.docker.utils import get_current_workloads
+from titus_isolate.gc.workload_gc import WorkloadGarbageCollector
 from titus_isolate.isolate.utils import get_allocator_class
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
@@ -56,10 +58,6 @@ def main(admin_port):
     event_manager = EventManager(docker.from_env().events(), event_handlers)
     set_em(event_manager)
 
-    # Report metrics
-    log.info("Starting metrics reporting...")
-    MetricsManager([workload_manager, event_manager])
-
     # Initialize currently running containers as workloads
     log.info("Isolating currently running workloads...")
     for workload in get_current_workloads(docker.from_env()):
@@ -67,6 +65,15 @@ def main(admin_port):
             workload_manager.add_workload(workload)
         except:
             log.exception("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
+
+    # Start workload garbage collection
+    log.info("Starting workload garbage collection...")
+    gc_interval = get_config_manager().get(WORKLOAD_GC_INTERVAL_SEC, DEFAULT_WORKLOAD_GC_INTERVAL_SEC)
+    workload_gc = WorkloadGarbageCollector(workload_manager, docker.from_env(), gc_interval)
+
+    # Report metrics
+    log.info("Starting metrics reporting...")
+    MetricsManager([workload_manager, event_manager, workload_gc])
 
     # Starting the HTTP server blocks exit forever
     log.info("Starting HTTP server")

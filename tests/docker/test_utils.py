@@ -1,10 +1,10 @@
 import unittest
 
-from tests.docker.mock_docker import MockDockerClient, MockContainer
+from tests.docker.mock_docker import MockDockerClient
+from tests.utils import get_test_container
 from titus_isolate import log
 from titus_isolate.docker.constants import STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY
 from titus_isolate.docker.utils import get_current_workloads
-from titus_isolate.model.workload import Workload
 
 
 class BadContainer:
@@ -21,11 +21,11 @@ class TestUtils(unittest.TestCase):
 
         c0_name = "c0"
         c0_thread_count = 1
-        docker_client.add_container(self.__get_test_container(c0_name, c0_thread_count))
+        docker_client.add_container(get_test_container(c0_name, c0_thread_count))
 
         c1_name = "c1"
         c1_thread_count = 2
-        docker_client.add_container(self.__get_test_container(c1_name, c1_thread_count))
+        docker_client.add_container(get_test_container(c1_name, c1_thread_count))
 
         current_workloads = get_current_workloads(docker_client)
         self.assertEqual(2, len(current_workloads))
@@ -94,7 +94,3 @@ class TestUtils(unittest.TestCase):
 
         current_workloads = get_current_workloads(docker_client)
         self.assertEqual(0, len(current_workloads))
-
-    @staticmethod
-    def __get_test_container(name, thread_count):
-        return MockContainer(Workload(name, thread_count, STATIC))
