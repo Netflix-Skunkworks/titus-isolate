@@ -61,6 +61,7 @@ class TestStatus(unittest.TestCase):
 
         event_manager = EventManager(MockEventProvider([]), [], 0.01)
         set_em(event_manager)
+        event_manager.start_processing_events()
 
         s = json.loads(get_wm_status())
         self.assertEqual(2, len(s))

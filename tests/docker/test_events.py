@@ -38,6 +38,7 @@ class TestEvents(unittest.TestCase):
             test_context.get_event_handlers(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
+        manager.start_processing_events()
 
         wait_until(lambda: event_count == manager.get_processed_count())
         self.assertEqual(0, manager.get_queue_depth())
@@ -71,6 +72,7 @@ class TestEvents(unittest.TestCase):
             test_context.get_event_handlers(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
+        manager.start_processing_events()
 
         wait_until(lambda: event_count == manager.get_processed_count())
         self.assertEqual(0, manager.get_queue_depth())
@@ -96,6 +98,7 @@ class TestEvents(unittest.TestCase):
             test_context.get_event_handlers(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
+        manager.start_processing_events()
 
         wait_until(lambda: test_context.get_create_event_handler().get_ignored_event_count() == 1)
         self.assertEqual(0, manager.get_queue_depth())
@@ -125,6 +128,7 @@ class TestEvents(unittest.TestCase):
             test_context.get_event_handlers(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
+        manager.start_processing_events()
 
         wait_until(lambda: test_context.get_create_event_handler().get_ignored_event_count() == 1)
         self.assertEqual(0, manager.get_queue_depth())
@@ -153,6 +157,7 @@ class TestEvents(unittest.TestCase):
         event_iterable = MockEventProvider([unknown_event])
         manager = EventManager(event_iterable, event_handlers, DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
+        manager.start_processing_events()
 
         wait_until(lambda: test_context.get_create_event_handler().get_ignored_event_count() == 1)
         self.assertEqual(0, manager.get_queue_depth())
@@ -180,6 +185,7 @@ class TestEvents(unittest.TestCase):
             test_context.get_event_handlers(),
             DEFAULT_TEST_EVENT_TIMEOUT_SECS)
         manager.set_registry(registry)
+        manager.start_processing_events()
 
         wait_until(lambda: manager.get_error_count() == 1)
         wait_until(lambda: manager.get_processed_count() == 2)

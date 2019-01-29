@@ -1,6 +1,6 @@
 import json
 from queue import Queue, Empty
-from threading import Thread
+from threading import Thread, Lock
 
 from titus_isolate import log
 from titus_isolate.docker.event_logger import EventLogger
@@ -26,11 +26,11 @@ class EventManager(MetricsReporter):
         self.__error_event_count = 0
         self.__processed_event_count = 0
 
-        self.__processing_thread = Thread(target=self.__process_events)
-        self.__processing_thread.start()
+        self.__started = False
+        self.__started_lock = Lock()
 
+        self.__processing_thread = Thread(target=self.__process_events)
         self.__pulling_thread = Thread(target=self.__pull_events)
-        self.__pulling_thread.start()
 
     def join(self):
         self.__pulling_thread.join()
@@ -40,6 +40,15 @@ class EventManager(MetricsReporter):
         self.__stopped = True
         self.__events.close()
         self.join()
+
+    def start_processing_events(self):
+        with self.__started_lock:
+            if self.__started:
+                return
+
+            self.__processing_thread.start()
+            self.__pulling_thread.start()
+            self.__started = True
 
     def get_success_count(self):
         return self.__success_event_count
