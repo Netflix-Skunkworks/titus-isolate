@@ -176,6 +176,7 @@ class WorkloadManager(MetricsReporter):
         self.__reg = registry
         self.__primary_cpu_allocator.set_registry(registry)
         self.__fallback_cpu_allocator.set_registry(registry)
+        self.__cgroup_manager.set_registry(registry)
 
     def report_metrics(self, tags):
         self.__reg.gauge(RUNNING, tags).set(1)
@@ -194,6 +195,7 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(PACKAGE_VIOLATIONS_KEY, tags).set(cross_package_violation_count)
         self.__reg.gauge(CORE_VIOLATIONS_KEY, tags).set(shared_core_violation_count)
 
-        # Have the allocators report metrics
+        # Have the sub-components report metrics
         self.__primary_cpu_allocator.report_metrics(tags)
         self.__fallback_cpu_allocator.report_metrics(tags)
+        self.__cgroup_manager.report_metrics(tags)

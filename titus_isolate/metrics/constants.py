@@ -11,6 +11,9 @@ EVENT_SUCCEEDED_KEY = 'titus-isolate.eventSucceeded'
 EVENT_FAILED_KEY = 'titus-isolate.eventFailed'
 EVENT_PROCESSED_KEY = 'titus-isolate.eventProcessed'
 
+WRITE_CPUSET_SUCCEEDED_KEY = 'titus-isolate.writeCpusetSucceeded'
+WRITE_CPUSET_FAILED_KEY = 'titus-isolate.writeCpusetFailed'
+
 PACKAGE_VIOLATIONS_KEY = 'titus-isolate.crossPackageViolations'
 CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
 

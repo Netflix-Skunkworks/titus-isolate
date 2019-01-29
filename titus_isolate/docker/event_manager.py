@@ -3,10 +3,7 @@ from queue import Queue, Empty
 from threading import Thread
 
 from titus_isolate import log
-from titus_isolate.cgroup.file_manager import FileManager
-from titus_isolate.docker.constants import ACTION, CREATE
 from titus_isolate.docker.event_logger import EventLogger
-from titus_isolate.docker.utils import get_container_name
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
@@ -15,7 +12,7 @@ DEFAULT_EVENT_TIMEOUT_SECS = 60
 
 class EventManager(MetricsReporter):
 
-    def __init__(self, event_iterable, event_handlers, file_manager=FileManager(), event_timeout=DEFAULT_EVENT_TIMEOUT_SECS):
+    def __init__(self, event_iterable, event_handlers, event_timeout=DEFAULT_EVENT_TIMEOUT_SECS):
         self.__reg = None
         self.__stopped = False
         self.__q = Queue()
@@ -24,8 +21,6 @@ class EventManager(MetricsReporter):
         self.__event_handlers = event_handlers
         self.__event_logger = EventLogger()
         self.__event_timeout = event_timeout
-
-        self.__file_manger = file_manager
 
         self.__success_event_count = 0
         self.__error_event_count = 0

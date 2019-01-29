@@ -5,6 +5,7 @@ from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
+from titus_isolate.model.processor.utils import is_cpu_full
 
 
 class IntegerProgramCpuAllocator(CpuAllocator):
@@ -70,6 +71,11 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         indicating unix timestamps at which workloads currently running on the cpu
         have been placed.
         """
+        log.info("Assigning '{}' thread(s) to workload: '{}'".format(workload.get_thread_count(), workload.get_id()))
+
+        if is_cpu_full(self.__cpu):
+            raise ValueError("Cannot assign workload: '{}' to full CPU.".format(workload.get_id()))
+
         n_compute_units = len(self.__cpu.get_threads())
 
         curr_ids_per_workload = self.__cpu.get_workload_ids_to_thread_ids()

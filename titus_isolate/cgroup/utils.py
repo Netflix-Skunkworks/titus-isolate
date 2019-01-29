@@ -25,8 +25,9 @@ def __noop():
 
 def _wait_for_file_to_exist(path, timeout, check_func=__noop):
     start_time = time.time()
+
+    log.info("Waiting '{}' seconds for file to exist: '{}'".format(timeout, path))
     while not os.path.exists(path):
-        log.debug("Waiting for file to exist: '{}'".format(path))
         time.sleep(0.1)
 
         check_func()
