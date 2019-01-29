@@ -68,6 +68,9 @@ def main(admin_port):
         except:
             log.exception("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
 
+    # Start processing events after adding running workloads to avoid processing a die event before we add a workload
+    event_manager.start_processing_events()
+
     # Starting the HTTP server blocks exit forever
     log.info("Starting HTTP server")
     __start_http_server(admin_port)
