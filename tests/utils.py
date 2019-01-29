@@ -1,11 +1,9 @@
 import logging
 import time
-from unittest.mock import MagicMock
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from titus_isolate import LOG_FMT_STRING, log
-from titus_isolate.cgroup.file_manager import FileManager
-from titus_isolate.docker.create_event_handler import CreateEventHandler
+from titus_isolate.docker.start_event_handler import StartEventHandler
 from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
@@ -45,19 +43,13 @@ def config_logs(level):
         level=level)
 
 
-def get_mock_file_manager():
-    file_manager = FileManager()
-    file_manager.wait_for_files = MagicMock(return_value=True)
-    return file_manager
-
-
 class TestContext:
     def __init__(self, cpu=None):
         if cpu is None:
             cpu = get_cpu()
         self.__workload_manager = WorkloadManager(cpu, MockCgroupManager())
         self.__event_logger = EventLogger()
-        self.__create_event_handler = CreateEventHandler(self.__workload_manager)
+        self.__create_event_handler = StartEventHandler(self.__workload_manager)
         self.__free_event_handler = FreeEventHandler(self.__workload_manager)
 
     def get_cpu(self):

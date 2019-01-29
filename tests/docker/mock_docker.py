@@ -3,8 +3,8 @@ import time
 import uuid
 
 from titus_isolate import log
-from titus_isolate.docker.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, CPU_LABEL_KEY, CREATE, ID, \
-    LOWERCASE_ID, NAME, TIME, TYPE, DIE, WORKLOAD_TYPE_LABEL_KEY, STATIC
+from titus_isolate.docker.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, CPU_LABEL_KEY, ID, \
+    LOWERCASE_ID, NAME, TIME, TYPE, DIE, WORKLOAD_TYPE_LABEL_KEY, STATIC, START
 
 
 class MockEventProvider:
@@ -69,14 +69,14 @@ class MockDockerClient:
         self.containers._add_container(container)
 
 
-def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()).replace("-", ""), id=str(uuid.uuid4()).replace("-", "")):
+def get_container_start_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()).replace("-", ""), id=str(uuid.uuid4()).replace("-", "")):
     attributes = {
         NAME: name,
         CPU_LABEL_KEY: str(cpus),
         WORKLOAD_TYPE_LABEL_KEY: workload_type
     }
 
-    return get_event(CONTAINER, CREATE, id, attributes)
+    return get_event(CONTAINER, START, id, attributes)
 
 
 def get_container_die_event(name=str(uuid.uuid4()).replace("-", ""), id=str(uuid.uuid4()).replace("-", "")):

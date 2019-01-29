@@ -6,7 +6,7 @@ from spectator import Registry
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.docker.mock_docker import MockDockerClient, MockContainer, get_container_create_event
+from tests.docker.mock_docker import MockDockerClient, MockContainer, get_container_start_event
 from tests.allocate.crashing_allocators import CrashingAllocator, CrashingAssignAllocator
 from tests.docker.test_events import DEFAULT_CPU_COUNT
 from tests.utils import config_logs, TestContext, wait_until, gauge_value_equals, gauge_value_reached

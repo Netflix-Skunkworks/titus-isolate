@@ -3,10 +3,7 @@ from queue import Queue, Empty
 from threading import Thread
 
 from titus_isolate import log
-from titus_isolate.cgroup.file_manager import FileManager
-from titus_isolate.docker.constants import ACTION, CREATE
 from titus_isolate.docker.event_logger import EventLogger
-from titus_isolate.docker.utils import get_container_name
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
@@ -15,25 +12,19 @@ DEFAULT_EVENT_TIMEOUT_SECS = 60
 
 class EventManager(MetricsReporter):
 
-    def __init__(self, event_iterable, event_handlers, file_manager=FileManager(), event_timeout=DEFAULT_EVENT_TIMEOUT_SECS):
+    def __init__(self, event_iterable, event_handlers, event_timeout=DEFAULT_EVENT_TIMEOUT_SECS):
         self.__reg = None
         self.__stopped = False
-        self.__raw_q = Queue()
-        self.__groomed_q = Queue()
+        self.__q = Queue()
 
         self.__events = event_iterable
         self.__event_handlers = event_handlers
         self.__event_logger = EventLogger()
         self.__event_timeout = event_timeout
 
-        self.__file_manger = file_manager
-
         self.__success_event_count = 0
         self.__error_event_count = 0
         self.__processed_event_count = 0
-
-        self.__processing_thread = Thread(target=self.__groom_events)
-        self.__processing_thread.start()
 
         self.__processing_thread = Thread(target=self.__process_events)
         self.__processing_thread.start()
@@ -60,46 +51,16 @@ class EventManager(MetricsReporter):
         return self.__processed_event_count
 
     def get_queue_depth(self):
-        return self.__raw_q.qsize()
+        return self.__q.qsize()
 
     def __pull_events(self):
         for event in self.__events:
-            self.__raw_q.put(event)
-
-    def __groom_events(self):
-        while not self.__stopped:
-            try:
-                event = self.__raw_q.get(timeout=self.__event_timeout)
-            except Empty:
-                log.debug("Timed out waiting for event on queue.")
-                continue
-
-            event = event.decode("utf-8")
-            event = json.loads(event)
-            self.__event_logger.handle(event)
-
-            Thread(target=self.__groom, args=[event]).start()
-
-    def __groom(self, event):
-        if not event[ACTION] == CREATE:
-            self.__groomed_q.put_nowait(event)
-            return
-
-        try:
-            name = get_container_name(event)
-            log.info("Grooming create event for: '{}'".format(name))
-
-            self.__file_manger.wait_for_files(name)
-            log.info("Groomed create event for: '{}'".format(name))
-            self.__groomed_q.put_nowait(event)
-        except:
-            self.__error_event_count += 1
-            log.exception("Dropping CREATE event, because failed to wait for files for: '{}'".format(name))
+            self.__q.put(event)
 
     def __process_events(self):
         while not self.__stopped:
             try:
-                event = self.__groomed_q.get(timeout=self.__event_timeout)
+                event = json.loads(self.__q.get(timeout=self.__event_timeout))
             except Empty:
                 log.debug("Timed out waiting for event on queue.")
                 continue
@@ -113,7 +74,7 @@ class EventManager(MetricsReporter):
                         type(event_handler).__name__, event))
                     self.__error_event_count += 1
 
-            self.__raw_q.task_done()
+            self.__q.task_done()
             self.__processed_event_count += 1
             log.debug("processed event count: {}".format(self.get_success_count()))
 

@@ -1,10 +1,10 @@
-from titus_isolate.docker.constants import ACTION, ACTOR, ATTRIBUTES, CREATE, REQUIRED_LABELS
+from titus_isolate.docker.constants import ACTION, ACTOR, ATTRIBUTES, REQUIRED_LABELS, START
 from titus_isolate.docker.event_handler import EventHandler
 from titus_isolate.docker.utils import get_container_name, get_cpu_count, get_workload_type
 from titus_isolate.model.workload import Workload
 
 
-class CreateEventHandler(EventHandler):
+class StartEventHandler(EventHandler):
     def __init__(self, workload_manager):
         super().__init__(workload_manager)
 
@@ -23,13 +23,13 @@ class CreateEventHandler(EventHandler):
         self.handled_event(event, "added workload: '{}'".format(workload.get_id()))
 
     def __relevant(self, event):
-        if not event[ACTION] == CREATE:
-            self.ignored_event(event, "not a CREATE event")
+        if not event[ACTION] == START:
+            self.ignored_event(event, "not a START event")
             return False
 
         for expected_label in REQUIRED_LABELS:
             if expected_label not in event[ACTOR][ATTRIBUTES]:
-                self.ignored_event(event, "container created without expected label: '{}'".format(expected_label))
+                self.ignored_event(event, "container started without expected label: '{}'".format(expected_label))
                 return False
 
         return True

@@ -10,6 +10,7 @@ TYPE = "Type"
 CONTAINER = "container"
 CREATE = "create"
 DIE = "die"
+START = "start"
 
 CPU_LABEL_KEY = "com.netflix.titus.cpu"
 WORKLOAD_TYPE_LABEL_KEY = "com.netflix.titus.workload.type"
