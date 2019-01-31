@@ -11,7 +11,7 @@ from titus_isolate.isolate.update import get_updates
 from titus_isolate.isolate.utils import get_burst_workloads
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, FALLBACK_ALLOCATOR_COUNT, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
-    ADDED_TO_FULL_CPU_ERROR_KEY
+    ADDED_TO_FULL_CPU_ERROR_KEY, FULL_CORES_KEY, HALF_CORES_KEY, EMPTY_CORES_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.utils import is_cpu_full
 
@@ -185,6 +185,21 @@ class WorkloadManager(MetricsReporter):
         self.__fallback_cpu_allocator.set_registry(registry)
         self.__cgroup_manager.set_registry(registry)
 
+    def __get_full_core_count(self):
+        return len(self.__get_cores_with_occupied_threads(2))
+
+    def __get_half_core_count(self):
+        return len(self.__get_cores_with_occupied_threads(1))
+
+    def __get_empty_core_count(self):
+        return len(self.__get_cores_with_occupied_threads(0))
+
+    def __get_cores_with_occupied_threads(self, thread_count):
+        return [c for c in self.get_cpu().get_cores() if self.__get_occupied_thread_count(c) == thread_count]
+
+    def __get_occupied_thread_count(self, core):
+        return len([t for t in core.get_threads() if t.is_claimed()])
+
     def report_metrics(self, tags):
         self.__reg.gauge(RUNNING, tags).set(1)
 
@@ -202,6 +217,11 @@ class WorkloadManager(MetricsReporter):
         shared_core_violation_count = len(get_shared_core_violations(self.get_cpu()))
         self.__reg.gauge(PACKAGE_VIOLATIONS_KEY, tags).set(cross_package_violation_count)
         self.__reg.gauge(CORE_VIOLATIONS_KEY, tags).set(shared_core_violation_count)
+
+        # Core occupancy metrics
+        self.__reg.gauge(FULL_CORES_KEY, tags).set(self.__get_full_core_count())
+        self.__reg.gauge(HALF_CORES_KEY, tags).set(self.__get_half_core_count())
+        self.__reg.gauge(EMPTY_CORES_KEY, tags).set(self.__get_empty_core_count())
 
         # Have the sub-components report metrics
         self.__primary_cpu_allocator.report_metrics(tags)

@@ -18,4 +18,8 @@ WRITE_CPUSET_FAILED_KEY = 'titus-isolate.writeCpusetFailed'
 PACKAGE_VIOLATIONS_KEY = 'titus-isolate.crossPackageViolations'
 CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
 
+FULL_CORES_KEY = 'titus-isolate.fullCores'
+HALF_CORES_KEY = 'titus-isolate.halfFullCores'
+EMPTY_CORES_KEY = 'titus-isolate.emptyCores'
+
 RUNNING = 'titus-isolate.running'
