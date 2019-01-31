@@ -2,6 +2,7 @@ import os
 import time
 
 from titus_isolate import log
+from titus_isolate.monitor.cpu_usage import CpuUsage
 
 ROOT_CGROUP_PATH = "/sys/fs/cgroup"
 TITUS_INITS_PATH = "/var/lib/titus-inits"
@@ -81,6 +82,12 @@ def get_quota_path(container_name):
     return "{}/cpu,cpuacct{}/cpu.cfs_quota_us".format(ROOT_CGROUP_PATH, cgroup_path)
 
 
+def get_usage_all_path(container_name):
+    file_path = __get_info_path(container_name)
+    cgroup_path = get_cgroup_path_from_file(file_path, CPU_CPUACCT)
+    return "{}/cpu,cpuacct{}/cpuacct.usage_all".format(ROOT_CGROUP_PATH, cgroup_path)
+
+
 def set_cpuset(container_name, threads_str):
     path = get_cpuset_path(container_name)
 
@@ -103,3 +110,27 @@ def get_quota(container_name):
     log.info("Reading from path '{}'".format(path))
     with open(path, 'r') as f:
         return int(f.readline().strip())
+
+
+def parse_cpuacct_usage_all(text):
+    # Text looks like this:
+    #
+    #     cpu user system
+    #     0 0 0
+    #     1 0 0
+    #     2 73169258935876 0
+    #     3 0 0
+    #     ...
+    #
+    # so we skip the first line and return a list of lists
+
+    raw_rows = [line.split() for line in text.splitlines()[1:]]
+
+    usage_rows = []
+    for row in raw_rows:
+        cpu, user, system = row
+        usage_rows.append(CpuUsage(int(cpu), int(user), int(system)))
+
+    return usage_rows
+
+
