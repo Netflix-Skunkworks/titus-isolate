@@ -1,11 +1,9 @@
 import logging
 import time
-from unittest.mock import MagicMock
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from titus_isolate import LOG_FMT_STRING, log
 from titus_isolate.docker.create_event_handler import CreateEventHandler
-from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
@@ -49,7 +47,6 @@ class TestContext:
         if cpu is None:
             cpu = get_cpu()
         self.__workload_manager = WorkloadManager(cpu, MockCgroupManager())
-        self.__event_logger = EventLogger()
         self.__create_event_handler = CreateEventHandler(self.__workload_manager)
         self.__free_event_handler = FreeEventHandler(self.__workload_manager)
 
@@ -66,6 +63,6 @@ class TestContext:
         return self.__free_event_handler
 
     def get_event_handlers(self):
-        return [self.__event_logger, self.__create_event_handler, self.__free_event_handler]
+        return [self.__create_event_handler, self.__free_event_handler]
 
 
