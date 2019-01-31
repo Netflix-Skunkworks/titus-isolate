@@ -3,7 +3,6 @@ from queue import Queue, Empty
 from threading import Thread, Lock
 
 from titus_isolate import log
-from titus_isolate.docker.event_logger import EventLogger
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
@@ -19,7 +18,6 @@ class EventManager(MetricsReporter):
 
         self.__events = event_iterable
         self.__event_handlers = event_handlers
-        self.__event_logger = EventLogger()
         self.__event_timeout = event_timeout
 
         self.__success_event_count = 0

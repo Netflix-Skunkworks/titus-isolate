@@ -195,6 +195,6 @@ class TestEvents(unittest.TestCase):
 
         manager.report_metrics({})
         self.assertTrue(gauge_value_equals(registry, QUEUE_DEPTH_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, 5))
+        self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, 3))
         self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 1))
         self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, 2))
