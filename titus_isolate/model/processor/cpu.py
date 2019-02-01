@@ -27,6 +27,9 @@ class Cpu:
 
         return emptiest_package
 
+    def get_cores(self):
+        return reduce(list.__add__, [package.get_cores() for package in self.get_packages()])
+
     def get_threads(self):
         return reduce(list.__add__, [package.get_threads() for package in self.get_packages()])
 

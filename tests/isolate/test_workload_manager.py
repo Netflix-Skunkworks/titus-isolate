@@ -17,7 +17,8 @@ from titus_isolate.isolate.detect import get_cross_package_violations
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
-    FALLBACK_ALLOCATOR_COUNT, IP_ALLOCATOR_TIMEBOUND_COUNT, ALLOCATOR_CALL_DURATION
+    FALLBACK_ALLOCATOR_COUNT, IP_ALLOCATOR_TIMEBOUND_COUNT, ALLOCATOR_CALL_DURATION, FULL_CORES_KEY, HALF_CORES_KEY, \
+    EMPTY_CORES_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
 from titus_isolate.model.workload import Workload
@@ -229,6 +230,9 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, CORE_VIOLATIONS_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, FALLBACK_ALLOCATOR_COUNT, 0))
         self.assertTrue(gauge_value_equals(registry, IP_ALLOCATOR_TIMEBOUND_COUNT, 0))
+        self.assertTrue(gauge_value_equals(registry, FULL_CORES_KEY, 0))
+        self.assertTrue(gauge_value_equals(registry, HALF_CORES_KEY, 0))
+        self.assertTrue(gauge_value_equals(registry, EMPTY_CORES_KEY, len(test_context.get_cpu().get_cores())))
 
     def test_add_metrics(self):
         test_context = TestContext()
@@ -249,6 +253,9 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, CORE_VIOLATIONS_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, FALLBACK_ALLOCATOR_COUNT, 0))
         self.assertTrue(gauge_value_equals(registry, IP_ALLOCATOR_TIMEBOUND_COUNT, 0))
+        self.assertTrue(gauge_value_equals(registry, FULL_CORES_KEY, 0))
+        self.assertTrue(gauge_value_equals(registry, HALF_CORES_KEY, 2))
+        self.assertTrue(gauge_value_equals(registry, EMPTY_CORES_KEY, 6))
 
     def test_edge_case_ip_allocator_metrics(self):
         # this is a specific scenario causing troubles to the solver.
@@ -307,6 +314,9 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, FAILED_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, WORKLOAD_COUNT_KEY, 1))
         self.assertTrue(gauge_value_equals(registry, FALLBACK_ALLOCATOR_COUNT, 1))
+        self.assertTrue(gauge_value_equals(registry, FULL_CORES_KEY, 5))
+        self.assertTrue(gauge_value_equals(registry, HALF_CORES_KEY, 0))
+        self.assertTrue(gauge_value_equals(registry, EMPTY_CORES_KEY, 27))
 
     def test_assign_to_full_cpu_fails(self):
         for allocator_class in ALLOCATORS:
