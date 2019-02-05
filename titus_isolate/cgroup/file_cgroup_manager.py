@@ -6,7 +6,7 @@ from titus_isolate.cgroup.cgroup_manager import CgroupManager
 from titus_isolate.cgroup.utils import set_cpuset, wait_for_files
 from titus_isolate.config.constants import WAIT_CGROUP_FILE_KEY, WAIT_JSON_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC, \
     DEFAULT_WAIT_JSON_FILE_SEC
-from titus_isolate.metrics.constants import WRITE_CPUSET_FAILED_KEY, WRITE_CPUSET_SUCCEEDED_KEY
+from titus_isolate.metrics.constants import WRITE_CPUSET_FAILED_KEY, WRITE_CPUSET_SUCCEEDED_KEY, ISOLATED_WORKLOAD_COUNT
 from titus_isolate.utils import get_config_manager
 
 
@@ -69,4 +69,5 @@ class FileCgroupManager(CgroupManager):
     def report_metrics(self, tags):
         self.__reg.gauge(WRITE_CPUSET_SUCCEEDED_KEY, tags).set(self.__write_count)
         self.__reg.gauge(WRITE_CPUSET_FAILED_KEY, tags).set(self.__fail_count)
+        self.__reg.gauge(ISOLATED_WORKLOAD_COUNT, tags).set(len(self.get_isolated_workload_ids()))
 

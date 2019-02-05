@@ -14,6 +14,7 @@ ADDED_TO_FULL_CPU_ERROR_KEY = 'titus-isolate.addedToFullCpu'
 
 WRITE_CPUSET_SUCCEEDED_KEY = 'titus-isolate.writeCpusetSucceeded'
 WRITE_CPUSET_FAILED_KEY = 'titus-isolate.writeCpusetFailed'
+ISOLATED_WORKLOAD_COUNT = 'titus-isolate.isolatedWorkloadCount'
 
 PACKAGE_VIOLATIONS_KEY = 'titus-isolate.crossPackageViolations'
 CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
