@@ -57,6 +57,7 @@ class WorkloadManager(MetricsReporter):
             self.__remove_workload(workload.get_id())
 
     def remove_workload(self, workload_id):
+        self.__cgroup_manager.release_cpuset(workload_id)
         self.__update_workload(self.__remove_workload, workload_id, workload_id)
 
     def __update_workload(self, func, arg, workload_id):
@@ -156,6 +157,9 @@ class WorkloadManager(MetricsReporter):
 
     def get_workloads(self):
         return self.__workloads.values()
+
+    def get_isolated_workload_ids(self):
+        return self.__cgroup_manager.get_isolated_workload_ids()
 
     def get_cpu(self):
         return self.__cpu

@@ -1,3 +1,4 @@
+import copy
 from threading import Thread, Lock
 
 from titus_isolate import log
@@ -13,12 +14,22 @@ class FileCgroupManager(CgroupManager):
 
     def __init__(self):
         self.__reg = None
-        self.__metrics_lock = Lock()
+        self.__lock = Lock()
         self.__write_count = 0
         self.__fail_count = 0
+        self.__isolated_workloads = []
 
     def set_cpuset(self, container_name, thread_ids):
         Thread(target=self.__set_cpuset, args=[container_name, thread_ids]).start()
+
+    def release_cpuset(self, container_name):
+        with self.__lock:
+            if container_name in self.__isolated_workloads:
+                self.__isolated_workloads.remove(container_name)
+
+    def get_isolated_workload_ids(self):
+        with self.__lock:
+            return copy.deepcopy(self.__isolated_workloads)
 
     def __set_cpuset(self, container_name, thread_ids):
         thread_ids_str = self.__get_thread_ids_str(thread_ids)
@@ -27,18 +38,19 @@ class FileCgroupManager(CgroupManager):
             self.__wait_for_files(container_name)
             log.info("updating workload: '{}' to cpuset.cpus: '{}'".format(container_name, thread_ids_str))
             set_cpuset(container_name, thread_ids_str)
-            self.__write_succeeded()
+            self.__write_succeeded(container_name)
         except:
             self.__write_failed()
             log.exception("Failed to apply cpuset to threads: '{}' for workload: '{}'".format(
                 thread_ids_str, container_name))
 
-    def __write_succeeded(self):
-        with self.__metrics_lock:
+    def __write_succeeded(self, container_name):
+        with self.__lock:
+            self.__isolated_workloads.append(container_name)
             self.__write_count += 1
 
     def __write_failed(self):
-        with self.__metrics_lock:
+        with self.__lock:
             self.__fail_count += 1
 
     @staticmethod

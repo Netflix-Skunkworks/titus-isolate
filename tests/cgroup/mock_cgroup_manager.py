@@ -17,6 +17,13 @@ class MockCgroupManager(CgroupManager):
         else:
             self.container_update_counts[container_name] += 1
 
+    def release_cpuset(self, container_name):
+        if container_name in self.container_update_map:
+            self.container_update_map.pop(container_name)
+
+    def get_isolated_workload_ids(self):
+        return list(self.container_update_map.keys())
+
     def set_registry(self, registry):
         pass
 
