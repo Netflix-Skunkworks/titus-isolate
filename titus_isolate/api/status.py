@@ -23,12 +23,13 @@ def set_em(event_manager):
 
 
 @app.route('/isolate/<workload_id>')
-def isolate_workload(workload_id):
-    timeout = int(get_config_manager().get(TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC))
+def isolate_workload(workload_id, timeout=None):
+    if timeout is None:
+        timeout = int(get_config_manager().get(TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC))
     deadline = time.time() + timeout
     while time.time() < deadline:
         if workload_id in __workload_manager.get_isolated_workload_ids():
-            return json.dumps({'workload_id': workload_id})
+            return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
         time.sleep(0.1)
 
     return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}

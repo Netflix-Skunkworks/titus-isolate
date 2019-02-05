@@ -80,14 +80,14 @@ class TestWorkloadManager(unittest.TestCase):
             workload_manager = WorkloadManager(get_cpu(), MockCgroupManager(), primary_cpu_allocator_class=allocator_class)
 
             # Remove from empty set
-            workload_manager.remove_workload([unknown_workload_id])
+            workload_manager.remove_workload(unknown_workload_id)
 
             # Add workload
             workload_manager.add_workload(workload)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - thread_count, len(workload_manager.get_cpu().get_empty_threads()))
 
             # Removal of an unknown workload should have no effect
-            workload_manager.remove_workload([unknown_workload_id])
+            workload_manager.remove_workload(unknown_workload_id)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - thread_count, len(workload_manager.get_cpu().get_empty_threads()))
 
             # Remove workload with unknown workload, real workload should be removed
