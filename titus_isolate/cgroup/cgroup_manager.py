@@ -8,3 +8,11 @@ class CgroupManager(MetricsReporter):
     @abstractmethod
     def set_cpuset(self, container_name, thread_ids):
         pass
+
+    @abstractmethod
+    def release_cpuset(self, container_name):
+        pass
+
+    @abstractmethod
+    def get_isolated_workload_ids(self):
+        pass

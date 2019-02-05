@@ -1,8 +1,11 @@
 import json
+import time
 
 from flask import Flask
 
+from titus_isolate.config.constants import TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
+from titus_isolate.utils import get_config_manager
 
 app = Flask(__name__)
 __workload_manager = None
@@ -19,10 +22,27 @@ def set_em(event_manager):
     __event_manager = event_manager
 
 
+@app.route('/isolate/<workload_id>')
+def isolate_workload(workload_id):
+    timeout = int(get_config_manager().get(TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC))
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if workload_id in __workload_manager.get_isolated_workload_ids():
+            return json.dumps({'workload_id': workload_id})
+        time.sleep(0.1)
+
+    return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
+
+
 @app.route('/workloads')
 def get_workloads():
     workloads = [w.to_dict() for w in __workload_manager.get_workloads()]
     return json.dumps(workloads)
+
+
+@app.route('/isolated_workload_ids')
+def get_isolated_workload_ids():
+    return json.dumps(__workload_manager.get_isolated_workload_ids())
 
 
 @app.route('/cpu')
