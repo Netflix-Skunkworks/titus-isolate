@@ -1,6 +1,11 @@
 steps:
+  - label: Run git fetch
+    command: git describe --tags
+  - label: Build build docker container
+    command: docker build -t deb release
+  - wait
   - label: Build titus-isolate debian package
-    command: docker build -t deb release && docker run --rm -e TITUS_ISOLATE_VERSION=$(date +%Y%m%d).$(git rev-parse HEAD) -v $PWD:/src deb:latest && mv *.deb titus-isolate_latest.deb
+    command: ./build.sh
     artifact_paths: "*.deb"
   - wait
   - trigger: titus-upload-debs
