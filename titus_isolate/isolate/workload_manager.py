@@ -5,6 +5,8 @@ import time
 from titus_isolate import log
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
+from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
+from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.update import get_updates
@@ -17,6 +19,7 @@ from titus_isolate.model.processor.utils import is_cpu_full
 
 
 class WorkloadManager(MetricsReporter):
+
     def __init__(self,
                  cpu,
                  cgroup_manager,
@@ -160,6 +163,14 @@ class WorkloadManager(MetricsReporter):
 
     def get_isolated_workload_ids(self):
         return self.__cgroup_manager.get_isolated_workload_ids()
+
+    def is_isolated(self, workload_id):
+        noop_allocators = [NoopCpuAllocator, NoopResetCpuAllocator]
+        for allocator in noop_allocators:
+            if isinstance(self.__primary_cpu_allocator, allocator):
+                return True
+
+        return workload_id in self.get_isolated_workload_ids()
 
     def get_cpu(self):
         return self.__cpu
