@@ -10,6 +10,7 @@ from titus_isolate.utils import get_config_manager
 app = Flask(__name__)
 __workload_manager = None
 __event_manager = None
+__workload_monitor_manager = None
 
 
 def set_wm(workload_manager):
@@ -20,6 +21,11 @@ def set_wm(workload_manager):
 def set_em(event_manager):
     global __event_manager
     __event_manager = event_manager
+
+
+def set_workload_monitor_manager(workload_monitor_manager):
+    global __workload_monitor_manager
+    __workload_monitor_manager = workload_monitor_manager
 
 
 @app.route('/isolate/<workload_id>')
@@ -97,9 +103,15 @@ def get_wm_status():
         "workload_manager": {
             "cpu_allocator": __workload_manager.get_allocator_name(),
             "workload_count": len(__workload_manager.get_workloads()),
+            "isolated_workload_count": len(__workload_manager.get_isolated_workload_ids()),
             "success_count": __workload_manager.get_success_count(),
             "error_count": __workload_manager.get_error_count(),
             "added_count": __workload_manager.get_added_count(),
             "removed_count": __workload_manager.get_removed_count()
         }
     })
+
+
+@app.route('/metrics')
+def get_metrics():
+    return json.dumps(__workload_monitor_manager.to_dict())

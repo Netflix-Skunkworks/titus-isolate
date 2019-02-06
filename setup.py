@@ -24,7 +24,8 @@ setup(name='titus-isolate',
           "titus_isolate/isolate",
           "titus_isolate/metrics",
           "titus_isolate/model",
-          "titus_isolate/model/processor"],
+          "titus_isolate/model/processor",
+          "titus_isolate/monitor"],
       scripts=["startup/titus-isolate"],
       url="https://github.com/Netflix-Skunkworks/titus-isolate"
       )
