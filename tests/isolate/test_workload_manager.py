@@ -9,6 +9,8 @@ from tests.config.test_property_provider import TestPropertyProvider
 from tests.allocate.crashing_allocators import CrashingAllocator, CrashingAssignAllocator
 from tests.utils import config_logs, TestContext, gauge_value_equals, gauge_value_reached
 from titus_isolate import log
+from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
+from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.docker.constants import STATIC, BURST
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
@@ -333,3 +335,20 @@ class TestWorkloadManager(unittest.TestCase):
             w1 = Workload(uuid.uuid4(), 1, STATIC)
             with self.assertRaises(ValueError):
                 workload_manager.add_workload(w1)
+
+    def test_is_isolated(self):
+        real_allocators = [GreedyCpuAllocator, IntegerProgramCpuAllocator]
+        for allocator in real_allocators:
+            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
+            self.assertFalse(wm.is_isolated(uuid.uuid4()))
+
+        for allocator in real_allocators:
+            workload = Workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
+            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
+            wm.add_workload(workload)
+            self.assertTrue(wm.is_isolated(workload.get_id()))
+
+        noop_allocators = [NoopCpuAllocator, NoopResetCpuAllocator]
+        for allocator in noop_allocators:
+            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
+            self.assertTrue(wm.is_isolated(uuid.uuid4()))

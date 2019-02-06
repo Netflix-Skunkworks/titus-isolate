@@ -32,9 +32,10 @@ def set_workload_monitor_manager(workload_monitor_manager):
 def isolate_workload(workload_id, timeout=None):
     if timeout is None:
         timeout = int(get_config_manager().get(TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC))
+
     deadline = time.time() + timeout
     while time.time() < deadline:
-        if workload_id in __workload_manager.get_isolated_workload_ids():
+        if __workload_manager.is_isolated(workload_id):
             return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
         time.sleep(0.1)
 
