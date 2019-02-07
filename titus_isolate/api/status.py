@@ -113,6 +113,19 @@ def get_wm_status():
     })
 
 
-@app.route('/metrics')
+@app.route('/metrics/raw')
 def get_metrics():
     return json.dumps(__workload_monitor_manager.to_dict())
+
+
+@app.route('/metrics/cpu_usage/<workload_id>/<seconds>')
+def get_cpu_usage(workload_id, seconds):
+    cpu_usage = __workload_monitor_manager.get_cpu_usage(seconds)
+
+    if workload_id.lower() == 'all':
+        return json.dumps(cpu_usage)
+
+    if workload_id in cpu_usage:
+        return json.dumps(cpu_usage[workload_id])
+
+    return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}

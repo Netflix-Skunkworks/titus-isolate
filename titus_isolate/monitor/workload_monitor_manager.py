@@ -14,6 +14,7 @@ class WorkloadMonitorManager:
 
     def __init__(self, workload_manager, sample_interval=DEFAULT_SAMPLE_FREQUENCY_SEC):
         self.__workload_manager = workload_manager
+        self.__sample_interval = sample_interval
         self.__lock = Lock()
         self.__monitors = {}
 
@@ -22,12 +23,19 @@ class WorkloadMonitorManager:
     def get_monitors(self):
         return self.__monitors
 
+    def get_cpu_usage(self, seconds):
+        cpu_usage = {}
+        for workload_id, monitor in self.get_monitors().items():
+            cpu_usage[workload_id] = monitor.get_cpu_usage(seconds)
+
+        return cpu_usage
+
     def to_dict(self):
         with self.__lock:
             monitors_dict = {}
             for workload_id, monitor in sorted(self.get_monitors().items()):
                 buffers = collections.OrderedDict()
-                for key, deque in sorted(monitor.get_raw_buffers().items()):
+                for key, deque in sorted(monitor.get_buffers().items()):
                     lst = list(deque)
                     lst = [str(i) for i in lst]
                     buffers[key] = lst
@@ -55,7 +63,8 @@ class WorkloadMonitorManager:
             # Add monitors for new workloads
             for workload in workloads:
                 if workload.get_id() not in self.__monitors.keys():
-                    self.__monitors[workload.get_id()] = WorkloadPerformanceMonitor(CgroupMetricsProvider(workload))
+                    self.__monitors[workload.get_id()] = \
+                        WorkloadPerformanceMonitor(CgroupMetricsProvider(workload), self.__sample_interval)
 
     def __sample_monitors(self):
         with self.__lock:
