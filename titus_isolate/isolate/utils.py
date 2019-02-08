@@ -32,42 +32,42 @@ def get_workloads_by_type(workloads, workload_type):
     return [w for w in workloads if w.get_type() == workload_type]
 
 
-def get_allocator_class(config_manager, hour=None):
+def get_allocator(config_manager, hour=None):
     if hour is None:
         hour = datetime.datetime.utcnow().hour
 
     alloc_str = config_manager.get(ALLOCATOR_KEY)
 
     if alloc_str == AB_TEST:
-        return __get_ab_allocator_class(config_manager, hour)
+        return __get_ab_allocator(config_manager, hour)
     else:
-        return __get_allocator_class(alloc_str)
+        return __get_allocator(alloc_str)
 
 
-def __get_allocator_class(allocator_str):
+def __get_allocator(allocator_str):
     if allocator_str not in CPU_ALLOCATORS:
         log.error("Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(allocator_str, DEFAULT_ALLOCATOR))
         allocator_str = DEFAULT_ALLOCATOR
 
-    return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str]
+    return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str]()
 
 
-def __get_ab_allocator_class(config_manager, hour):
+def __get_ab_allocator(config_manager, hour):
     a_allocator_str = config_manager.get(CPU_ALLOCATOR_A)
     b_allocator_str = config_manager.get(CPU_ALLOCATOR_B)
 
-    a_allocator_class = __get_allocator_class(a_allocator_str)
-    b_allocator_class = __get_allocator_class(b_allocator_str)
+    a_allocator = __get_allocator(a_allocator_str)
+    b_allocator = __get_allocator(b_allocator_str)
 
     bucket = get_ab_bucket(config_manager, hour)
 
     if bucket not in BUCKETS:
         log.error("Unexpected A/B bucket specified: '{}', falling back to default: '{}'".format(bucket, DEFAULT_ALLOCATOR))
-        return __get_allocator_class("UNDEFINED_AB_BUCKET")
+        return __get_allocator("UNDEFINED_AB_BUCKET")
 
     return {
-        "A": a_allocator_class,
-        "B": b_allocator_class,
+        "A": a_allocator,
+        "B": b_allocator,
     }[bucket]
 
 

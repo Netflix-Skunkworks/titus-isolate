@@ -14,7 +14,7 @@ from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.docker.utils import get_current_workloads
-from titus_isolate.isolate.utils import get_allocator_class
+from titus_isolate.isolate.utils import get_allocator
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.model.processor.config import get_cpu_from_env
@@ -43,7 +43,7 @@ def main(admin_port):
 
     # Setup the workload manager
     log.info("Setting up the workload manager...")
-    workload_manager = WorkloadManager(cpu, FileCgroupManager(), get_allocator_class(get_config_manager()))
+    workload_manager = WorkloadManager(cpu, FileCgroupManager(), get_allocator(get_config_manager()))
     set_wm(workload_manager)
 
     # Start performance monitoring

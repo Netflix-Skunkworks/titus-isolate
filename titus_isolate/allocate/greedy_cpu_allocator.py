@@ -6,20 +6,18 @@ from titus_isolate.model.workload import Workload
 
 class GreedyCpuAllocator(CpuAllocator):
 
-    def __init__(self, cpu):
-        self.__cpu = cpu
+    def assign_threads(self, cpu, workload):
+        self.__assign_threads(cpu, workload)
+        return cpu
 
-    def get_cpu(self):
-        return self.__cpu
-
-    def assign_threads(self, workload):
+    def __assign_threads(self, cpu, workload):
         thread_count = workload.get_thread_count()
         claimed_threads = []
 
         if thread_count == 0:
             return claimed_threads
 
-        package = self.__cpu.get_emptiest_package()
+        package = cpu.get_emptiest_package()
 
         while thread_count > 0 and len(package.get_empty_threads()) > 0:
             core = get_emptiest_core(package)
@@ -32,12 +30,16 @@ class GreedyCpuAllocator(CpuAllocator):
                 claimed_threads.append(empty_thread)
                 thread_count -= 1
 
-        return claimed_threads + self.assign_threads(Workload(workload.get_id(), thread_count, workload.get_type()))
+        return claimed_threads + self.__assign_threads(
+            cpu,
+            Workload(workload.get_id(), thread_count, workload.get_type()))
 
-    def free_threads(self, workload_id):
-        for t in self.__cpu.get_threads():
+    def free_threads(self, cpu, workload_id):
+        for t in cpu.get_threads():
             if t.get_workload_id() == workload_id:
                 t.free()
+
+        return cpu
 
     def set_registry(self, registry):
         pass

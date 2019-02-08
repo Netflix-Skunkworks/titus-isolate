@@ -17,11 +17,10 @@ class TestCpu(unittest.TestCase):
     def test_assign_threads(self):
         cpu = get_cpu()
         cgroup_manager = MockCgroupManager()
-        cpu_allocator = NoopResetCpuAllocator(cpu)
-        cpu_allocator.set_cgroup_manager(cgroup_manager)
+        cpu_allocator = NoopResetCpuAllocator(cgroup_manager)
 
         w = Workload(uuid.uuid4(), 1, STATIC)
-        cpu_allocator.assign_threads(w)
+        cpu_allocator.assign_threads(cpu, w)
         self.assertEqual(1, cgroup_manager.container_update_counts[w.get_id()])
         self.assertEqual(len(cpu.get_threads()), len(cgroup_manager.container_update_map[w.get_id()]))
 
