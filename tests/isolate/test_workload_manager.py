@@ -220,8 +220,8 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, EMPTY_CORES_KEY, 6))
 
     def test_edge_case_ip_allocator_metrics(self):
-        # this is a specific scenario causing troubles to the solver.
-        # we should hit the time-bound limit and report it.
+        # This is a specific scenario causing troubles to the solver.
+        # We should hit the time-bound limit and report it.
 
         registry = Registry()
 
