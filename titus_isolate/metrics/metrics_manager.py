@@ -4,7 +4,7 @@ import schedule
 from spectator import GlobalRegistry
 
 from titus_isolate import log
-from titus_isolate.isolate.utils import get_allocator_class
+from titus_isolate.isolate.utils import get_allocator
 from titus_isolate.utils import get_config_manager
 
 registry = GlobalRegistry
@@ -38,7 +38,7 @@ class MetricsManager:
         if ec2_instance_id in os.environ:
             tags["node"] = os.environ[ec2_instance_id]
 
-        allocator_name = get_allocator_class(get_config_manager()).__name__
+        allocator_name = get_allocator(get_config_manager()).__name__
         tags["cpu_allocator"] = allocator_name
 
         return tags

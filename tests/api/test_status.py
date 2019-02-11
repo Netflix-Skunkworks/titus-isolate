@@ -5,6 +5,7 @@ import uuid
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.docker.mock_docker import MockEventProvider
+from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.api import status
 from titus_isolate.api.status import set_wm, get_workloads, get_violations, get_wm_status, set_em, \
     get_isolated_workload_ids, isolate_workload
@@ -23,12 +24,11 @@ class TestStatus(unittest.TestCase):
     def test_get_workloads_endpoint(self):
         override_config_manager(ConfigManager(TestPropertyProvider({})))
 
-        cpu = get_cpu()
         thread_count = 2
         workload_id = str(uuid.uuid4())
         workload = Workload(workload_id, thread_count, STATIC)
 
-        workload_manager = WorkloadManager(cpu, MockCgroupManager())
+        workload_manager = self.__get_default_workload_manager()
         set_wm(workload_manager)
 
         workloads = json.loads(get_workloads())
@@ -42,7 +42,7 @@ class TestStatus(unittest.TestCase):
         self.assertEqual(thread_count, workloads[0]["thread_count"])
 
     def test_get_isolated_workloads_endpoint(self):
-        workload_manager = WorkloadManager(get_cpu(), MockCgroupManager())
+        workload_manager = self.__get_default_workload_manager()
         set_wm(workload_manager)
 
         isolated_workload_ids = json.loads(get_isolated_workload_ids())
@@ -56,7 +56,7 @@ class TestStatus(unittest.TestCase):
         self.assertEqual(workload.get_id(), isolated_workload_ids[0])
 
     def test_isolate_workload_endpoint(self):
-        workload_manager = WorkloadManager(get_cpu(), MockCgroupManager())
+        workload_manager = self.__get_default_workload_manager()
         set_wm(workload_manager)
 
         _, code, _ = isolate_workload(str(uuid.uuid4()), timeout=0.5)
@@ -102,4 +102,4 @@ class TestStatus(unittest.TestCase):
     @staticmethod
     def __get_default_workload_manager():
         cpu = get_cpu()
-        return WorkloadManager(cpu, MockCgroupManager())
+        return WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator())

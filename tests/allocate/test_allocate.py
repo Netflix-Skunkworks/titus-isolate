@@ -12,7 +12,7 @@ from titus_isolate.model.workload import Workload
 
 config_logs(logging.DEBUG)
 
-ALLOCATORS = [IntegerProgramCpuAllocator, GreedyCpuAllocator]
+ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator()]
 
 
 class TestCpu(unittest.TestCase):
@@ -21,14 +21,13 @@ class TestCpu(unittest.TestCase):
         """
         Workload 0: 1 thread --> (p:0 c:0 t:0)
         """
-        for allocator_class in ALLOCATORS:
+        for allocator in ALLOCATORS:
             cpu = get_cpu()
-            allocator = allocator_class(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
             w = Workload(uuid.uuid4(), 1, STATIC)
 
-            allocator.assign_threads(w)
+            cpu = allocator.assign_threads(cpu, w)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 1, len(cpu.get_empty_threads()))
             self.assertEqual(1, len(cpu.get_claimed_threads()))
             self.assertEqual(0, cpu.get_claimed_threads()[0].get_id())
@@ -38,10 +37,10 @@ class TestCpu(unittest.TestCase):
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         """
         cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator(cpu)
+        allocator = IntegerProgramCpuAllocator()
         w = Workload(uuid.uuid4(), 2, STATIC)
 
-        allocator.assign_threads(w)
+        cpu = allocator.assign_threads(cpu, w)
         self.assertEqual(2, len(cpu.get_claimed_threads()))
 
         # Expected core and threads
@@ -59,10 +58,10 @@ class TestCpu(unittest.TestCase):
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:1)
         """
         cpu = get_cpu()
-        allocator = GreedyCpuAllocator(cpu)
+        allocator = GreedyCpuAllocator()
         w = Workload(uuid.uuid4(), 2, STATIC)
 
-        allocator.assign_threads(w)
+        cpu = allocator.assign_threads(cpu, w)
         self.assertEqual(2, len(cpu.get_claimed_threads()))
 
         # Expected core and threads
@@ -80,12 +79,12 @@ class TestCpu(unittest.TestCase):
         Workload 1: 1 thread  --> (p:1 c:0 t:0)
         """
         cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator(cpu)
+        allocator = IntegerProgramCpuAllocator()
         w0 = Workload(uuid.uuid4(), 2, STATIC)
         w1 = Workload(uuid.uuid4(), 1, STATIC)
 
-        allocator.assign_threads(w0)
-        allocator.assign_threads(w1)
+        cpu = allocator.assign_threads(cpu, w0)
+        cpu = allocator.assign_threads(cpu, w1)
         self.assertEqual(3, len(cpu.get_claimed_threads()))
 
         packages = cpu.get_packages()
@@ -112,12 +111,12 @@ class TestCpu(unittest.TestCase):
         Workload 1: 1 thread  --> (p:1 c:0 t:0)
         """
         cpu = get_cpu()
-        allocator = GreedyCpuAllocator(cpu)
+        allocator = GreedyCpuAllocator()
         w0 = Workload(uuid.uuid4(), 2, STATIC)
         w1 = Workload(uuid.uuid4(), 1, STATIC)
 
-        allocator.assign_threads(w0)
-        allocator.assign_threads(w1)
+        cpu = allocator.assign_threads(cpu, w0)
+        cpu = allocator.assign_threads(cpu, w1)
         self.assertEqual(3, len(cpu.get_claimed_threads()))
 
         packages = cpu.get_packages()
@@ -147,10 +146,10 @@ class TestCpu(unittest.TestCase):
         |   |   |   |   |
         """
         cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator(cpu)
+        allocator = IntegerProgramCpuAllocator()
         w = Workload(uuid.uuid4(), 10, STATIC)
 
-        allocator.assign_threads(w)
+        cpu = allocator.assign_threads(cpu, w)
         self.assertEqual(10, len(cpu.get_claimed_threads()))
 
         expected_thread_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12]
@@ -170,9 +169,8 @@ class TestCpu(unittest.TestCase):
         --------------------
         Total:      16 cores
         """
-        for allocator_class in ALLOCATORS:
+        for allocator in ALLOCATORS:
             cpu = get_cpu()
-            allocator = allocator_class(cpu)
             workloads = [
                 Workload(uuid.uuid4(), 8, STATIC),
                 Workload(uuid.uuid4(), 4, STATIC),
@@ -182,7 +180,7 @@ class TestCpu(unittest.TestCase):
 
             tot_req = 0
             for w in workloads:
-                allocator.assign_threads(w)
+                cpu = allocator.assign_threads(cpu, w)
                 tot_req += w.get_thread_count()
                 self.assertEqual(tot_req, len(cpu.get_claimed_threads()))
 
@@ -197,7 +195,7 @@ class TestCpu(unittest.TestCase):
         | a |   | a |   |
         """
         cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator(cpu)
+        allocator = IntegerProgramCpuAllocator()
 
         # Initialize fragmented workload
         wa = Workload(uuid.uuid4(), 8, STATIC)
@@ -224,7 +222,7 @@ class TestCpu(unittest.TestCase):
 
         workloads = [wa, w0, w1, w2, w3]
         for w in workloads:
-            allocator.assign_threads(w)
+            cpu = allocator.assign_threads(cpu, w)
 
         self.assertEqual(0, len(cpu.get_empty_threads()))
 
@@ -236,35 +234,33 @@ class TestCpu(unittest.TestCase):
             self.assertListEqual(ids, [wa.get_id()] * 8)
 
     def test_free_cpu(self):
-        for allocator_class in ALLOCATORS:
+        for allocator in ALLOCATORS:
             cpu = get_cpu()
-            allocator = allocator_class(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
             w = Workload(uuid.uuid4(), 3, STATIC)
-            allocator.assign_threads(w)
+            cpu = allocator.assign_threads(cpu, w)
             self.assertEqual(
                 DEFAULT_TOTAL_THREAD_COUNT - w.get_thread_count(),
                 len(cpu.get_empty_threads()))
 
-            allocator.free_threads(w.get_id())
+            cpu = allocator.free_threads(cpu, w.get_id())
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
     def test_free_cpu_3_workloads(self):
         # Add 3 workloads sequentially, and then remove the 2nd one added.
-        for allocator_class in ALLOCATORS:
+        for allocator in ALLOCATORS:
             cpu = get_cpu()
-            allocator = allocator_class(cpu)
 
             w0 = Workload(123, 3, STATIC)
             w1 = Workload(456, 2, STATIC)
             w2 = Workload(789, 4, STATIC)
-            allocator.assign_threads(w0)
-            allocator.assign_threads(w1)
-            allocator.assign_threads(w2)
+            cpu = allocator.assign_threads(cpu, w0)
+            cpu = allocator.assign_threads(cpu, w1)
+            cpu = allocator.assign_threads(cpu, w2)
             self.assertEqual(3 + 4 + 2, len(cpu.get_claimed_threads()))
 
-            allocator.free_threads(w1.get_id())
+            allocator.free_threads(cpu, w1.get_id())
             self.assertEqual(3 + 4, len(cpu.get_claimed_threads()))
 
             workload_ids_left = set()
@@ -285,22 +281,22 @@ class TestCpu(unittest.TestCase):
         (state=[2,2], req=[2,2]) but different layout
         """
         cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator(cpu)
+        allocator = IntegerProgramCpuAllocator()
 
-        allocator.assign_threads(Workload("a", 2, STATIC))
+        cpu = allocator.assign_threads(cpu, Workload("a", 2, STATIC))
         self.assertEqual(1, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        allocator.assign_threads(Workload("b", 2, STATIC))
+        cpu = allocator.assign_threads(cpu, Workload("b", 2, STATIC))
         self.assertEqual(2, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        allocator.free_threads("b")
+        cpu = allocator.free_threads(cpu, "b")
         self.assertEqual(3, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        allocator.assign_threads(Workload("c", 2, STATIC))
+        cpu = allocator.assign_threads(cpu, Workload("c", 2, STATIC))
         self.assertEqual(3, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        allocator.free_threads("a")
+        cpu = allocator.free_threads(cpu, "a")
         self.assertEqual(4, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        allocator.assign_threads(Workload("d", 2, STATIC))
+        cpu = allocator.assign_threads(cpu, Workload("d", 2, STATIC))
         self.assertEqual(5, len(allocator._IntegerProgramCpuAllocator__cache))

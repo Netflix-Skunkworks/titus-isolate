@@ -10,7 +10,7 @@ from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import ALLOCATOR_KEY, NOOP, AB_TEST, GREEDY, CPU_ALLOCATOR_B, CPU_ALLOCATOR_A, IP, \
     EC2_INSTANCE_ID
-from titus_isolate.isolate.utils import get_allocator_class, get_ab_bucket, _get_ab_bucket_int
+from titus_isolate.isolate.utils import get_allocator, get_ab_bucket, _get_ab_bucket_int
 
 config_logs(logging.DEBUG)
 
@@ -23,8 +23,8 @@ class TestUtils(unittest.TestCase):
                ALLOCATOR_KEY: NOOP
             })
         config_manager = ConfigManager(property_provider)
-        allocator_class = get_allocator_class(config_manager)
-        self.assertEqual(NoopCpuAllocator, allocator_class)
+        allocator = get_allocator(config_manager)
+        self.assertEqual(NoopCpuAllocator, allocator.__class__)
 
     def test_ab_allocator_selection(self):
         even_instance_id = 'i-0cfefd19c9a8db976'
@@ -37,8 +37,8 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator_class = get_allocator_class(config_manager, 12)
-        self.assertEqual(IntegerProgramCpuAllocator, allocator_class)
+        allocator = get_allocator(config_manager, 12)
+        self.assertEqual(IntegerProgramCpuAllocator, allocator.__class__)
 
         odd_instance_id = 'i-0cfefd19c9a8db977'
         property_provider = TestPropertyProvider(
@@ -50,8 +50,8 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator_class = get_allocator_class(config_manager, 12)
-        self.assertEqual(GreedyCpuAllocator, allocator_class)
+        allocator = get_allocator(config_manager, 12)
+        self.assertEqual(GreedyCpuAllocator, allocator.__class__)
 
     def test_ab_allocator_fallback(self):
         property_provider = TestPropertyProvider(
@@ -60,11 +60,11 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator_class = get_allocator_class(config_manager)
-        self.assertEqual(NoopCpuAllocator, allocator_class)
+        allocator = get_allocator(config_manager)
+        self.assertEqual(NoopCpuAllocator, allocator.__class__)
 
-        allocator_class = get_allocator_class(config_manager)
-        self.assertEqual(NoopCpuAllocator, allocator_class)
+        allocator = get_allocator(config_manager)
+        self.assertEqual(NoopCpuAllocator, allocator.__class__)
 
     def test_real_instance_ids(self):
         even_instance_id = 'i-0cfefd19c9a8db976'
@@ -77,8 +77,8 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator_class = get_allocator_class(config_manager, 12)
-        self.assertEqual(IntegerProgramCpuAllocator, allocator_class)
+        allocator = get_allocator(config_manager, 12)
+        self.assertEqual(IntegerProgramCpuAllocator, allocator.__class__)
 
         odd_instance_id = 'i-0cfefd19c9a8db977'
         property_provider = TestPropertyProvider(
@@ -90,8 +90,8 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator_class = get_allocator_class(config_manager, 12)
-        self.assertEqual(GreedyCpuAllocator, allocator_class)
+        allocator = get_allocator(config_manager, 12)
+        self.assertEqual(GreedyCpuAllocator, allocator.__class__)
 
     def test_undefined_instance_id(self):
         property_provider = TestPropertyProvider(
@@ -102,8 +102,8 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator_class = get_allocator_class(config_manager)
-        self.assertEqual(NoopCpuAllocator, allocator_class)
+        allocator = get_allocator(config_manager)
+        self.assertEqual(NoopCpuAllocator, allocator.__class__)
 
     def test_get_ab_bucket(self):
         even_instance_id = 'i-0cfefd19c9a8db976'
