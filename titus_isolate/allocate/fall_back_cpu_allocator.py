@@ -1,3 +1,5 @@
+import copy
+
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.metrics.constants import FALLBACK_ALLOCATOR_COUNT
@@ -25,27 +27,27 @@ class FallbackCpuAllocator(CpuAllocator):
 
     def assign_threads(self, cpu, workload_id, workloads):
         try:
-            return self.__primary_allocator.assign_threads(cpu, workload_id, workloads)
+            return self.__primary_allocator.assign_threads(copy.deepcopy(cpu), workload_id, workloads)
         except:
             log.exception(
                 "Failed to assign threads to workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
                     workload_id,
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
-            cpu = self.__secondary_allocator.assign_threads(cpu, workload_id, workloads)
+            cpu = self.__secondary_allocator.assign_threads(copy.deepcopy(cpu), workload_id, workloads)
             self.__secondary_allocator_calls_count += 1
             return cpu
 
     def free_threads(self, cpu, workload_id, workloads):
         try:
-            return self.__primary_allocator.free_threads(cpu, workload_id, workloads)
+            return self.__primary_allocator.free_threads(copy.deepcopy(cpu), workload_id, workloads)
         except:
             log.exception(
                 "Failed to free threads for workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
                     workload_id,
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
-            cpu = self.__secondary_allocator.free_threads(cpu, workload_id, workloads)
+            cpu = self.__secondary_allocator.free_threads(copy.deepcopy(cpu), workload_id, workloads)
             self.__secondary_allocator_calls_count += 1
             return cpu
 

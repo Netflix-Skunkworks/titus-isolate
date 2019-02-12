@@ -41,14 +41,14 @@ class Cpu:
 
     def clear(self):
         for t in self.get_threads():
-            t.free()
+            t.clear()
 
     def get_workload_ids_to_thread_ids(self):
         res = defaultdict(list)
         for t in self.get_threads():
             if t.is_claimed():
-                wid = t.get_workload_id()
-                res[wid] = res[wid] + [t.get_id()]
+                for w_id in t.get_workload_ids():
+                    res[w_id] += [t.get_id()]
         return res
 
     def __str__(self):

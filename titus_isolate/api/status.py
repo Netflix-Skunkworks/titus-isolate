@@ -65,7 +65,7 @@ def get_cpu():
             for t in c.get_threads():
                 threads.append({
                     "id": t.get_id(),
-                    "workload_id": t.get_workload_id()
+                    "workload_id": t.get_workload_ids()
                 })
             cores.append({
                 "id": c.get_id(),
