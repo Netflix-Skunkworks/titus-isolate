@@ -10,7 +10,9 @@ from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import ALLOCATOR_KEY, NOOP, AB_TEST, GREEDY, CPU_ALLOCATOR_B, CPU_ALLOCATOR_A, IP, \
     EC2_INSTANCE_ID
-from titus_isolate.isolate.utils import get_allocator, get_ab_bucket, _get_ab_bucket_int
+from titus_isolate.docker.constants import STATIC
+from titus_isolate.isolate.utils import get_allocator, get_ab_bucket, _get_ab_bucket_int, get_sorted_workloads
+from titus_isolate.model.workload import Workload
 
 config_logs(logging.DEBUG)
 
@@ -215,3 +217,15 @@ class TestUtils(unittest.TestCase):
             bucket_int = _get_ab_bucket_int(char, hour)
             log.info("{}: {}".format(hour, bucket_int))
             self.assertEqual(odd_hour_to_bucket_map[hour], bucket_int)
+
+    def test_get_sorted_workloads(self):
+        w_a = Workload('a', 1, STATIC)
+        w_b = Workload('b', 1, STATIC)
+        w_c = Workload('c', 1, STATIC)
+        expected_ids = ['a', 'b', 'c']
+
+        scrambled_workloads = [w_b, w_a, w_c]
+        sorted_workloads = get_sorted_workloads(scrambled_workloads)
+        actual_ids = [w.get_id() for w in sorted_workloads]
+
+        self.assertEqual(expected_ids, actual_ids)

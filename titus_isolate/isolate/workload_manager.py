@@ -73,7 +73,7 @@ class WorkloadManager(MetricsReporter):
         new_cpu = self.__cpu
         if workload.get_type() == STATIC:
             current_cpu = copy.deepcopy(self.get_cpu())
-            new_cpu = self.__cpu_allocator.assign_threads(self.__cpu, workload)
+            new_cpu = self.__cpu_allocator.assign_threads(copy.deepcopy(self.__cpu), workload.get_id(), self.__workloads)
             updates = get_updates(current_cpu, new_cpu)
             log.info("Found footprint updates: '{}'".format(updates))
             self.__update_static_cpusets(updates)
@@ -92,7 +92,7 @@ class WorkloadManager(MetricsReporter):
         if workload_id not in self.__workloads:
             raise ValueError("Attempted to remove unknown workload: '{}'".format(workload_id))
 
-        self.__cpu = self.__cpu_allocator.free_threads(self.__cpu, workload_id)
+        self.__cpu = self.__cpu_allocator.free_threads(copy.deepcopy(self.__cpu), workload_id, self.__workloads)
         self.__workloads.pop(workload_id)
 
         self.__update_burst_cpusets()
@@ -154,7 +154,7 @@ class WorkloadManager(MetricsReporter):
         return self.__allocator_call_duration_sum_secs
 
     def get_allocator_name(self):
-        return str(self.__cpu_allocator)
+        return self.__cpu_allocator.__class__.__name__
 
     def set_registry(self, registry):
         self.__reg = registry

@@ -32,6 +32,10 @@ def get_workloads_by_type(workloads, workload_type):
     return [w for w in workloads if w.get_type() == workload_type]
 
 
+def get_sorted_workloads(workloads):
+    return sorted(workloads, key=lambda w: w.get_creation_time())
+
+
 def get_allocator(config_manager, hour=None):
     if hour is None:
         hour = datetime.datetime.utcnow().hour

@@ -6,8 +6,8 @@ from titus_isolate.model.workload import Workload
 
 class GreedyCpuAllocator(CpuAllocator):
 
-    def assign_threads(self, cpu, workload):
-        self.__assign_threads(cpu, workload)
+    def assign_threads(self, cpu, workload_id, workloads):
+        self.__assign_threads(cpu, workloads[workload_id])
         return cpu
 
     def __assign_threads(self, cpu, workload):
@@ -34,7 +34,7 @@ class GreedyCpuAllocator(CpuAllocator):
             cpu,
             Workload(workload.get_id(), thread_count, workload.get_type()))
 
-    def free_threads(self, cpu, workload_id):
+    def free_threads(self, cpu, workload_id, workloads):
         for t in cpu.get_threads():
             if t.get_workload_id() == workload_id:
                 t.free()

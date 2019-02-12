@@ -1,5 +1,3 @@
-import time
-
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
@@ -11,13 +9,9 @@ class IntegerProgramCpuAllocator(CpuAllocator):
     def __init__(self, solver_max_runtime_secs=1.5):
         self.__reg = None
 
-        self.__workload_insertion_times = {}
         self.__cache = {}  # TODO: use @functools.lru_cache instead
         self.__solver_max_runtime_secs = solver_max_runtime_secs
         self.__time_bound_call_count = 0
-
-    def __ordered_workload_ids(self):
-        return [t[0] for t in sorted(self.__workload_insertion_times.items(), key=lambda t: t[1])]
 
     def __assign_new_mapping(self, cpu, thread_id2workload_id):
         cpu.clear()
@@ -50,7 +44,7 @@ class IntegerProgramCpuAllocator(CpuAllocator):
 
         return placement
 
-    def assign_threads(self, cpu, workload):
+    def assign_threads(self, cpu, workload_id, workloads):
         """
         Use the integer-program solver to find the optimal static placement
         when adding the given workload on the cpu.
@@ -59,11 +53,13 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         indicating unix timestamps at which workloads currently running on the cpu
         have been placed.
         """
+        from titus_isolate.isolate.utils import get_sorted_workloads
+
         n_compute_units = len(cpu.get_threads())
 
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
-        ordered_workload_ids = self.__ordered_workload_ids().copy()
+        ordered_workload_ids = [w.get_id() for w in get_sorted_workloads(workloads.values())]
         tid_2order = {i: t.get_id() for i, t in enumerate(cpu.get_threads())}
 
         curr_placement_vectors = []
@@ -76,6 +72,8 @@ class IntegerProgramCpuAllocator(CpuAllocator):
             requested_cus = []
         else:
             requested_cus = [sum(v) for v in curr_placement_vectors]
+
+        workload = workloads[workload_id]
         requested_cus += [workload.get_thread_count()]
 
         new_placement_vectors = self.__compute_new_placement(cpu, curr_placement_vectors, requested_cus)
@@ -89,15 +87,16 @@ class IntegerProgramCpuAllocator(CpuAllocator):
                     thread_id2workload_id[tid_2order[i]] = ordered_workload_ids[w_ind]
 
         self.__assign_new_mapping(cpu, thread_id2workload_id)
-        self.__workload_insertion_times[workload.get_id()] = time.time()
 
         return cpu
 
-    def free_threads(self, cpu, workload_id):
+    def free_threads(self, cpu, workload_id, workloads):
         """
         Use the integerprogram solver to find the optimal static placement
         after removing the given workload from the cpu.
         """
+        from titus_isolate.isolate.utils import get_sorted_workloads
+
         n_compute_units = len(cpu.get_threads())
 
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
@@ -105,7 +104,7 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         if workload_id not in curr_ids_per_workload:
             raise Exception("workload_id=`%s` is not placed on the instance. Cannot free it." % (workload_id,))
 
-        ordered_workload_ids = self.__ordered_workload_ids()
+        ordered_workload_ids = [w.get_id() for w in get_sorted_workloads(workloads.values())]
         tid_2order = {i: t.get_id() for i, t in enumerate(cpu.get_threads())}
 
         curr_placement_vectors = []
@@ -129,8 +128,6 @@ class IntegerProgramCpuAllocator(CpuAllocator):
                     thread_id2workload_id[tid_2order[i]] = ordered_workload_ids[w_ind]
 
         self.__assign_new_mapping(cpu, thread_id2workload_id)
-        self.__workload_insertion_times.pop(workload_id)
-
         return cpu
     
     def set_solver_max_runtime_secs(self, val):

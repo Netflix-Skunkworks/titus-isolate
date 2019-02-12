@@ -17,40 +17,35 @@ class FallbackCpuAllocator(CpuAllocator):
         self.__primary_allocator = primary_cpu_allocator
         self.__secondary_allocator = secondary_cpu_allocator
 
-        self.__primary_allocator_calls_count = 0
         self.__secondary_allocator_calls_count = 0
 
         log.info("Created FallbackCpuAllocator with primary cpu allocator: '{}' and secondary cpu allocator: '{}'".format(
             self.__primary_allocator.__class__.__name__,
             self.__secondary_allocator.__class__.__name__))
 
-    def assign_threads(self, cpu, workload):
+    def assign_threads(self, cpu, workload_id, workloads):
         try:
-            cpu = self.__primary_allocator.assign_threads(cpu, workload)
-            self.__primary_allocator_calls_count += 1
-            return cpu
+            return self.__primary_allocator.assign_threads(cpu, workload_id, workloads)
         except:
             log.exception(
                 "Failed to assign threads to workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
-                    workload.get_id(),
+                    workload_id,
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
-            cpu = self.__secondary_allocator.assign_threads(cpu, workload)
+            cpu = self.__secondary_allocator.assign_threads(cpu, workload_id, workloads)
             self.__secondary_allocator_calls_count += 1
             return cpu
 
-    def free_threads(self, cpu, workload_id):
+    def free_threads(self, cpu, workload_id, workloads):
         try:
-            cpu = self.__primary_allocator.free_threads(cpu, workload_id)
-            self.__primary_allocator_calls_count += 1
-            return cpu
+            return self.__primary_allocator.free_threads(cpu, workload_id, workloads)
         except:
             log.exception(
                 "Failed to free threads for workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
                     workload_id,
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
-            cpu = self.__secondary_allocator.free_threads(cpu, workload_id)
+            cpu = self.__secondary_allocator.free_threads(cpu, workload_id, workloads)
             self.__secondary_allocator_calls_count += 1
             return cpu
 
