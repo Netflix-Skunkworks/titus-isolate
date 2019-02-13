@@ -36,8 +36,8 @@ class GreedyCpuAllocator(CpuAllocator):
 
     def free_threads(self, cpu, workload_id, workloads):
         for t in cpu.get_threads():
-            if t.get_workload_id() == workload_id:
-                t.free()
+            if workload_id in t.get_workload_ids():
+                t.free(workload_id)
 
         return cpu
 

@@ -34,7 +34,11 @@ def is_cpu_full(cpu):
 
 # Workloads
 def get_workload_ids(cpu):
-    return set([thread.get_workload_id() for thread in cpu.get_threads() if thread.is_claimed()])
+    workload_ids = []
+    for t in cpu.get_threads():
+        workload_ids += t.get_workload_ids()
+
+    return set(workload_ids)
 
 
 def get_packages_with_workload(cpu, workload_id):
@@ -46,7 +50,7 @@ def is_on_package(package, workload_id):
 
 
 def get_threads_with_workload(core, workload_id):
-    return [thread for thread in core.get_threads() if thread.get_workload_id() == workload_id]
+    return [thread for thread in core.get_threads() if workload_id in thread.get_workload_ids()]
 
 
 def visualize(cpu):
@@ -89,7 +93,7 @@ def visualize(cpu):
                 if not t.is_claimed():
                     j += 1
                     continue
-                wid = t.get_workload_id()
+                wid = t.get_workload_ids()
                 if wid in workload_ids:
                     simple_id = workload_ids.index(wid)
                 else:

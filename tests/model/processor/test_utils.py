@@ -26,7 +26,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(c1, get_emptiest_core(p))
 
         # The first core should be the emptiest again, after we release the claimed thread
-        c0.get_threads()[0].free()
+        c0.get_threads()[0].clear()
         self.assertEqual(c0, get_emptiest_core(p))
 
         # The first core should be emptiest when we claim a thread on the second

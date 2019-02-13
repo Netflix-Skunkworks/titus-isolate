@@ -18,11 +18,11 @@ from titus_isolate.model.processor.utils import is_cpu_full
 
 class WorkloadManager(MetricsReporter):
 
-    def __init__(self, cpu, cgroup_manager, cpu_allocator):
+    def __init__(self, cpu, cgroup_manager, static_cpu_allocator):
         self.__reg = None
         self.__lock = Lock()
 
-        self.__cpu_allocator = cpu_allocator
+        self.__cpu_allocator = static_cpu_allocator
 
         self.__error_count = 0
         self.__added_count = 0

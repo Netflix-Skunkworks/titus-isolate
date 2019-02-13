@@ -242,9 +242,9 @@ class TestCpu(unittest.TestCase):
 
         # first workload should be filling completely a socket to avoid cross-socket job layout
         for package in cpu.get_packages():
-            if package.get_cores()[0].get_threads()[0].get_workload_id() != wa.get_id():
+            if package.get_cores()[0].get_threads()[0].get_workload_ids() != wa.get_id():
                 continue
-            ids = [t.get_workload_id() for core in package.get_cores() for t in core.get_threads()]
+            ids = [t.get_workload_ids() for core in package.get_cores() for t in core.get_threads()]
             self.assertListEqual(ids, [wa.get_id()] * 8)
 
     def test_free_cpu(self):
@@ -290,7 +290,8 @@ class TestCpu(unittest.TestCase):
             workload_ids_left = set()
             for t in cpu.get_threads():
                 if t.is_claimed():
-                    workload_ids_left.add(t.get_workload_id())
+                    for w_id in t.get_workload_ids():
+                        workload_ids_left.add(w_id)
 
             self.assertListEqual(sorted(list(workload_ids_left)), [123, 789])
 
