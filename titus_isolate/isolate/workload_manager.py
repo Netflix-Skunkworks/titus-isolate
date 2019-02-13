@@ -3,17 +3,17 @@ from threading import Lock
 import time
 
 from titus_isolate import log
+from titus_isolate.allocate.burst_cpu_allocator import BurstCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
-from titus_isolate.docker.constants import STATIC, BURST
+from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.update import get_updates
-from titus_isolate.isolate.utils import get_burst_workloads
+from titus_isolate.isolate.utils import get_burst_workloads, free_threads
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     ADDED_TO_FULL_CPU_ERROR_KEY, FULL_CORES_KEY, HALF_CORES_KEY, EMPTY_CORES_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
-from titus_isolate.model.processor.utils import is_cpu_full
 
 
 class WorkloadManager(MetricsReporter):
@@ -22,7 +22,8 @@ class WorkloadManager(MetricsReporter):
         self.__reg = None
         self.__lock = Lock()
 
-        self.__cpu_allocator = static_cpu_allocator
+        self.__static_cpu_allocator = static_cpu_allocator
+        self.__burst_cpu_allocator = BurstCpuAllocator()
 
         self.__error_count = 0
         self.__added_count = 0
@@ -38,12 +39,15 @@ class WorkloadManager(MetricsReporter):
 
     def add_workload(self, workload):
         succeeded = self.__update_workload(self.__add_workload, workload, workload.get_id())
-        if not succeeded:
+        if succeeded:
+            self.__added_count += 1
+        else:
             self.__remove_workload(workload.get_id())
 
     def remove_workload(self, workload_id):
         self.__cgroup_manager.release_cpuset(workload_id)
         self.__update_workload(self.__remove_workload, workload_id, workload_id)
+        self.__removed_count += 1
 
     def __update_workload(self, func, arg, workload_id):
         try:
@@ -63,62 +67,59 @@ class WorkloadManager(MetricsReporter):
     def __add_workload(self, workload):
         log.info("Assigning '{}' thread(s) to workload: '{}'".format(workload.get_thread_count(), workload.get_id()))
 
-        if is_cpu_full(self.get_cpu()):
-            self.__added_to_full_cpu_count += 1
-            raise ValueError("Cannot assign workload: '{}' to full CPU.".format(workload.get_id()))
+        new_cpu = copy.deepcopy(self.get_cpu())
+        workloads = copy.deepcopy(self.__workloads)
+        workloads[workload.get_id()] = workload
 
-        workload_id = workload.get_id()
-        self.__workloads[workload_id] = workload
+        # Free threads claimed by BURST workloads, they will be reclaimed below
+        for w in get_burst_workloads(workloads.values()):
+            free_threads(new_cpu, w.get_id())
 
-        new_cpu = self.__cpu
+        # Assign static workload
         if workload.get_type() == STATIC:
-            current_cpu = copy.deepcopy(self.get_cpu())
-            new_cpu = self.__cpu_allocator.assign_threads(copy.deepcopy(self.__cpu), workload.get_id(), self.__workloads)
-            updates = get_updates(current_cpu, new_cpu)
-            log.info("Found footprint updates: '{}'".format(updates))
-            self.__update_static_cpusets(updates)
+            new_cpu = self.__static_cpu_allocator.assign_threads(new_cpu, workload.get_id(), workloads)
 
-        if workload.get_type() == BURST:
-            self.__cgroup_manager.set_cpuset(workload.get_id(), self.__get_empty_thread_ids())
+        # Update burst workloads
+        new_cpu = self.__burst_cpu_allocator.assign_threads(new_cpu, workload.get_id(), workloads)
+
+        # Apply cpuset updates
+        updates = get_updates(copy.deepcopy(self.get_cpu()), new_cpu)
+        for workload_id, thread_ids in updates.items():
+            log.info("updating workload: '{}' to '{}'".format(workload_id, thread_ids))
+            self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
 
         self.__cpu = new_cpu
-        self.__update_burst_cpusets()
-
-        log.info("Added workload: {}".format(workload.get_id()))
-        self.__added_count += 1
+        self.__workloads = workloads
 
     def __remove_workload(self, workload_id):
         log.info("Removing workload: {}".format(workload_id))
         if workload_id not in self.__workloads:
             raise ValueError("Attempted to remove unknown workload: '{}'".format(workload_id))
 
-        self.__cpu = self.__cpu_allocator.free_threads(copy.deepcopy(self.__cpu), workload_id, self.__workloads)
-        self.__workloads.pop(workload_id)
+        new_cpu = copy.deepcopy(self.get_cpu())
+        workloads = copy.deepcopy(self.__workloads)
+        workload = workloads[workload_id]
 
-        self.__update_burst_cpusets()
-        log.info("Removed workload: {}".format(workload_id))
-        self.__removed_count += 1
+        # Free threads claimed by BURST workloads, they will be reclaimed below
+        for w in get_burst_workloads(workloads.values()):
+            free_threads(new_cpu, w.get_id())
 
-    def __update_static_cpusets(self, updates):
+        # Free static workload
+        if workload.get_type() == STATIC:
+            new_cpu = self.__static_cpu_allocator.free_threads(new_cpu, workload.get_id(), workloads)
+
+        # Update burst workloads
+        new_cpu = self.__burst_cpu_allocator.free_threads(new_cpu, workload.get_id(), workloads)
+
+        # Apply cpuset updates
+        updates = get_updates(copy.deepcopy(self.get_cpu()), new_cpu)
         for workload_id, thread_ids in updates.items():
-            log.info("updating static workload: '{}'".format(workload_id))
+            log.info("updating workload: '{}' to '{}'".format(workload_id, thread_ids))
             self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
 
-    def __update_burst_cpusets(self):
-        empty_thread_ids = self.__get_empty_thread_ids()
-        error_count = 0
-        for b_w in get_burst_workloads(self.__workloads.values()):
-            log.info("updating burst workload: '{}'".format(b_w.get_id()))
-            try:
-                self.__cgroup_manager.set_cpuset(b_w.get_id(), empty_thread_ids)
-            except:
-                error_count += 1
-                log.exception("Failed to update burst workload: '{}', maybe it's gone.".format(b_w.get_id()))
-
-        self.__error_count += error_count
-
-    def __get_empty_thread_ids(self):
-        return [t.get_id() for t in self.get_cpu().get_empty_threads()]
+        workloads.pop(workload_id)
+        self.__cpu = new_cpu
+        self.__workloads = workloads
 
     def get_workloads(self):
         return self.__workloads.values()
@@ -129,7 +130,7 @@ class WorkloadManager(MetricsReporter):
     def is_isolated(self, workload_id):
         noop_allocators = [NoopCpuAllocator, NoopResetCpuAllocator]
         for allocator in noop_allocators:
-            if isinstance(self.__cpu_allocator, allocator):
+            if isinstance(self.__static_cpu_allocator, allocator):
                 return True
 
         return workload_id in self.get_isolated_workload_ids()
@@ -154,11 +155,11 @@ class WorkloadManager(MetricsReporter):
         return self.__allocator_call_duration_sum_secs
 
     def get_allocator_name(self):
-        return self.__cpu_allocator.__class__.__name__
+        return self.__static_cpu_allocator.__class__.__name__
 
     def set_registry(self, registry):
         self.__reg = registry
-        self.__cpu_allocator.set_registry(registry)
+        self.__static_cpu_allocator.set_registry(registry)
         self.__cgroup_manager.set_registry(registry)
 
     def __get_full_core_count(self):
@@ -199,5 +200,5 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(EMPTY_CORES_KEY, tags).set(self.__get_empty_core_count())
 
         # Have the sub-components report metrics
-        self.__cpu_allocator.report_metrics(tags)
+        self.__static_cpu_allocator.report_metrics(tags)
         self.__cgroup_manager.report_metrics(tags)

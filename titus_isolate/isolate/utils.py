@@ -36,6 +36,11 @@ def get_sorted_workloads(workloads):
     return sorted(workloads, key=lambda w: w.get_creation_time())
 
 
+def free_threads(cpu, workload_id):
+    for t in cpu.get_threads():
+        t.free(workload_id)
+
+
 def get_allocator(config_manager, hour=None):
     if hour is None:
         hour = datetime.datetime.utcnow().hour
