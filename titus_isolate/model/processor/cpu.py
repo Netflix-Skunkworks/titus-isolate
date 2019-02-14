@@ -51,6 +51,33 @@ class Cpu:
                     res[w_id] += [t.get_id()]
         return res
 
+    def to_dict(self):
+        packages = []
+        for p in self.get_packages():
+
+            cores = []
+            for c in p.get_cores():
+
+                threads = []
+                for t in c.get_threads():
+                    threads.append({
+                        "id": t.get_id(),
+                        "workload_id": t.get_workload_ids()
+                    })
+                cores.append({
+                    "id": c.get_id(),
+                    "threads": threads
+                })
+
+            packages.append({
+                "id": p.get_id(),
+                "cores": cores
+            })
+
+        return {
+            "packages": packages
+        }
+
     def __str__(self):
         n_packages = len(self.get_packages())
         n_cores = n_packages * len(self.get_packages()[0].get_cores())

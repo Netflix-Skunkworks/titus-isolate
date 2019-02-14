@@ -55,33 +55,7 @@ def get_isolated_workload_ids():
 
 @app.route('/cpu')
 def get_cpu():
-    packages = []
-    for p in __workload_manager.get_cpu().get_packages():
-
-        cores = []
-        for c in p.get_cores():
-
-            threads = []
-            for t in c.get_threads():
-                threads.append({
-                    "id": t.get_id(),
-                    "workload_id": t.get_workload_ids()
-                })
-            cores.append({
-                "id": c.get_id(),
-                "threads": threads
-            })
-
-        packages.append({
-            "id": p.get_id(),
-            "cores": cores
-        })
-
-    response = {
-        "packages": packages
-    }
-
-    return json.dumps(response)
+    return json.dumps(__workload_manager.get_cpu().to_dict())
 
 
 @app.route('/violations')

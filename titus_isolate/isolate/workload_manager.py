@@ -1,5 +1,5 @@
 import copy
-from threading import Lock
+from threading import Lock, Thread
 import time
 
 from titus_isolate import log
@@ -13,6 +13,7 @@ from titus_isolate.isolate.utils import get_burst_workloads, free_threads
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     ADDED_TO_FULL_CPU_ERROR_KEY, FULL_CORES_KEY, HALF_CORES_KEY, EMPTY_CORES_KEY
+from titus_isolate.metrics.event_log import report_cpu
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
 
@@ -57,6 +58,8 @@ class WorkloadManager(MetricsReporter):
                 func(arg)
                 stop_time = time.time()
                 self.__allocator_call_duration_sum_secs = stop_time - start_time
+                self.__report_cpu_state(self.__cpu)
+
             log.info("Released lock for func: {} on workload: {}".format(func.__name__, workload_id))
             return True
         except:
@@ -83,10 +86,7 @@ class WorkloadManager(MetricsReporter):
         new_cpu = self.__burst_cpu_allocator.assign_threads(new_cpu, workload.get_id(), workloads)
 
         # Apply cpuset updates
-        updates = get_updates(copy.deepcopy(self.get_cpu()), new_cpu)
-        for workload_id, thread_ids in updates.items():
-            log.info("updating workload: '{}' to '{}'".format(workload_id, thread_ids))
-            self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
+        self.__apply_cpuset_updates(copy.deepcopy(self.get_cpu()), new_cpu)
 
         self.__cpu = new_cpu
         self.__workloads = workloads
@@ -112,14 +112,17 @@ class WorkloadManager(MetricsReporter):
         new_cpu = self.__burst_cpu_allocator.free_threads(new_cpu, workload.get_id(), workloads)
 
         # Apply cpuset updates
-        updates = get_updates(copy.deepcopy(self.get_cpu()), new_cpu)
-        for workload_id, thread_ids in updates.items():
-            log.info("updating workload: '{}' to '{}'".format(workload_id, thread_ids))
-            self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
+        self.__apply_cpuset_updates(copy.deepcopy(self.get_cpu()), new_cpu)
 
         workloads.pop(workload_id)
         self.__cpu = new_cpu
         self.__workloads = workloads
+
+    def __apply_cpuset_updates(self, old_cpu, new_cpu):
+        updates = get_updates(old_cpu, new_cpu)
+        for workload_id, thread_ids in updates.items():
+            log.info("updating workload: '{}' to '{}'".format(workload_id, thread_ids))
+            self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
 
     def get_workloads(self):
         return self.__workloads.values()
@@ -176,6 +179,11 @@ class WorkloadManager(MetricsReporter):
 
     def __get_occupied_thread_count(self, core):
         return len([t for t in core.get_threads() if t.is_claimed()])
+
+    @staticmethod
+    def __report_cpu_state(cpu):
+        log.info("Applied updates resulting in cpu: {}".format(cpu))
+        Thread(target=report_cpu, args=[cpu]).start()
 
     def report_metrics(self, tags):
         self.__reg.gauge(RUNNING, tags).set(1)
