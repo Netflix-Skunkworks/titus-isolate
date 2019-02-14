@@ -1,6 +1,7 @@
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
+from titus_isolate.docker.constants import STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
 
 

@@ -36,6 +36,10 @@ def gauge_value_reached(registry, key, min_expected_value):
     return value >= min_expected_value
 
 
+def get_threads_with_workload(cpu, workload_id):
+    return [t for t in cpu.get_threads() if workload_id in t.get_workload_ids()]
+
+
 def config_logs(level):
     logging.basicConfig(
         format=LOG_FMT_STRING,
