@@ -15,6 +15,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     ADDED_TO_FULL_CPU_ERROR_KEY, FULL_CORES_KEY, HALF_CORES_KEY, EMPTY_CORES_KEY
 from titus_isolate.metrics.event_log import report_cpu
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
+from titus_isolate.numa.utils import update_numa_balancing
 
 
 class WorkloadManager(MetricsReporter):
@@ -39,6 +40,7 @@ class WorkloadManager(MetricsReporter):
         log.info("Created workload manager")
 
     def add_workload(self, workload):
+        update_numa_balancing(workload, self.__cpu)
         succeeded = self.__update_workload(self.__add_workload, workload, workload.get_id())
         if succeeded:
             self.__added_count += 1
@@ -177,7 +179,8 @@ class WorkloadManager(MetricsReporter):
     def __get_cores_with_occupied_threads(self, thread_count):
         return [c for c in self.get_cpu().get_cores() if self.__get_occupied_thread_count(c) == thread_count]
 
-    def __get_occupied_thread_count(self, core):
+    @staticmethod
+    def __get_occupied_thread_count(core):
         return len([t for t in core.get_threads() if t.is_claimed()])
 
     @staticmethod
