@@ -16,6 +16,7 @@ from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT
 from titus_isolate.model.workload import Workload
+from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.utils import set_config_manager, set_workload_manager, set_event_manager
 
 
@@ -102,4 +103,4 @@ class TestStatus(unittest.TestCase):
     @staticmethod
     def __get_default_workload_manager():
         cpu = get_cpu()
-        return WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator())
+        return WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator(), EmptyFreeThreadProvider())

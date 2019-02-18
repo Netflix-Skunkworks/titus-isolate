@@ -4,14 +4,14 @@ from threading import Lock
 import schedule
 
 from titus_isolate import log
+from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
+from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
 from titus_isolate.utils import get_workload_manager
 
-DEFAULT_SAMPLE_FREQUENCY_SEC = 6
 
-
-class WorkloadMonitorManager:
+class WorkloadMonitorManager(CpuUsageProvider):
 
     def __init__(self, sample_interval=DEFAULT_SAMPLE_FREQUENCY_SEC):
         self.__sample_interval = sample_interval
@@ -23,7 +23,7 @@ class WorkloadMonitorManager:
     def get_monitors(self):
         return self.__monitors
 
-    def get_cpu_usage(self, seconds):
+    def get_cpu_usage(self, seconds: int) -> dict:
         cpu_usage = {}
         for workload_id, monitor in self.get_monitors().items():
             cpu_usage[workload_id] = monitor.get_cpu_usage(seconds)

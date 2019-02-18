@@ -8,13 +8,14 @@ import docker
 from titus_isolate import log
 from titus_isolate.api.status import app
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.config.cpu_allocator_watcher import CpuAllocatorWatcher
+from titus_isolate.config.constants import CPU_ALLOCATOR, FREE_THREAD_PROVIDER
+from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.constants import FAILURE_EXIT_CODE
 from titus_isolate.docker.create_event_handler import CreateEventHandler
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.docker.free_event_handler import FreeEventHandler
 from titus_isolate.docker.utils import get_current_workloads
-from titus_isolate.isolate.utils import get_allocator
+from titus_isolate.isolate.utils import get_allocator, get_free_thread_provider
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.model.processor.config import get_cpu_from_env
@@ -32,8 +33,9 @@ def main(admin_port):
 
     exit_handler = RealExitHandler()
 
-    log.info("Starting watching for CPU allocator changes")
-    CpuAllocatorWatcher(get_config_manager(), exit_handler)
+    log.info("Watching property changes for restart...")
+    restart_properties = [CPU_ALLOCATOR, FREE_THREAD_PROVIDER]
+    RestartPropertyWatcher(get_config_manager(), exit_handler, restart_properties)
 
     log.info("Modeling the CPU...")
     cpu = get_cpu_from_env()
@@ -44,7 +46,11 @@ def main(admin_port):
 
     # Setup the workload manager
     log.info("Setting up the workload manager...")
-    workload_manager = WorkloadManager(cpu, FileCgroupManager(), get_allocator(get_config_manager()))
+    workload_manager = WorkloadManager(
+        cpu=cpu,
+        cgroup_manager=FileCgroupManager(),
+        static_cpu_allocator=get_allocator(get_config_manager()),
+        free_thread_provider=get_free_thread_provider(get_config_manager()))
     set_workload_manager(workload_manager)
 
     # Start performance monitoring

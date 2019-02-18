@@ -2,14 +2,11 @@ import logging
 import unittest
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.utils import config_logs, wait_until
+from tests.utils import config_logs
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.config.constants import ALLOCATOR_KEY, GREEDY, IP
-from titus_isolate.utils import start_periodic_scheduling
+from titus_isolate.config.constants import CPU_ALLOCATOR, GREEDY, IP
 
 config_logs(logging.DEBUG)
-
-CONFIG_CHANGE_INTERVAL = 0.1
 
 
 class TestConfigManager(unittest.TestCase):
@@ -18,37 +15,32 @@ class TestConfigManager(unittest.TestCase):
         property_provider = TestPropertyProvider({})
         config_manager = ConfigManager(property_provider)
         self.assertEqual(None, config_manager.get("foo"))
-        self.assertEqual(None, config_manager.get(ALLOCATOR_KEY))
+        self.assertEqual(None, config_manager.get(CPU_ALLOCATOR))
 
     def test_none_to_something_update(self):
         property_provider = TestPropertyProvider({})
-        config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL)
-        self.assertEqual(None, config_manager.get(ALLOCATOR_KEY))
+        config_manager = ConfigManager(property_provider)
 
-        start_periodic_scheduling()
-        property_provider.map[ALLOCATOR_KEY] = GREEDY
-        wait_until(lambda: config_manager.get(ALLOCATOR_KEY) == GREEDY)
+        self.assertEqual(None, config_manager.get(CPU_ALLOCATOR))
+        property_provider.map[CPU_ALLOCATOR] = GREEDY
+        self.assertEqual(GREEDY, config_manager.get(CPU_ALLOCATOR))
 
     def test_something_to_something_update(self):
         property_provider = TestPropertyProvider(
             {
-               ALLOCATOR_KEY: IP
+               CPU_ALLOCATOR: IP
             })
-        config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL)
-        self.assertEqual(IP, config_manager.get(ALLOCATOR_KEY))
+        config_manager = ConfigManager(property_provider)
 
-        start_periodic_scheduling()
-        property_provider.map[ALLOCATOR_KEY] = GREEDY
-        wait_until(lambda: config_manager.get(ALLOCATOR_KEY) == GREEDY)
+        self.assertEqual(IP, config_manager.get(CPU_ALLOCATOR))
+        property_provider.map[CPU_ALLOCATOR] = GREEDY
+        self.assertEqual(GREEDY, config_manager.get(CPU_ALLOCATOR))
 
     def test_something_to_no_change_update(self):
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: IP
+                CPU_ALLOCATOR: IP
             })
-        config_manager = ConfigManager(property_provider, CONFIG_CHANGE_INTERVAL)
-        self.assertEqual(IP, config_manager.get(ALLOCATOR_KEY))
-
-        original_update_count = config_manager.update_count
-        start_periodic_scheduling()
-        wait_until(lambda: config_manager.update_count > original_update_count)
+        config_manager = ConfigManager(property_provider)
+        self.assertEqual(IP, config_manager.get(CPU_ALLOCATOR))
+        self.assertEqual(IP, config_manager.get(CPU_ALLOCATOR))
