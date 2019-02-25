@@ -6,14 +6,14 @@ import schedule
 from titus_isolate import log
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
+from titus_isolate.utils import get_workload_manager
 
 DEFAULT_SAMPLE_FREQUENCY_SEC = 6
 
 
 class WorkloadMonitorManager:
 
-    def __init__(self, workload_manager, sample_interval=DEFAULT_SAMPLE_FREQUENCY_SEC):
-        self.__workload_manager = workload_manager
+    def __init__(self, sample_interval=DEFAULT_SAMPLE_FREQUENCY_SEC):
         self.__sample_interval = sample_interval
         self.__lock = Lock()
         self.__monitors = {}
@@ -51,7 +51,12 @@ class WorkloadMonitorManager:
             log.exception("Failed to sample performance monitors.")
 
     def __update_monitors(self):
-        workloads = self.__workload_manager.get_workloads()
+        wm = get_workload_manager()
+        if wm is None:
+            log.debug("Workload manager not yet present.")
+            return
+
+        workloads = wm.get_workloads()
 
         with self.__lock:
             # Remove monitors for workloads which are no longer managed

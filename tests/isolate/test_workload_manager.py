@@ -25,10 +25,10 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
 from titus_isolate.model.workload import Workload
-from titus_isolate.utils import override_config_manager
+from titus_isolate.utils import set_config_manager
 
 config_logs(logging.DEBUG)
-override_config_manager(ConfigManager(TestPropertyProvider({})))
+set_config_manager(ConfigManager(TestPropertyProvider({})))
 
 ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator()]
 

@@ -13,22 +13,75 @@ scheduling_lock = Lock()
 scheduling_started = False
 
 config_manager_lock = Lock()
-config_manager = None
+__config_manager = None
+
+workload_manager_lock = Lock()
+__workload_manager = None
+
+event_manager_lock = Lock()
+__event_manager = None
+
+workload_monitor_manager_lock = Lock()
+__workload_monitor_manager = None
 
 
 def get_config_manager(property_provider=AgentPropertyProvider()):
-    global config_manager
+    global __config_manager
 
     with config_manager_lock:
-        if config_manager is None:
-            config_manager = ConfigManager(property_provider)
+        if __config_manager is None:
+            __config_manager = ConfigManager(property_provider)
 
-        return config_manager
+        return __config_manager
 
 
-def override_config_manager(cfg_manager):
-    global config_manager
-    config_manager = cfg_manager
+def set_config_manager(config_manager):
+    global __config_manager
+
+    with config_manager_lock:
+        __config_manager = config_manager
+
+
+def get_workload_manager():
+    global __workload_manager
+
+    with workload_manager_lock:
+        return __workload_manager
+
+
+def set_workload_manager(workload_manager):
+    global __workload_manager
+
+    with workload_manager_lock:
+        __workload_manager = workload_manager
+
+
+def get_event_manager():
+    global __event_manager
+
+    with event_manager_lock:
+        return __event_manager
+
+
+def set_event_manager(event_manager):
+    global __event_manager
+
+    with event_manager_lock:
+        __event_manager = event_manager
+
+
+def set_workload_monitor_manager(workoad_monitor_manager):
+    global __workload_monitor_manager
+
+    with workload_monitor_manager_lock:
+        __workload_monitor_manager = workoad_monitor_manager
+
+
+def get_workload_monitor_manager():
+    global __workload_monitor_manager
+
+    with workload_monitor_manager_lock:
+        return __workload_monitor_manager
 
 
 def start_periodic_scheduling():

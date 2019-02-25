@@ -6,7 +6,7 @@ import click
 import docker
 
 from titus_isolate import log
-from titus_isolate.api.status import app, set_wm, set_em, set_workload_monitor_manager
+from titus_isolate.api.status import app
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 from titus_isolate.config.cpu_allocator_watcher import CpuAllocatorWatcher
 from titus_isolate.constants import FAILURE_EXIT_CODE
@@ -20,7 +20,8 @@ from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.real_exit_handler import RealExitHandler
-from titus_isolate.utils import start_periodic_scheduling, get_config_manager
+from titus_isolate.utils import start_periodic_scheduling, get_config_manager, set_workload_manager, \
+    set_workload_monitor_manager, set_event_manager
 
 
 @click.command()
@@ -44,11 +45,11 @@ def main(admin_port):
     # Setup the workload manager
     log.info("Setting up the workload manager...")
     workload_manager = WorkloadManager(cpu, FileCgroupManager(), get_allocator(get_config_manager()))
-    set_wm(workload_manager)
+    set_workload_manager(workload_manager)
 
     # Start performance monitoring
     log.info("Starting performance monitoring...")
-    workload_monitor_manager = WorkloadMonitorManager(workload_manager)
+    workload_monitor_manager = WorkloadMonitorManager()
     set_workload_monitor_manager(workload_monitor_manager)
 
     # Setup the event handlers
@@ -60,7 +61,7 @@ def main(admin_port):
     # Start event processing
     log.info("Starting Docker event handling...")
     event_manager = EventManager(docker.from_env().events(), event_handlers)
-    set_em(event_manager)
+    set_event_manager(event_manager)
 
     # Report metrics
     log.info("Starting metrics reporting...")

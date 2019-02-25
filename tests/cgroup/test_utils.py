@@ -8,7 +8,7 @@ from tests.utils import config_logs
 from titus_isolate.cgroup.utils import _get_cgroup_path_from_list, CPUSET, get_cgroup_path_from_file, \
     _wait_for_file_to_exist, parse_cpuacct_usage_all
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.utils import override_config_manager
+from titus_isolate.utils import set_config_manager
 
 config_logs(logging.DEBUG)
 
@@ -172,12 +172,12 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(None, _get_cgroup_path_from_list(cgroups_list, CPUSET))
 
     def test_parse_from_file(self):
-        override_config_manager(ConfigManager(TestPropertyProvider({})))
+        set_config_manager(ConfigManager(TestPropertyProvider({})))
         dir = os.path.dirname(os.path.abspath(__file__))
         self.assertEqual(expected_path, get_cgroup_path_from_file(dir + "/test_cgroup_file", CPUSET))
 
     def test_wait_for_file_to_exist(self):
-        override_config_manager(ConfigManager(TestPropertyProvider({})))
+        set_config_manager(ConfigManager(TestPropertyProvider({})))
         with self.assertRaises(TimeoutError):
             _wait_for_file_to_exist("/tmp/foo", 0.1)
 
