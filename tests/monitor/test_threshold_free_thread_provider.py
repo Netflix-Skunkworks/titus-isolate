@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 from tests.utils import config_logs
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
+from titus_isolate.config.constants import DEFAULT_PER_WORKLOAD_THRESHOLD
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload
@@ -62,16 +63,25 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertEqual([], free_threads)
 
     def test_low_usage_all_threads_claimed(self):
+        thread_count = len(get_cpu().get_threads())
+        free_threads = self.__test_uniform_usage(DEFAULT_PER_WORKLOAD_THRESHOLD)
+        self.assertEqual(thread_count, len(free_threads))
+
+    def test_high_usage_all_threads_claimed(self):
+        free_threads = self.__test_uniform_usage(DEFAULT_PER_WORKLOAD_THRESHOLD + 0.001)
+        self.assertEqual([], free_threads)
+
+    def __test_uniform_usage(self, usage):
         # Assign a workload to a CPU
         cpu = get_cpu()
-        thread_count =  len(cpu.get_threads())
+        thread_count = len(cpu.get_threads())
         workload = Workload("a", thread_count, STATIC)
         cpu = self.__assign_workload(cpu, workload)
 
         # Low uniform CPU usage
         w_usage = {}
         for x in range(thread_count):
-            w_usage[str(x)] = 0.001
+            w_usage[str(x)] = usage
         low_cpu_usage = {
             workload.get_id(): w_usage
         }
@@ -84,10 +94,7 @@ class TestWorkloadManager(unittest.TestCase):
             per_workload_threshold=TEST_PER_WORKLOAD_THRESHOLD,
             per_workload_duration_sec=DEFAULT_SAMPLE_FREQUENCY_SEC)
 
-        free_threads = free_thread_provider.get_free_threads(cpu)
-
-        # All threads should be free
-        self.assertEqual(thread_count, len(free_threads))
+        return free_thread_provider.get_free_threads(cpu)
 
     @staticmethod
     def __assign_workload(cpu, workload):

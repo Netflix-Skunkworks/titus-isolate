@@ -20,6 +20,9 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
         self.__per_workload_threshold = per_workload_threshold
         self.__per_workload_duration_sec = per_workload_duration_sec
 
+        log.info("ThresholdFreeThreadProvider created with total_threshold: '{}', total_duration_sec: '{}', per_workload_threshold: '{}', per_workload_duration_sec: '{}'".format(
+           self.__total_threshold, self.__total_duration_sec, self.__per_workload_threshold, self.__per_workload_duration_sec))
+
     def get_free_threads(self, cpu: Cpu) -> list:
         wmm = get_workload_monitor_manager()
         if wmm is None:
@@ -32,7 +35,7 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
         # A thread is free if no workload has claimed it or its combined usage is below the threshold
         free_threads = [t for t in cpu.get_threads() if self.__is_free(t, workload_usage, total_usage)]
         free_thread_ids = [t.get_id() for t in free_threads]
-        log.info("Found free threads: {}".format(free_thread_ids))
+        log.debug("Found free threads: {}".format(free_thread_ids))
 
         return free_threads
 
@@ -61,14 +64,6 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
             # A workload probably just started so the thread isn't free
             if not self.__is_reporting_metrics(w_id, [workload_usage, total_usage]):
                 log.debug("Thread '{}' is not free because workload: '{}' is does not have usage metrics.".format(
-                    thread.get_id(), w_id))
-                return False
-
-            usage_dict = workload_usage[w_id]
-
-            # Workload hasn't been running long enough to provide usage metrics
-            if usage_dict is None:
-                log.debug("Thread '{}' is not free because workload: '{}' has insufficient metrics.".format(
                     thread.get_id(), w_id))
                 return False
 

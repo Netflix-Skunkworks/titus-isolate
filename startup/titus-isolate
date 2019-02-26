@@ -8,7 +8,7 @@ import docker
 from titus_isolate import log
 from titus_isolate.api.status import app
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.config.constants import CPU_ALLOCATOR, FREE_THREAD_PROVIDER
+from titus_isolate.config.constants import RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.constants import FAILURE_EXIT_CODE
 from titus_isolate.docker.create_event_handler import CreateEventHandler
@@ -34,8 +34,7 @@ def main(admin_port):
     exit_handler = RealExitHandler()
 
     log.info("Watching property changes for restart...")
-    restart_properties = [CPU_ALLOCATOR, FREE_THREAD_PROVIDER]
-    RestartPropertyWatcher(get_config_manager(), exit_handler, restart_properties)
+    RestartPropertyWatcher(get_config_manager(), exit_handler, RESTART_PROPERTIES)
 
     log.info("Modeling the CPU...")
     cpu = get_cpu_from_env()
