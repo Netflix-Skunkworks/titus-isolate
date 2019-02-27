@@ -41,7 +41,7 @@ class TestWorkloadPerfMon(unittest.TestCase):
         self.assertEqual(1, len(buffer))
         self.assertEqual(cpu_usage.user + cpu_usage.system, buffer[0])
 
-    def test_cpu_usage(self):
+    def test_two_sample_monitors(self):
         workload = Workload(uuid.uuid4(), 2, STATIC)
         metrics_provider = CgroupMetricsProvider(workload)
         perf_mon = WorkloadPerformanceMonitor(metrics_provider, DEFAULT_SAMPLE_FREQUENCY_SEC)
@@ -65,3 +65,7 @@ class TestWorkloadPerfMon(unittest.TestCase):
         cpu_usage = perf_mon.get_cpu_usage(DEFAULT_SAMPLE_FREQUENCY_SEC)
         self.assertEqual(1, len(cpu_usage))
         self.assertEqual(simulated_cpu_time / (DEFAULT_SAMPLE_FREQUENCY_SEC * 1_000_000_000), cpu_usage['0'])
+
+        processing_time = perf_mon.get_processing_time_ns(DEFAULT_SAMPLE_FREQUENCY_SEC)
+        self.assertEqual(1, len(processing_time))
+        self.assertEqual(simulated_cpu_time, processing_time['0'])
