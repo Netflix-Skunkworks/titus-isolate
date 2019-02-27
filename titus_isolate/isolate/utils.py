@@ -5,10 +5,16 @@ from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
-from titus_isolate.config.constants import ALLOCATOR_KEY, CPU_ALLOCATORS, DEFAULT_ALLOCATOR, \
+from titus_isolate.config.config_manager import ConfigManager
+from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAULT_ALLOCATOR, \
     CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, IP, GREEDY, NOOP, \
-    NOOP_RESET
+    NOOP_RESET, FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER, EMPTY, THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
+    TOTAL_THRESHOLD, DEFAULT_THRESHOLD_TOTAL_DURATION_SEC, THRESHOLD_TOTAL_DURATION_SEC, DEFAULT_PER_WORKLOAD_THRESHOLD, \
+    PER_WORKLOAD_THRESHOLD, DEFAULT_PER_WORKLOAD_DURATION_SEC, PER_WORKLOAD_DURATION_SEC
 from titus_isolate.docker.constants import BURST, STATIC
+from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
+from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
+from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
 
 BUCKETS = ["A", "B"]
 
@@ -36,16 +42,38 @@ def get_sorted_workloads(workloads):
     return sorted(workloads, key=lambda w: w.get_creation_time())
 
 
-def free_threads(cpu, workload_id):
+def release_threads(cpu, workload_id):
     for t in cpu.get_threads():
         t.free(workload_id)
+
+
+def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvider:
+    free_thread_provider_str = config_manager.get(FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER)
+    free_thread_provider = None
+
+    if free_thread_provider_str == EMPTY:
+        free_thread_provider = EmptyFreeThreadProvider()
+    elif free_thread_provider_str == THRESHOLD:
+        total_threshold = config_manager.get(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
+        total_duration_sec = config_manager.get(THRESHOLD_TOTAL_DURATION_SEC, DEFAULT_THRESHOLD_TOTAL_DURATION_SEC)
+        per_workload_threshold = config_manager.get(PER_WORKLOAD_THRESHOLD, DEFAULT_PER_WORKLOAD_THRESHOLD)
+        per_workload_duration_sec = config_manager.get(PER_WORKLOAD_DURATION_SEC, DEFAULT_PER_WORKLOAD_DURATION_SEC)
+
+        free_thread_provider = ThresholdFreeThreadProvider(
+            total_threshold=total_threshold,
+            total_duration_sec=total_duration_sec,
+            per_workload_threshold=per_workload_threshold,
+            per_workload_duration_sec=per_workload_duration_sec)
+
+    log.info("Free thread provider: '{}'".format(free_thread_provider.__class__.__name__))
+    return free_thread_provider
 
 
 def get_allocator(config_manager, hour=None):
     if hour is None:
         hour = datetime.datetime.utcnow().hour
 
-    alloc_str = config_manager.get(ALLOCATOR_KEY)
+    alloc_str = config_manager.get(CPU_ALLOCATOR)
 
     if alloc_str == AB_TEST:
         return __get_ab_allocator(config_manager, hour)

@@ -1,6 +1,6 @@
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.docker.constants import STATIC
-from titus_isolate.isolate.utils import get_burst_workloads, free_threads
+from titus_isolate.isolate.utils import get_burst_workloads, release_threads
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.thread import Thread
 
@@ -23,13 +23,13 @@ class BurstCpuAllocator(CpuAllocator):
         return self.__reset_burst_assignments(cpu, burst_workloads, workloads)
 
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
-        free_threads(cpu, workload_id)
+        release_threads(cpu, workload_id)
         burst_workloads = [w for w in get_burst_workloads(workloads.values()) if w.get_id() != workload_id]
         return self.__reset_burst_assignments(cpu, burst_workloads, workloads)
 
     def __reset_burst_assignments(self, cpu: Cpu, burst_workloads: list, workloads: dict):
         for w in burst_workloads:
-            free_threads(cpu, w.get_id())
+            release_threads(cpu, w.get_id())
 
         for w in burst_workloads:
             self.__assign_threads(cpu, w.get_id(), workloads)

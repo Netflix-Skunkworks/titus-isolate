@@ -8,7 +8,7 @@ from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.config.constants import ALLOCATOR_KEY, NOOP, AB_TEST, GREEDY, CPU_ALLOCATOR_B, CPU_ALLOCATOR_A, IP, \
+from titus_isolate.config.constants import CPU_ALLOCATOR, NOOP, AB_TEST, GREEDY, CPU_ALLOCATOR_B, CPU_ALLOCATOR_A, IP, \
     EC2_INSTANCE_ID
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.isolate.utils import get_allocator, get_ab_bucket, _get_ab_bucket_int, get_sorted_workloads
@@ -22,7 +22,7 @@ class TestUtils(unittest.TestCase):
     def test_get_noop_cpu_allocator(self):
         property_provider = TestPropertyProvider(
             {
-               ALLOCATOR_KEY: NOOP
+               CPU_ALLOCATOR: NOOP
             })
         config_manager = ConfigManager(property_provider)
         allocator = get_allocator(config_manager)
@@ -32,7 +32,7 @@ class TestUtils(unittest.TestCase):
         even_instance_id = 'i-0cfefd19c9a8db976'
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST,
+                CPU_ALLOCATOR: AB_TEST,
                 CPU_ALLOCATOR_A: IP,
                 CPU_ALLOCATOR_B: GREEDY,
                 EC2_INSTANCE_ID: even_instance_id,
@@ -45,7 +45,7 @@ class TestUtils(unittest.TestCase):
         odd_instance_id = 'i-0cfefd19c9a8db977'
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST,
+                CPU_ALLOCATOR: AB_TEST,
                 CPU_ALLOCATOR_A: IP,
                 CPU_ALLOCATOR_B: GREEDY,
                 EC2_INSTANCE_ID: odd_instance_id
@@ -58,7 +58,7 @@ class TestUtils(unittest.TestCase):
     def test_ab_allocator_fallback(self):
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST
+                CPU_ALLOCATOR: AB_TEST
             })
         config_manager = ConfigManager(property_provider)
 
@@ -72,7 +72,7 @@ class TestUtils(unittest.TestCase):
         even_instance_id = 'i-0cfefd19c9a8db976'
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST,
+                CPU_ALLOCATOR: AB_TEST,
                 CPU_ALLOCATOR_A: IP,
                 CPU_ALLOCATOR_B: GREEDY,
                 EC2_INSTANCE_ID: even_instance_id
@@ -85,7 +85,7 @@ class TestUtils(unittest.TestCase):
         odd_instance_id = 'i-0cfefd19c9a8db977'
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST,
+                CPU_ALLOCATOR: AB_TEST,
                 CPU_ALLOCATOR_A: IP,
                 CPU_ALLOCATOR_B: GREEDY,
                 EC2_INSTANCE_ID: odd_instance_id
@@ -98,7 +98,7 @@ class TestUtils(unittest.TestCase):
     def test_undefined_instance_id(self):
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST,
+                CPU_ALLOCATOR: AB_TEST,
                 CPU_ALLOCATOR_A: IP,
                 CPU_ALLOCATOR_B: GREEDY
             })
@@ -111,7 +111,7 @@ class TestUtils(unittest.TestCase):
         even_instance_id = 'i-0cfefd19c9a8db976'
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST,
+                CPU_ALLOCATOR: AB_TEST,
                 CPU_ALLOCATOR_A: IP,
                 CPU_ALLOCATOR_B: GREEDY,
                 EC2_INSTANCE_ID: even_instance_id
@@ -122,7 +122,7 @@ class TestUtils(unittest.TestCase):
         odd_instance_id = 'i-0cfefd19c9a8db977'
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST,
+                CPU_ALLOCATOR: AB_TEST,
                 CPU_ALLOCATOR_A: IP,
                 CPU_ALLOCATOR_B: GREEDY,
                 EC2_INSTANCE_ID: odd_instance_id
@@ -133,7 +133,7 @@ class TestUtils(unittest.TestCase):
         letter_instance_id = 'i-0cfefd19c9a8db97x'
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST,
+                CPU_ALLOCATOR: AB_TEST,
                 CPU_ALLOCATOR_A: IP,
                 CPU_ALLOCATOR_B: GREEDY,
                 EC2_INSTANCE_ID: letter_instance_id
@@ -144,7 +144,7 @@ class TestUtils(unittest.TestCase):
     def test_get_ab_bucket_undefined(self):
         property_provider = TestPropertyProvider(
             {
-                ALLOCATOR_KEY: AB_TEST,
+                CPU_ALLOCATOR: AB_TEST,
                 CPU_ALLOCATOR_A: IP,
                 CPU_ALLOCATOR_B: GREEDY
             })

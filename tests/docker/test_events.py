@@ -12,14 +12,14 @@ from titus_isolate.docker.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_
 from titus_isolate.docker.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
-from titus_isolate.utils import override_config_manager
+from titus_isolate.utils import set_config_manager
 
 DEFAULT_CPU_COUNT = 2
 
 config_logs(logging.DEBUG)
 
 DEFAULT_TEST_EVENT_TIMEOUT_SECS = 0.01
-override_config_manager(ConfigManager(TestPropertyProvider({})))
+set_config_manager(ConfigManager(TestPropertyProvider({})))
 
 
 class TestEvents(unittest.TestCase):

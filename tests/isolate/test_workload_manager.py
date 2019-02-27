@@ -25,10 +25,11 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
 from titus_isolate.model.workload import Workload
-from titus_isolate.utils import override_config_manager
+from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
+from titus_isolate.utils import set_config_manager
 
 config_logs(logging.DEBUG)
-override_config_manager(ConfigManager(TestPropertyProvider({})))
+set_config_manager(ConfigManager(TestPropertyProvider({})))
 
 ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator()]
 
@@ -41,7 +42,7 @@ class TestWorkloadManager(unittest.TestCase):
             workload = Workload(uuid.uuid4(), thread_count, STATIC)
 
             cgroup_manager = MockCgroupManager()
-            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator, EmptyFreeThreadProvider())
 
             # Add workload
             workload_manager.add_workload(workload)
@@ -58,7 +59,7 @@ class TestWorkloadManager(unittest.TestCase):
             workload = Workload(uuid.uuid4(), thread_count, BURST)
 
             cgroup_manager = MockCgroupManager()
-            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator, EmptyFreeThreadProvider())
 
             # Add workload
             workload_manager.add_workload(workload)
@@ -80,7 +81,7 @@ class TestWorkloadManager(unittest.TestCase):
             thread_count = 2
             workload = Workload(uuid.uuid4(), thread_count, STATIC)
 
-            workload_manager = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
+            workload_manager = WorkloadManager(get_cpu(), MockCgroupManager(), allocator, EmptyFreeThreadProvider())
 
             # Remove from empty set
             workload_manager.remove_workload(unknown_workload_id)
@@ -146,7 +147,7 @@ class TestWorkloadManager(unittest.TestCase):
             static1 = Workload("static1", thread_count, STATIC)
 
             cgroup_manager = MockCgroupManager()
-            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator, EmptyFreeThreadProvider())
 
             # Add static workload
             log.info("ADDING STATIC0")
@@ -191,7 +192,7 @@ class TestWorkloadManager(unittest.TestCase):
 
         cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)
 
-        workload_manager = WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator())
+        workload_manager = WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator(), EmptyFreeThreadProvider())
         workload_manager.add_workload(w_a)
         workload_manager.add_workload(w_b)
         workload_manager.add_workload(w_c)
@@ -310,7 +311,7 @@ class TestWorkloadManager(unittest.TestCase):
             w0 = Workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
 
             cgroup_manager = MockCgroupManager()
-            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator, EmptyFreeThreadProvider())
             workload_manager.add_workload(w0)
 
             self.assertTrue(is_cpu_full(workload_manager.get_cpu()))
@@ -323,16 +324,16 @@ class TestWorkloadManager(unittest.TestCase):
     def test_is_isolated(self):
         real_allocators = [GreedyCpuAllocator(), IntegerProgramCpuAllocator()]
         for allocator in real_allocators:
-            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
+            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator, EmptyFreeThreadProvider())
             self.assertFalse(wm.is_isolated(uuid.uuid4()))
 
         for allocator in real_allocators:
             workload = Workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
-            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
+            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator, EmptyFreeThreadProvider())
             wm.add_workload(workload)
             self.assertTrue(wm.is_isolated(workload.get_id()))
 
         noop_allocators = [NoopCpuAllocator(), NoopResetCpuAllocator()]
         for allocator in noop_allocators:
-            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
+            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator, EmptyFreeThreadProvider())
             self.assertTrue(wm.is_isolated(uuid.uuid4()))
