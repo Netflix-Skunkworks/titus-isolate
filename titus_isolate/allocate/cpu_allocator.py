@@ -30,5 +30,18 @@ class CpuAllocator(abc.ABC, MetricsReporter):
         """
         pass
 
+    @abc.abstractmethod
+    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+        """
+        This method will be called periodically to provide an opportunity to move already running
+        workloads according to whatever policy the allocator deems appropriate.  Examples policies
+        may choose to oversubscribe resources or improve isolation.
+
+        :param cpu: An object indicating the state of the CPU before freeing threads
+        :param workloads: A map of all relevant workloads including the workload to be removed.
+        The keys are workload ids, the values are Workload objects.
+        """
+        pass
+
     def str(self):
         return self.__class__.__name__

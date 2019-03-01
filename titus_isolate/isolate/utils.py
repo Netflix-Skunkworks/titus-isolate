@@ -11,7 +11,6 @@ from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAUL
     NOOP_RESET, FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER, EMPTY, THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
     TOTAL_THRESHOLD, DEFAULT_THRESHOLD_TOTAL_DURATION_SEC, THRESHOLD_TOTAL_DURATION_SEC, DEFAULT_PER_WORKLOAD_THRESHOLD, \
     PER_WORKLOAD_THRESHOLD, DEFAULT_PER_WORKLOAD_DURATION_SEC, PER_WORKLOAD_DURATION_SEC
-from titus_isolate.docker.constants import BURST, STATIC
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
@@ -24,27 +23,6 @@ CPU_ALLOCATOR_NAME_TO_CLASS_MAP = {
     NOOP: NoopCpuAllocator,
     NOOP_RESET: NoopResetCpuAllocator,
 }
-
-
-def get_burst_workloads(workloads):
-    return get_workloads_by_type(workloads, BURST)
-
-
-def get_static_workloads(workloads):
-    return get_workloads_by_type(workloads, STATIC)
-
-
-def get_workloads_by_type(workloads, workload_type):
-    return [w for w in workloads if w.get_type() == workload_type]
-
-
-def get_sorted_workloads(workloads):
-    return sorted(workloads, key=lambda w: w.get_creation_time())
-
-
-def release_threads(cpu, workload_id):
-    for t in cpu.get_threads():
-        t.free(workload_id)
 
 
 def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvider:
@@ -65,7 +43,7 @@ def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvide
             per_workload_threshold=per_workload_threshold,
             per_workload_duration_sec=per_workload_duration_sec)
 
-    log.info("Free thread provider: '{}'".format(free_thread_provider.__class__.__name__))
+    log.debug("Free thread provider: '{}'".format(free_thread_provider.__class__.__name__))
     return free_thread_provider
 
 
@@ -78,29 +56,30 @@ def get_allocator(config_manager, hour=None):
     if alloc_str == AB_TEST:
         return __get_ab_allocator(config_manager, hour)
     else:
-        return __get_allocator(alloc_str)
+        return __get_allocator(alloc_str, config_manager)
 
 
-def __get_allocator(allocator_str):
+def __get_allocator(allocator_str, config_manager):
     if allocator_str not in CPU_ALLOCATORS:
         log.error("Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(allocator_str, DEFAULT_ALLOCATOR))
         allocator_str = DEFAULT_ALLOCATOR
 
-    return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str]()
+    free_thread_provider = get_free_thread_provider(config_manager)
+    return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str](free_thread_provider)
 
 
 def __get_ab_allocator(config_manager, hour):
     a_allocator_str = config_manager.get(CPU_ALLOCATOR_A)
     b_allocator_str = config_manager.get(CPU_ALLOCATOR_B)
 
-    a_allocator = __get_allocator(a_allocator_str)
-    b_allocator = __get_allocator(b_allocator_str)
+    a_allocator = __get_allocator(a_allocator_str, config_manager)
+    b_allocator = __get_allocator(b_allocator_str, config_manager)
 
     bucket = get_ab_bucket(config_manager, hour)
 
     if bucket not in BUCKETS:
         log.error("Unexpected A/B bucket specified: '{}', falling back to default: '{}'".format(bucket, DEFAULT_ALLOCATOR))
-        return __get_allocator("UNDEFINED_AB_BUCKET")
+        return __get_allocator("UNDEFINED_AB_BUCKET", config_manager)
 
     return {
         "A": a_allocator,

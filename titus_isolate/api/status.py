@@ -5,6 +5,7 @@ from flask import Flask
 
 from titus_isolate.config.constants import TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
+from titus_isolate.isolate.utils import get_free_thread_provider
 from titus_isolate.utils import get_config_manager, get_workload_manager, get_event_manager, \
     get_workload_monitor_manager
 

@@ -103,4 +103,4 @@ class TestStatus(unittest.TestCase):
     @staticmethod
     def __get_default_workload_manager():
         cpu = get_cpu()
-        return WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator(), EmptyFreeThreadProvider())
+        return WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator())

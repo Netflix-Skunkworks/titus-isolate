@@ -51,7 +51,7 @@ class TestContext:
     def __init__(self, cpu=None, allocator=IntegerProgramCpuAllocator()):
         if cpu is None:
             cpu = get_cpu()
-        self.__workload_manager = WorkloadManager(cpu, MockCgroupManager(), allocator, EmptyFreeThreadProvider())
+        self.__workload_manager = WorkloadManager(cpu, MockCgroupManager(), allocator)
         self.__create_event_handler = CreateEventHandler(self.__workload_manager)
         self.__free_event_handler = FreeEventHandler(self.__workload_manager)
 
