@@ -3,7 +3,10 @@ from threading import Lock
 
 from titus_isolate import log
 
-MAX_COUNTER_BUFFER_SIZE = 600
+from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC
+
+# Maintain buffers for the last hour
+MAX_COUNTER_BUFFER_SIZE = int(60 * 60 / DEFAULT_SAMPLE_FREQUENCY_SEC)
 TIMESTAMP = "timestamp"
 
 
@@ -27,18 +30,23 @@ class WorkloadPerformanceMonitor:
                 copy[key] = list(buffer)
             return copy
 
-    def get_cpu_usage(self, seconds):
-        sample_count = int(seconds) // self.__sample_frequency_sec
+    def get_processing_time_ns(self, seconds):
+        buffers, start, end = self.__get_buffers_start_end(seconds)
 
-        buffers = self.get_buffers()
-        end = len(buffers[TIMESTAMP]) - 1
-        start = end - sample_count
-
-        # Insufficient samples to satisfy request
-        if start < 0:
+        if buffers is None:
             log.debug(
-                "Insufficient samples to calculate cpu usage over the last '{}' seconds for workload: '{}'".format(
-                seconds, self.get_workload().get_id()))
+                "Insufficient samples to calculate processing time for workload: '{}'".format(
+                    self.get_workload().get_id()))
+            return None
+
+        return self.__get_processing_time(buffers, start, end)
+
+    def get_cpu_usage(self, seconds):
+        buffers, start, end = self.__get_buffers_start_end(seconds)
+
+        if buffers is None:
+            log.debug(
+                "Insufficient samples to calculate cpu usage for workload: '{}'".format(self.get_workload().get_id()))
             return None
 
         end_time = buffers[TIMESTAMP][end]
@@ -46,12 +54,11 @@ class WorkloadPerformanceMonitor:
         diff = end_time - start_time
         wall_time_ns = diff.total_seconds() * 1000000000
 
+        processing_time = self.__get_processing_time(buffers, start, end)
+
         cpu_usage = collections.OrderedDict()
-        for pu_id, buffer in sorted(buffers.items()):
-            if pu_id == TIMESTAMP:
-                continue
-            cpu_time_ns = buffer[end] - buffer[start]
-            cpu_usage[pu_id] = cpu_time_ns / wall_time_ns
+        for pu_id, proc_time in processing_time.items():
+            cpu_usage[pu_id] = proc_time / wall_time_ns
 
         return cpu_usage
 
@@ -74,3 +81,28 @@ class WorkloadPerformanceMonitor:
     def __init_buffers(self, count):
         for x in range(count):
             self.__buffers[str(x)] = collections.deque([], MAX_COUNTER_BUFFER_SIZE)
+
+    def __get_buffers_start_end(self, seconds):
+        sample_count = int(seconds) // self.__sample_frequency_sec
+
+        buffers = self.get_buffers()
+        end = len(buffers[TIMESTAMP]) - 1
+        start = end - sample_count
+
+        # Insufficient samples to satisfy request
+        if start < 0:
+            log.debug("Insufficient samples to provide buffers over the last '{}' seconds".format(seconds))
+            return None, None, None
+
+        return buffers, start, end
+
+    @staticmethod
+    def __get_processing_time(buffers, start, end):
+        processing_time = collections.OrderedDict()
+        for pu_id, buffer in sorted(buffers.items()):
+            if pu_id == TIMESTAMP:
+                continue
+            cpu_time_ns = buffer[end] - buffer[start]
+            processing_time[pu_id] = cpu_time_ns
+
+        return processing_time
