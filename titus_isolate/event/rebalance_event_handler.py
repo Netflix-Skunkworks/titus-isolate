@@ -1,3 +1,5 @@
+import logging
+
 from titus_isolate.event.constants import ACTION, REBALANCE
 from titus_isolate.event.event_handler import EventHandler
 
@@ -5,7 +7,7 @@ from titus_isolate.event.event_handler import EventHandler
 class RebalanceEventHandler(EventHandler):
 
     def __init__(self, workload_manager):
-        super().__init__(workload_manager)
+        super().__init__(workload_manager, logging.DEBUG)
 
     def handle(self, event):
         if not self.__relevant(event):

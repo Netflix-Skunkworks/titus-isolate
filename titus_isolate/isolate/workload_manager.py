@@ -9,7 +9,6 @@ from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
-from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.update import get_updates
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
@@ -123,7 +122,7 @@ class WorkloadManager(MetricsReporter):
         return len(updates) > 0
 
     def get_workloads(self):
-        return self.__workloads.values()
+        return list(self.__workloads.values())
 
     def get_isolated_workload_ids(self):
         return self.__cgroup_manager.get_isolated_workload_ids()

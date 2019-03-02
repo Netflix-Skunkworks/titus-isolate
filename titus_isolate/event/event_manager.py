@@ -5,10 +5,12 @@ from threading import Thread, Lock
 import schedule
 
 from titus_isolate import log
-from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC
-from titus_isolate.event.constants import ACTION, REBALANCE, REBALANCE_EVENT
+from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC, ENABLE_RECONCILIATION_KEY, \
+    DEFAULT_ENABLE_RECONCILIATION, DEFAULT_RECONCILIATION_FREQUENCY_SEC
+from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
+from titus_isolate.utils import get_config_manager
 
 DEFAULT_EVENT_TIMEOUT_SECS = 60
 
@@ -35,6 +37,11 @@ class EventManager(MetricsReporter):
         self.__pulling_thread = Thread(target=self.__pull_events)
 
         schedule.every(DEFAULT_SAMPLE_FREQUENCY_SEC).seconds.do(self.__rebalance)
+
+        enable_reconciliation = bool(get_config_manager().get(ENABLE_RECONCILIATION_KEY, DEFAULT_ENABLE_RECONCILIATION))
+        log.info("Enabling reconciliation: '{}'".format(enable_reconciliation))
+        if enable_reconciliation:
+            schedule.every(DEFAULT_RECONCILIATION_FREQUENCY_SEC).seconds.do(self.__reconcile)
 
     def join(self):
         self.__pulling_thread.join()
@@ -68,6 +75,9 @@ class EventManager(MetricsReporter):
 
     def __rebalance(self):
         self.__q.put(REBALANCE_EVENT)
+
+    def __reconcile(self):
+        self.__q.put(RECONCILE_EVENT)
 
     def __pull_events(self):
         for event in self.__events:

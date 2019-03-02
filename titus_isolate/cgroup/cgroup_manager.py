@@ -10,6 +10,10 @@ class CgroupManager(MetricsReporter):
         pass
 
     @abstractmethod
+    def get_cpuset(self, container_name):
+        pass
+
+    @abstractmethod
     def release_cpuset(self, container_name):
         pass
 

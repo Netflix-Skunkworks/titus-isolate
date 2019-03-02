@@ -13,6 +13,7 @@ CONTAINER = "container"
 CREATE = "create"
 DIE = "die"
 REBALANCE = "rebalance"
+RECONCILE = "reconcile"
 
 CPU_LABEL_KEY = "com.netflix.titus.cpu"
 WORKLOAD_TYPE_LABEL_KEY = "com.netflix.titus.workload.type"
@@ -23,3 +24,4 @@ BURST = "burst"
 WORKLOAD_TYPES = [STATIC, BURST]
 
 REBALANCE_EVENT = json.dumps({ACTION: REBALANCE}).encode("utf-8")
+RECONCILE_EVENT = json.dumps({ACTION: RECONCILE}).encode("utf-8")

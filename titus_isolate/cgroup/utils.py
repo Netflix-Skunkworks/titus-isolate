@@ -97,6 +97,14 @@ def set_cpuset(container_name, threads_str):
         f.write(threads_str)
 
 
+def get_cpuset(container_name):
+    path = get_cpuset_path(container_name)
+
+    log.debug("Reading path '{}'".format(path))
+    with open(path, 'r') as f:
+        return f.read()
+
+
 def set_quota(container_name, value):
     path = get_quota_path(container_name)
 
@@ -137,3 +145,9 @@ def parse_cpuacct_usage_all(text) -> List[CpuUsage]:
     return usage_rows
 
 
+def parse_cpuset(cpuset_str: str) -> list:
+    ranges = list(x.split("-") for x in cpuset_str.split(","))
+    if len(ranges) == 0:
+        return []
+    else:
+        return list([i for r in ranges for i in range(int(r[0]), int(r[-1]) + 1)])
