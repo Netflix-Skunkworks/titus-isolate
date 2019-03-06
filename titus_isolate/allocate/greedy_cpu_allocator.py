@@ -1,6 +1,6 @@
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_isolate.docker.constants import STATIC
+from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads, update_burst_workloads, rebalance

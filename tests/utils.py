@@ -4,8 +4,9 @@ import time
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from titus_isolate import LOG_FMT_STRING, log
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
-from titus_isolate.docker.create_event_handler import CreateEventHandler
-from titus_isolate.docker.free_event_handler import FreeEventHandler
+from titus_isolate.event.create_event_handler import CreateEventHandler
+from titus_isolate.event.free_event_handler import FreeEventHandler
+from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
@@ -54,6 +55,7 @@ class TestContext:
         self.__workload_manager = WorkloadManager(cpu, MockCgroupManager(), allocator)
         self.__create_event_handler = CreateEventHandler(self.__workload_manager)
         self.__free_event_handler = FreeEventHandler(self.__workload_manager)
+        self.__rebalance_event_handler = RebalanceEventHandler(self.__workload_manager)
 
     def get_cpu(self):
         return self.__workload_manager.get_cpu()
@@ -67,7 +69,10 @@ class TestContext:
     def get_free_event_handler(self):
         return self.__free_event_handler
 
+    def get_rebalance_event_handler(self):
+        return self.__rebalance_event_handler
+
     def get_event_handlers(self):
-        return [self.__create_event_handler, self.__free_event_handler]
+        return [self.__create_event_handler, self.__free_event_handler, self.__rebalance_event_handler]
 
 

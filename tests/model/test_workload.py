@@ -1,7 +1,7 @@
 import unittest
 import uuid
 
-from titus_isolate.docker.constants import STATIC, BURST
+from titus_isolate.event.constants import STATIC, BURST
 from titus_isolate.model.workload import Workload
 
 

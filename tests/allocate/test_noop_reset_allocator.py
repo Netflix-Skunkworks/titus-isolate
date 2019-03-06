@@ -5,7 +5,7 @@ import uuid
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.utils import config_logs
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
-from titus_isolate.docker.constants import STATIC
+from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload
 

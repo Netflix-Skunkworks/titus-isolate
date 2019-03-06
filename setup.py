@@ -5,7 +5,7 @@ from distutils.core import setup
 
 install_requires = [
     'click',
-    'docker',
+    'event',
     'flask'
 ]
 
@@ -20,7 +20,7 @@ setup(name='titus-isolate',
           "titus_isolate/api",
           "titus_isolate/cgroup",
           "titus_isolate/config",
-          "titus_isolate/docker",
+          "titus_isolate/event",
           "titus_isolate/isolate",
           "titus_isolate/metrics",
           "titus_isolate/model",

@@ -2,7 +2,11 @@ import json
 from queue import Queue, Empty
 from threading import Thread, Lock
 
+import schedule
+
 from titus_isolate import log
+from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC
+from titus_isolate.event.constants import ACTION, REBALANCE, REBALANCE_EVENT
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
@@ -29,6 +33,8 @@ class EventManager(MetricsReporter):
 
         self.__processing_thread = Thread(target=self.__process_events)
         self.__pulling_thread = Thread(target=self.__pull_events)
+
+        schedule.every(DEFAULT_SAMPLE_FREQUENCY_SEC).seconds.do(self.__rebalance)
 
     def join(self):
         self.__pulling_thread.join()
@@ -59,6 +65,9 @@ class EventManager(MetricsReporter):
 
     def get_queue_depth(self):
         return self.__q.qsize()
+
+    def __rebalance(self):
+        self.__q.put(REBALANCE_EVENT)
 
     def __pull_events(self):
         for event in self.__events:

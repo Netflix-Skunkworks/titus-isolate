@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from tests.utils import config_logs
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.config.constants import DEFAULT_PER_WORKLOAD_THRESHOLD
-from titus_isolate.docker.constants import STATIC
+from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider

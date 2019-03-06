@@ -40,8 +40,6 @@ class WorkloadManager(MetricsReporter):
         self.__cgroup_manager = cgroup_manager
         self.__workloads = {}
 
-        schedule.every(DEFAULT_SAMPLE_FREQUENCY_SEC).seconds.do(self.rebalance)
-
         log.info("Created workload manager")
 
     def add_workload(self, workload):

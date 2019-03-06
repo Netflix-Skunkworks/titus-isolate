@@ -1,6 +1,6 @@
-from titus_isolate.docker.constants import ACTION, ACTOR, ATTRIBUTES, CREATE, REQUIRED_LABELS
-from titus_isolate.docker.event_handler import EventHandler
-from titus_isolate.docker.utils import get_container_name, get_cpu_count, get_workload_type
+from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CREATE, REQUIRED_LABELS
+from titus_isolate.event.event_handler import EventHandler
+from titus_isolate.event.utils import get_container_name, get_cpu_count, get_workload_type
 from titus_isolate.model.workload import Workload
 
 

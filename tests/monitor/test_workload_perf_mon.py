@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 
-from titus_isolate.docker.constants import STATIC
+from titus_isolate.event.constants import STATIC
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
 from titus_isolate.monitor.cpu_usage import CpuUsage, CpuUsageSnapshot

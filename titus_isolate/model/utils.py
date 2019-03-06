@@ -1,4 +1,4 @@
-from titus_isolate.docker.constants import BURST, STATIC
+from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 

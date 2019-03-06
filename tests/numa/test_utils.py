@@ -1,6 +1,6 @@
 import unittest
 
-from titus_isolate.docker.constants import STATIC
+from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.numa.utils import _set_numa_balancing, _occupies_entire_cpu
