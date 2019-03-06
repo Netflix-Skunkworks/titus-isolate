@@ -48,9 +48,10 @@ def main(admin_port):
     workload_manager = WorkloadManager(
         cpu=cpu,
         cgroup_manager=FileCgroupManager(),
-        static_cpu_allocator=get_allocator(get_config_manager()),
-        free_thread_provider=get_free_thread_provider(get_config_manager()))
+        cpu_allocator=get_allocator(get_config_manager()))
     set_workload_manager(workload_manager)
+
+    log.info("Using free cpu provider: {}".format(get_free_thread_provider(get_config_manager()).__class__.__name__))
 
     # Start performance monitoring
     log.info("Starting performance monitoring...")

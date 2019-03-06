@@ -3,49 +3,44 @@ from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
 from titus_isolate.docker.constants import STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
+from titus_isolate.model.processor.cpu import Cpu
+from titus_isolate.model.processor.utils import is_cpu_full
+from titus_isolate.model.utils import get_sorted_workloads, get_burst_workloads, release_all_threads, \
+    update_burst_workloads, rebalance
+from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 
 
 class IntegerProgramCpuAllocator(CpuAllocator):
 
-    def __init__(self, solver_max_runtime_secs=1.5):
+    def __init__(self, free_thread_provider=EmptyFreeThreadProvider(), solver_max_runtime_secs=1.5):
         self.__reg = None
-
         self.__cache = {}  # TODO: use @functools.lru_cache instead
-        self.__solver_max_runtime_secs = solver_max_runtime_secs
         self.__time_bound_call_count = 0
 
-    def __assign_new_mapping(self, cpu, thread_id2workload_id):
-        cpu.clear()
-        for t in cpu.get_threads():
-            wid = thread_id2workload_id.get(t.get_id(), None)
-            if wid is not None:
-                t.claim(wid)
-
-    def __compute_new_placement(self, cpu, current_placement, requested_units):
-        key_req = '-'.join([str(e) for e in requested_units])
-        cache_key = key_req
-        if current_placement is not None: 
-            cache_key += '&' + '%'.join(['|'.join([str(e) for e in v]) for v in current_placement])
-
-        cache_val = self.__cache.get(cache_key, None)
-        if cache_val is None:
-            placement, status = optimize_ip(
-                requested_units,
-                len(cpu.get_threads()),
-                len(cpu.get_packages()),
-                current_placement,
-                verbose=False,
-                max_runtime_secs=self.__solver_max_runtime_secs)
-            self.__cache[cache_key] = (placement, status)
-        else:
-            placement, status = cache_val[0], cache_val[1]
-
-        if status == IP_SOLUTION_TIME_BOUND:
-            self.__time_bound_call_count += 1
-
-        return placement
+        self.__solver_max_runtime_secs = solver_max_runtime_secs
+        self.__free_thread_provider = free_thread_provider
 
     def assign_threads(self, cpu, workload_id, workloads):
+        burst_workloads = get_burst_workloads(workloads.values())
+        release_all_threads(cpu, burst_workloads)
+        if workloads[workload_id].get_type() == STATIC:
+            self.__assign_threads(cpu, workload_id, workloads)
+        update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
+        return cpu
+
+    def free_threads(self, cpu, workload_id, workloads):
+        burst_workloads = get_burst_workloads(workloads.values())
+        release_all_threads(cpu, burst_workloads)
+        if workloads[workload_id].get_type() == STATIC:
+            self.__free_threads(cpu, workload_id, workloads)
+        burst_workloads = [w for w in burst_workloads if w.get_id() != workload_id]
+        update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
+        return cpu
+
+    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+        return rebalance(cpu, workloads, self.__free_thread_provider)
+
+    def __assign_threads(self, cpu, workload_id, workloads):
         """
         Use the integer-program solver to find the optimal static placement
         when adding the given workload on the cpu.
@@ -54,12 +49,14 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         indicating unix timestamps at which workloads currently running on the cpu
         have been placed.
         """
-        from titus_isolate.isolate.utils import get_sorted_workloads
+
+        if is_cpu_full(cpu):
+            raise ValueError("CPU is full, failed to add workload: '{}'".format(workload_id))
 
         n_compute_units = len(cpu.get_threads())
-
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
+        from titus_isolate.model.utils import get_sorted_workloads
         ordered_workload_ids = [w.get_id() for w in get_sorted_workloads(workloads.values())]
         tid_2order = {i: t.get_id() for i, t in enumerate(cpu.get_threads())}
 
@@ -91,12 +88,11 @@ class IntegerProgramCpuAllocator(CpuAllocator):
 
         return cpu
 
-    def free_threads(self, cpu, workload_id, workloads):
+    def __free_threads(self, cpu, workload_id, workloads):
         """
         Use the integerprogram solver to find the optimal static placement
         after removing the given workload from the cpu.
         """
-        from titus_isolate.isolate.utils import get_sorted_workloads
 
         n_compute_units = len(cpu.get_threads())
 
@@ -130,7 +126,39 @@ class IntegerProgramCpuAllocator(CpuAllocator):
 
         self.__assign_new_mapping(cpu, thread_id2workload_id)
         return cpu
-    
+
+    @staticmethod
+    def __assign_new_mapping(cpu, thread_id2workload_id):
+        cpu.clear()
+        for t in cpu.get_threads():
+            wid = thread_id2workload_id.get(t.get_id(), None)
+            if wid is not None:
+                t.claim(wid)
+
+    def __compute_new_placement(self, cpu, current_placement, requested_units):
+        key_req = '-'.join([str(e) for e in requested_units])
+        cache_key = key_req
+        if current_placement is not None:
+            cache_key += '&' + '%'.join(['|'.join([str(e) for e in v]) for v in current_placement])
+
+        cache_val = self.__cache.get(cache_key, None)
+        if cache_val is None:
+            placement, status = optimize_ip(
+                requested_units,
+                len(cpu.get_threads()),
+                len(cpu.get_packages()),
+                current_placement,
+                verbose=False,
+                max_runtime_secs=self.__solver_max_runtime_secs)
+            self.__cache[cache_key] = (placement, status)
+        else:
+            placement, status = cache_val[0], cache_val[1]
+
+        if status == IP_SOLUTION_TIME_BOUND:
+            self.__time_bound_call_count += 1
+
+        return placement
+
     def set_solver_max_runtime_secs(self, val):
         self.__solver_max_runtime_secs = val
 

@@ -17,7 +17,7 @@ class TestCpu(unittest.TestCase):
     def test_assign_threads(self):
         cpu = get_cpu()
         cgroup_manager = MockCgroupManager()
-        cpu_allocator = NoopResetCpuAllocator(cgroup_manager)
+        cpu_allocator = NoopResetCpuAllocator("", cgroup_manager)
 
         w = Workload(uuid.uuid4(), 1, STATIC)
         cpu_allocator.assign_threads(cpu, w)
