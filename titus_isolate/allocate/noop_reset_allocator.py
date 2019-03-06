@@ -1,11 +1,12 @@
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
+from titus_isolate.model.processor.cpu import Cpu
 
 
 class NoopResetCpuAllocator(CpuAllocator):
 
-    def __init__(self, cgroup_manager=FileCgroupManager()):
+    def __init__(self, free_thread_provider="", cgroup_manager=FileCgroupManager()):
         self.__cgroup_manager = cgroup_manager
 
     def get_cgroup_manager(self):
@@ -22,6 +23,9 @@ class NoopResetCpuAllocator(CpuAllocator):
 
     def free_threads(self, workload_id):
         log.info("Ignoring attempt to free threads for workload: '{}'".format(workload_id))
+
+    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+        pass
 
     def set_registry(self, registry):
         pass

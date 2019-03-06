@@ -3,6 +3,7 @@ import unittest
 import uuid
 
 from tests.utils import config_logs
+from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.docker.constants import STATIC
@@ -180,17 +181,18 @@ class TestCpu(unittest.TestCase):
         for allocator in ALLOCATORS:
             cpu = get_cpu()
             workloads = [
-                Workload(uuid.uuid4(), 8, STATIC),
-                Workload(uuid.uuid4(), 4, STATIC),
-                Workload(uuid.uuid4(), 2, STATIC),
-                Workload(uuid.uuid4(), 1, STATIC),
-                Workload(uuid.uuid4(), 1, STATIC)]
+                Workload("a", 8, STATIC),
+                Workload("b", 4, STATIC),
+                Workload("c", 2, STATIC),
+                Workload("d", 1, STATIC),
+                Workload("e", 1, STATIC)]
 
             tot_req = 0
             workload_map = {}
             for w in workloads:
                 workload_map[w.get_id()] = w
                 cpu = allocator.assign_threads(cpu, w.get_id(), workload_map)
+                log.debug("{}".format(cpu))
                 tot_req += w.get_thread_count()
                 self.assertEqual(tot_req, len(cpu.get_claimed_threads()))
 

@@ -11,7 +11,8 @@ from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, NOOP, AB_TEST, GREEDY, CPU_ALLOCATOR_B, CPU_ALLOCATOR_A, IP, \
     EC2_INSTANCE_ID
 from titus_isolate.docker.constants import STATIC
-from titus_isolate.isolate.utils import get_allocator, get_ab_bucket, _get_ab_bucket_int, get_sorted_workloads
+from titus_isolate.isolate.utils import get_allocator, get_ab_bucket, _get_ab_bucket_int
+from titus_isolate.model.utils import get_sorted_workloads
 from titus_isolate.model.workload import Workload
 
 config_logs(logging.DEBUG)

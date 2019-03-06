@@ -20,7 +20,7 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
         self.__per_workload_threshold = per_workload_threshold
         self.__per_workload_duration_sec = per_workload_duration_sec
 
-        log.info("ThresholdFreeThreadProvider created with total_threshold: '{}', total_duration_sec: '{}', per_workload_threshold: '{}', per_workload_duration_sec: '{}'".format(
+        log.debug("ThresholdFreeThreadProvider created with total_threshold: '{}', total_duration_sec: '{}', per_workload_threshold: '{}', per_workload_duration_sec: '{}'".format(
            self.__total_threshold, self.__total_duration_sec, self.__per_workload_threshold, self.__per_workload_duration_sec))
 
     def get_free_threads(self, cpu: Cpu) -> list:

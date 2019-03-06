@@ -1,14 +1,41 @@
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_isolate.model.processor.utils import get_emptiest_core
+from titus_isolate.docker.constants import STATIC
+from titus_isolate.model.processor.cpu import Cpu
+from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
+from titus_isolate.model.utils import get_burst_workloads, release_all_threads, update_burst_workloads, rebalance
 from titus_isolate.model.workload import Workload
+from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
+from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 
 
 class GreedyCpuAllocator(CpuAllocator):
 
+    def __init__(self, free_thread_provider: FreeThreadProvider = EmptyFreeThreadProvider()):
+        self.__free_thread_provider = free_thread_provider
+
     def assign_threads(self, cpu, workload_id, workloads):
-        self.__assign_threads(cpu, workloads[workload_id])
+        burst_workloads = get_burst_workloads(workloads.values())
+        release_all_threads(cpu, burst_workloads)
+        if workloads[workload_id].get_type() == STATIC:
+            self.__assign_threads(cpu, workloads[workload_id])
+        update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
         return cpu
+
+    def free_threads(self, cpu, workload_id, workloads):
+        burst_workloads = get_burst_workloads(workloads.values())
+        release_all_threads(cpu, burst_workloads)
+        for t in cpu.get_threads():
+            if workload_id in t.get_workload_ids():
+                t.free(workload_id)
+
+        burst_workloads = [w for w in burst_workloads if w.get_id() != workload_id]
+        update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
+
+        return cpu
+
+    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+        return rebalance(cpu, workloads, self.__free_thread_provider)
 
     def __assign_threads(self, cpu, workload):
         thread_count = workload.get_thread_count()
@@ -16,6 +43,9 @@ class GreedyCpuAllocator(CpuAllocator):
 
         if thread_count == 0:
             return claimed_threads
+
+        if is_cpu_full(cpu):
+            raise ValueError("Failed to add workload: '{}', cpu is full: {}".format(workload.get_id(), cpu))
 
         package = cpu.get_emptiest_package()
 
@@ -34,16 +64,8 @@ class GreedyCpuAllocator(CpuAllocator):
             cpu,
             Workload(workload.get_id(), thread_count, workload.get_type()))
 
-    def free_threads(self, cpu, workload_id, workloads):
-        for t in cpu.get_threads():
-            if workload_id in t.get_workload_ids():
-                t.free(workload_id)
-
-        return cpu
-
     def set_registry(self, registry):
         pass
 
     def report_metrics(self, tags):
         pass
-

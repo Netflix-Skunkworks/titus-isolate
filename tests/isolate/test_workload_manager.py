@@ -4,12 +4,10 @@ import uuid
 
 from spectator import Registry
 
-from tests.allocate.crashing_allocators import CrashingAllocator
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, TestContext, gauge_value_equals, gauge_value_reached, get_threads_with_workload
 from titus_isolate import log
-from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
@@ -21,11 +19,10 @@ from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     IP_ALLOCATOR_TIMEBOUND_COUNT, ALLOCATOR_CALL_DURATION, FULL_CORES_KEY, HALF_CORES_KEY, \
-    EMPTY_CORES_KEY, FALLBACK_ALLOCATOR_COUNT
+    EMPTY_CORES_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
 from titus_isolate.model.workload import Workload
-from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.utils import set_config_manager
 
 config_logs(logging.DEBUG)
@@ -42,7 +39,7 @@ class TestWorkloadManager(unittest.TestCase):
             workload = Workload(uuid.uuid4(), thread_count, STATIC)
 
             cgroup_manager = MockCgroupManager()
-            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator, EmptyFreeThreadProvider())
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
 
             # Add workload
             workload_manager.add_workload(workload)
@@ -59,7 +56,7 @@ class TestWorkloadManager(unittest.TestCase):
             workload = Workload(uuid.uuid4(), thread_count, BURST)
 
             cgroup_manager = MockCgroupManager()
-            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator, EmptyFreeThreadProvider())
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
 
             # Add workload
             workload_manager.add_workload(workload)
@@ -81,7 +78,7 @@ class TestWorkloadManager(unittest.TestCase):
             thread_count = 2
             workload = Workload(uuid.uuid4(), thread_count, STATIC)
 
-            workload_manager = WorkloadManager(get_cpu(), MockCgroupManager(), allocator, EmptyFreeThreadProvider())
+            workload_manager = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
 
             # Remove from empty set
             workload_manager.remove_workload(unknown_workload_id)
@@ -147,7 +144,7 @@ class TestWorkloadManager(unittest.TestCase):
             static1 = Workload("static1", thread_count, STATIC)
 
             cgroup_manager = MockCgroupManager()
-            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator, EmptyFreeThreadProvider())
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
 
             # Add static workload
             log.info("ADDING STATIC0")
@@ -192,14 +189,13 @@ class TestWorkloadManager(unittest.TestCase):
 
         cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)
 
-        workload_manager = WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator(), EmptyFreeThreadProvider())
+        workload_manager = WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator())
         workload_manager.add_workload(w_a)
         workload_manager.add_workload(w_b)
         workload_manager.add_workload(w_c)
         workload_manager.add_workload(w_d)
 
         self.assertEqual(0, len(get_cross_package_violations(workload_manager.get_cpu())))
-        #self.assertEqual(1, len(get_shared_core_violations(workload_manager.get_cpu())))  # todo: fix me
         self.assertEqual(0, len(workload_manager.get_cpu().get_empty_threads()))
 
     def test_empty_metrics(self):
@@ -251,7 +247,7 @@ class TestWorkloadManager(unittest.TestCase):
         registry = Registry()
 
         cpu = get_cpu(2, 16, 2)
-        allocator = FallbackCpuAllocator(IntegerProgramCpuAllocator(0.01), GreedyCpuAllocator())
+        allocator = IntegerProgramCpuAllocator(solver_max_runtime_secs=0.01)
         test_context = TestContext(cpu, allocator)
 
         workload_manager = test_context.get_workload_manager()
@@ -271,39 +267,8 @@ class TestWorkloadManager(unittest.TestCase):
         workload_manager.remove_workload("15")
         workload_manager.report_metrics({})
 
-        self.assertTrue(gauge_value_equals(registry, RUNNING, 1))
-        self.assertTrue(gauge_value_equals(registry, ADDED_KEY, 25))
-        self.assertTrue(gauge_value_equals(registry, REMOVED_KEY, 1))
-        self.assertTrue(gauge_value_equals(registry, SUCCEEDED_KEY, 26))
-        self.assertTrue(gauge_value_equals(registry, FAILED_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, WORKLOAD_COUNT_KEY, 24))
-        self.assertTrue(gauge_value_equals(registry, PACKAGE_VIOLATIONS_KEY, 0))
         self.assertTrue(gauge_value_reached(registry, IP_ALLOCATOR_TIMEBOUND_COUNT, 1))
         self.assertTrue(gauge_value_reached(registry, ALLOCATOR_CALL_DURATION, 0.1))
-
-    def test_crash_ip_allocator_metrics(self):
-        registry = Registry()
-        cpu = get_cpu(2, 16, 2)
-        allocator = FallbackCpuAllocator(CrashingAllocator(), GreedyCpuAllocator())
-        test_context = TestContext(cpu, allocator)
-
-        # now override the cpu seen by the allocator to crash it
-        workload_manager = test_context.get_workload_manager()
-        workload_manager.set_registry(registry)
-
-        workload_manager.add_workload(Workload(uuid.uuid4(), 10, STATIC))
-        workload_manager.report_metrics({})
-
-        self.assertTrue(gauge_value_equals(registry, RUNNING, 1))
-        self.assertTrue(gauge_value_equals(registry, ADDED_KEY, 1))
-        self.assertTrue(gauge_value_equals(registry, REMOVED_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, SUCCEEDED_KEY, 1))
-        self.assertTrue(gauge_value_equals(registry, FAILED_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, WORKLOAD_COUNT_KEY, 1))
-        self.assertTrue(gauge_value_equals(registry, FALLBACK_ALLOCATOR_COUNT, 1))
-        self.assertTrue(gauge_value_equals(registry, FULL_CORES_KEY, 5))
-        self.assertTrue(gauge_value_equals(registry, HALF_CORES_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, EMPTY_CORES_KEY, 27))
 
     def test_assign_to_full_cpu_fails(self):
         for allocator in ALLOCATORS:
@@ -311,29 +276,30 @@ class TestWorkloadManager(unittest.TestCase):
             w0 = Workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
 
             cgroup_manager = MockCgroupManager()
-            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator, EmptyFreeThreadProvider())
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
             workload_manager.add_workload(w0)
 
             self.assertTrue(is_cpu_full(workload_manager.get_cpu()))
 
             # Fail to claim one more thread
+            error_count = workload_manager.get_error_count()
             w1 = Workload(uuid.uuid4(), 1, STATIC)
-            with self.assertRaises(ValueError):
-                workload_manager.add_workload(w1)
+            workload_manager.add_workload(w1)
+            self.assertEqual(error_count + 1, workload_manager.get_error_count())
 
     def test_is_isolated(self):
         real_allocators = [GreedyCpuAllocator(), IntegerProgramCpuAllocator()]
         for allocator in real_allocators:
-            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator, EmptyFreeThreadProvider())
+            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
             self.assertFalse(wm.is_isolated(uuid.uuid4()))
 
         for allocator in real_allocators:
             workload = Workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
-            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator, EmptyFreeThreadProvider())
+            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
             wm.add_workload(workload)
             self.assertTrue(wm.is_isolated(workload.get_id()))
 
         noop_allocators = [NoopCpuAllocator(), NoopResetCpuAllocator()]
         for allocator in noop_allocators:
-            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator, EmptyFreeThreadProvider())
+            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
             self.assertTrue(wm.is_isolated(uuid.uuid4()))
