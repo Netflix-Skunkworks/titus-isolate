@@ -1,9 +1,9 @@
 import unittest
 
-from tests.docker.mock_docker import MockDockerClient, MockContainer
+from tests.event.mock_docker import MockDockerClient, MockContainer
 from titus_isolate import log
-from titus_isolate.docker.constants import STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY
-from titus_isolate.docker.utils import get_current_workloads
+from titus_isolate.event.constants import STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY
+from titus_isolate.event.utils import get_current_workloads
 from titus_isolate.model.workload import Workload
 
 

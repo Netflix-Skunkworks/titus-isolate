@@ -11,10 +11,11 @@ from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 from titus_isolate.config.constants import RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.constants import FAILURE_EXIT_CODE
-from titus_isolate.docker.create_event_handler import CreateEventHandler
-from titus_isolate.docker.event_manager import EventManager
-from titus_isolate.docker.free_event_handler import FreeEventHandler
-from titus_isolate.docker.utils import get_current_workloads
+from titus_isolate.event.create_event_handler import CreateEventHandler
+from titus_isolate.event.event_manager import EventManager
+from titus_isolate.event.free_event_handler import FreeEventHandler
+from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
+from titus_isolate.event.utils import get_current_workloads
 from titus_isolate.isolate.utils import get_allocator, get_free_thread_provider
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
@@ -62,7 +63,8 @@ def main(admin_port):
     log.info("Setting up the Docker event handlers...")
     create_event_handler = CreateEventHandler(workload_manager)
     free_event_handler = FreeEventHandler(workload_manager)
-    event_handlers = [create_event_handler, free_event_handler]
+    rebalance_event_handler = RebalanceEventHandler(workload_manager)
+    event_handlers = [create_event_handler, free_event_handler, rebalance_event_handler]
 
     # Start event processing
     log.info("Starting Docker event handling...")

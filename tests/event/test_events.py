@@ -5,11 +5,12 @@ import uuid
 from spectator import Registry
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.docker.mock_docker import get_container_create_event, MockEventProvider, get_event, get_container_die_event
+from tests.event.mock_docker import get_container_create_event, MockEventProvider, get_event, get_container_die_event
 from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.docker.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME
-from titus_isolate.docker.event_manager import EventManager
+from titus_isolate.event.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME, \
+    ACTION, REBALANCE, REBALANCE_EVENT
+from titus_isolate.event.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.utils import set_config_manager
@@ -195,6 +196,36 @@ class TestEvents(unittest.TestCase):
 
         manager.report_metrics({})
         self.assertTrue(gauge_value_equals(registry, QUEUE_DEPTH_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, 3))
+        self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, 5))
         self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 1))
         self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, 2))
+
+    def test_rebalance(self):
+        registry = Registry()
+
+        events = [REBALANCE_EVENT]
+        event_count = len(events)
+        event_iterable = MockEventProvider(events)
+
+        test_context = TestContext()
+        manager = EventManager(
+            event_iterable,
+            test_context.get_event_handlers(),
+            DEFAULT_TEST_EVENT_TIMEOUT_SECS)
+        manager.set_registry(registry)
+        manager.start_processing_events()
+
+        wait_until(lambda: event_count == manager.get_processed_count())
+        self.assertEqual(0, manager.get_queue_depth())
+        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(test_context.get_cpu().get_empty_threads()))
+        self.assertEqual(0, test_context.get_create_event_handler().get_handled_event_count())
+        self.assertEqual(0, test_context.get_free_event_handler().get_handled_event_count())
+        self.assertEqual(1, test_context.get_rebalance_event_handler().get_handled_event_count())
+
+        manager.stop_processing_events()
+
+        manager.report_metrics({})
+        self.assertTrue(gauge_value_equals(registry, QUEUE_DEPTH_KEY, 0))
+        self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, event_count * len(test_context.get_event_handlers())))
+        self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 0))
+        self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, event_count))

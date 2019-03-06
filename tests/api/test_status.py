@@ -4,14 +4,14 @@ import uuid
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.docker.mock_docker import MockEventProvider
+from tests.event.mock_docker import MockEventProvider
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.api import status
 from titus_isolate.api.status import get_workloads, get_violations, get_wm_status, get_isolated_workload_ids, \
     isolate_workload
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.docker.constants import STATIC, BURST
-from titus_isolate.docker.event_manager import EventManager
+from titus_isolate.event.constants import STATIC, BURST
+from titus_isolate.event.event_manager import EventManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT

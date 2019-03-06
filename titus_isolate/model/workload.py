@@ -1,6 +1,6 @@
 import datetime
 
-from titus_isolate.docker.constants import WORKLOAD_TYPES, BURST
+from titus_isolate.event.constants import WORKLOAD_TYPES, BURST
 
 
 class Workload:
