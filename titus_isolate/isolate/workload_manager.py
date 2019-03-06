@@ -108,12 +108,13 @@ class WorkloadManager(MetricsReporter):
         self.__update_state(new_cpu, workloads)
 
     def __update_state(self, new_cpu, new_workloads):
-        updated = self.__apply_cpuset_updates(copy.deepcopy(self.get_cpu()), new_cpu)
+        old_cpu = copy.deepcopy(self.get_cpu())
+        updated = self.__apply_cpuset_updates(old_cpu, new_cpu)
         self.__cpu = new_cpu
         self.__workloads = new_workloads
 
         if updated:
-            self.__report_cpu_state(self.__cpu)
+            self.__report_cpu_state(old_cpu, new_cpu)
 
     def __apply_cpuset_updates(self, old_cpu, new_cpu):
         updates = get_updates(old_cpu, new_cpu)
@@ -181,9 +182,9 @@ class WorkloadManager(MetricsReporter):
         return len([t for t in core.get_threads() if t.is_claimed()])
 
     @staticmethod
-    def __report_cpu_state(cpu):
-        log.info("Applied updates resulting in cpu: {}".format(cpu))
-        Thread(target=report_cpu, args=[cpu]).start()
+    def __report_cpu_state(old_cpu, new_cpu):
+        log.info("old cpu: {}\nnew cpu: {}".format(old_cpu, new_cpu))
+        Thread(target=report_cpu, args=[new_cpu]).start()
 
     def report_metrics(self, tags):
         self.__reg.gauge(RUNNING, tags).set(1)
