@@ -24,9 +24,11 @@ class WorkloadMonitorManager(CpuUsageProvider):
         return self.__monitors
 
     def get_cpu_usage(self, seconds: int) -> dict:
+        if seconds != 3600:
+            raise Exception("Only usage supported for now is over the last hour.")
         cpu_usage = {}
         for workload_id, monitor in self.get_monitors().items():
-            cpu_usage[workload_id] = monitor.get_cpu_usage(seconds)
+            cpu_usage[workload_id] = monitor.get_normalized_cpu_usage_last_hour()
 
         return cpu_usage
 
@@ -35,10 +37,10 @@ class WorkloadMonitorManager(CpuUsageProvider):
             monitors_dict = {}
             for workload_id, monitor in sorted(self.get_monitors().items()):
                 buffers = collections.OrderedDict()
-                for key, deque in sorted(monitor.get_buffers().items()):
-                    lst = list(deque)
-                    lst = [str(i) for i in lst]
-                    buffers[key] = lst
+                _, timestamps, mon_buffers = monitor.get_buffers()
+                for cpu_ind, buff in enumerate(mon_buffers):
+                    buffers[str(cpu_ind)] = [str(i) for i in buff]
+                buffers['timestamps'] = timestamps
                 monitors_dict[workload_id] = buffers
 
             return monitors_dict
@@ -67,7 +69,7 @@ class WorkloadMonitorManager(CpuUsageProvider):
 
             # Add monitors for new workloads
             for workload in workloads:
-                if workload.get_id() not in self.__monitors.keys():
+                if workload.get_id() not in self.__monitors:
                     self.__monitors[workload.get_id()] = \
                         WorkloadPerformanceMonitor(CgroupMetricsProvider(workload), self.__sample_interval)
 
