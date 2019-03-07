@@ -21,5 +21,6 @@ CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
 FULL_CORES_KEY = 'titus-isolate.fullCores'
 HALF_CORES_KEY = 'titus-isolate.halfFullCores'
 EMPTY_CORES_KEY = 'titus-isolate.emptyCores'
+EXTRA_BURST_THREADS_KEY = 'titus-isolate.extraBurstThreads'
 
 RUNNING = 'titus-isolate.running'
