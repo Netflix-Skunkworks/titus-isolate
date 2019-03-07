@@ -3,7 +3,7 @@ from threading import Thread, Lock
 
 from titus_isolate import log
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
-from titus_isolate.cgroup.utils import set_cpuset, wait_for_files
+from titus_isolate.cgroup.utils import set_cpuset, wait_for_files, get_cpuset, parse_cpuset
 from titus_isolate.config.constants import WAIT_CGROUP_FILE_KEY, WAIT_JSON_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC, \
     DEFAULT_WAIT_JSON_FILE_SEC
 from titus_isolate.metrics.constants import WRITE_CPUSET_FAILED_KEY, WRITE_CPUSET_SUCCEEDED_KEY, ISOLATED_WORKLOAD_COUNT
@@ -21,6 +21,13 @@ class FileCgroupManager(CgroupManager):
 
     def set_cpuset(self, container_name, thread_ids):
         Thread(target=self.__set_cpuset, args=[container_name, thread_ids]).start()
+
+    def get_cpuset(self, container_name):
+        cpuset_str = self.__get_cpuset(container_name)
+        if cpuset_str is None:
+            return None
+        else:
+            return parse_cpuset(cpuset_str)
 
     def release_cpuset(self, container_name):
         with self.__lock:
@@ -43,6 +50,15 @@ class FileCgroupManager(CgroupManager):
             self.__write_failed()
             log.exception("Failed to apply cpuset to threads: '{}' for workload: '{}'".format(
                 thread_ids_str, container_name))
+
+    def __get_cpuset(self, container_name: str) -> str:
+        try:
+            self.__wait_for_files(container_name)
+            log.info("getting cpuset.cpus for workload: '{}'".format(container_name))
+            return get_cpuset(container_name)
+        except:
+            log.exception("Failed to read cpuset for workload: '{}'".format(container_name))
+            return None
 
     def __write_succeeded(self, container_name):
         with self.__lock:

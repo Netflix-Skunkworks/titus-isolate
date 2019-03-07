@@ -28,7 +28,7 @@ class RestartPropertyWatcher:
 
         log.info("Starting watching for changes to properties: {}".format(properties))
         for k, v in self.__original_properties.items():
-            log.info("{}: {}'".format(k, v))
+            log.info("{}: {}".format(k, v))
 
         schedule.every(detection_interval).seconds.do(self.detect_changes)
 

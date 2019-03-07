@@ -6,7 +6,7 @@ import unittest
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs
 from titus_isolate.cgroup.utils import _get_cgroup_path_from_list, CPUSET, get_cgroup_path_from_file, \
-    _wait_for_file_to_exist, parse_cpuacct_usage_all
+    _wait_for_file_to_exist, parse_cpuacct_usage_all, parse_cpuset
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.utils import set_config_manager
 
@@ -205,3 +205,26 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(1, lines[1].pu_id)
         self.assertEqual(1779435414091, lines[1].user)
         self.assertEqual(7480246384, lines[1].system)
+
+    def test_parse_cpuset(self):
+        s = "2"
+        threads = parse_cpuset(s)
+        self.assertEqual([2], threads)
+
+        s = "7-9"
+        threads = parse_cpuset(s)
+        self.assertEqual([7, 8, 9], threads)
+
+        s = "7-8"
+        threads = parse_cpuset(s)
+        self.assertEqual([7, 8], threads)
+
+        s = "2,5,7-9,12"
+        threads = parse_cpuset(s)
+        self.assertEqual([2, 5, 7, 8, 9, 12], threads)
+
+        s = "5,2,12,7-9"
+        threads = sorted(parse_cpuset(s))
+        self.assertEqual([2, 5, 7, 8, 9, 12], threads)
+
+

@@ -15,7 +15,9 @@ from titus_isolate.event.create_event_handler import CreateEventHandler
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.event.free_event_handler import FreeEventHandler
 from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
+from titus_isolate.event.reconcile_event_handler import ReconcileEventHandler
 from titus_isolate.event.utils import get_current_workloads
+from titus_isolate.isolate.reconciler import Reconciler
 from titus_isolate.isolate.utils import get_allocator, get_free_thread_provider
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
@@ -46,9 +48,10 @@ def main(admin_port):
 
     # Setup the workload manager
     log.info("Setting up the workload manager...")
+    cgroup_manager = FileCgroupManager()
     workload_manager = WorkloadManager(
         cpu=cpu,
-        cgroup_manager=FileCgroupManager(),
+        cgroup_manager=cgroup_manager,
         cpu_allocator=get_allocator(get_config_manager()))
     set_workload_manager(workload_manager)
 
@@ -64,7 +67,8 @@ def main(admin_port):
     create_event_handler = CreateEventHandler(workload_manager)
     free_event_handler = FreeEventHandler(workload_manager)
     rebalance_event_handler = RebalanceEventHandler(workload_manager)
-    event_handlers = [create_event_handler, free_event_handler, rebalance_event_handler]
+    reconcile_event_handler = ReconcileEventHandler(Reconciler(cgroup_manager, RealExitHandler()))
+    event_handlers = [create_event_handler, free_event_handler, rebalance_event_handler, reconcile_event_handler]
 
     # Start event processing
     log.info("Starting Docker event handling...")
