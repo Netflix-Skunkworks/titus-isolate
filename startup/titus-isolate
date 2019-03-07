@@ -4,8 +4,10 @@ from threading import Thread
 
 import click
 import docker
+import schedule
 
 from titus_isolate import log
+from titus_isolate.allocate.utils import download_latest_cpu_model
 from titus_isolate.api.status import app
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 from titus_isolate.config.constants import RESTART_PROPERTIES
@@ -33,6 +35,10 @@ from titus_isolate.utils import start_periodic_scheduling, get_config_manager, s
 def main(admin_port):
     # Set the schedule library's logging level higher so it doesn't spam messages every time it schedules a task
     logging.getLogger('schedule').setLevel(logging.WARN)
+
+    log.info("Getting latest cpu model...")
+    download_latest_cpu_model()
+    schedule.every(1).hour.do(download_latest_cpu_model)
 
     exit_handler = RealExitHandler()
 
