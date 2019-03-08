@@ -3,7 +3,7 @@ import unittest
 import uuid
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
-from tests.utils import config_logs
+from tests.utils import config_logs, get_test_workload
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
@@ -19,7 +19,7 @@ class TestCpu(unittest.TestCase):
         cgroup_manager = MockCgroupManager()
         cpu_allocator = NoopResetCpuAllocator("", cgroup_manager)
 
-        w = Workload(uuid.uuid4(), 1, STATIC)
+        w = get_test_workload(uuid.uuid4(), 1, STATIC)
         cpu_allocator.assign_threads(cpu, w)
         self.assertEqual(1, cgroup_manager.container_update_counts[w.get_id()])
         self.assertEqual(len(cpu.get_threads()), len(cgroup_manager.container_update_map[w.get_id()]))

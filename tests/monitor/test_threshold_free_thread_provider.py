@@ -2,12 +2,11 @@ import logging
 import unittest
 from unittest.mock import MagicMock
 
-from tests.utils import config_logs
+from tests.utils import config_logs, get_test_workload
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.config.constants import DEFAULT_PER_WORKLOAD_THRESHOLD
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
-from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
 from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
 from titus_isolate.monitor.workload_monitor_manager import DEFAULT_SAMPLE_FREQUENCY_SEC
@@ -42,7 +41,7 @@ class TestWorkloadManager(unittest.TestCase):
     def test_empty_usage_all_threads_claimed(self):
         # Assign a workload to a CPU
         cpu = get_cpu()
-        workload = Workload("a", len(cpu.get_threads()), STATIC)
+        workload = get_test_workload("a", len(cpu.get_threads()), STATIC)
         cpu = self.__assign_workload(cpu, workload)
 
         # Fake empty CPU Usage
@@ -75,7 +74,7 @@ class TestWorkloadManager(unittest.TestCase):
         # Assign a workload to a CPU
         cpu = get_cpu()
         thread_count = len(cpu.get_threads())
-        workload = Workload("a", thread_count, STATIC)
+        workload = get_test_workload("a", thread_count, STATIC)
         cpu = self.__assign_workload(cpu, workload)
 
         # Low uniform CPU usage

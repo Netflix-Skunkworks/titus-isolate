@@ -2,9 +2,11 @@ import json
 import time
 import uuid
 
+from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE
 from titus_isolate import log
 from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, CPU_LABEL_KEY, CREATE, ID, \
-    LOWERCASE_ID, NAME, TIME, TYPE, DIE, WORKLOAD_TYPE_LABEL_KEY, STATIC
+    LOWERCASE_ID, NAME, TIME, TYPE, DIE, WORKLOAD_TYPE_LABEL_KEY, STATIC, MEM_LABEL_KEY, DISK_LABEL_KEY, \
+    NETWORK_LABEL_KEY, IMAGE_LABEL_KEY
 
 
 class MockEventProvider:
@@ -35,6 +37,10 @@ class MockContainer:
         self.name = workload.get_id()
         self.labels = {
             CPU_LABEL_KEY: str(workload.get_thread_count()),
+            MEM_LABEL_KEY: str(workload.get_mem()),
+            DISK_LABEL_KEY: str(workload.get_disk()),
+            NETWORK_LABEL_KEY: str(workload.get_network()),
+            IMAGE_LABEL_KEY: workload.get_image(),
             WORKLOAD_TYPE_LABEL_KEY: workload.get_type()
         }
         self.update_calls = []
@@ -73,6 +79,10 @@ def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()
     attributes = {
         NAME: name,
         CPU_LABEL_KEY: str(cpus),
+        MEM_LABEL_KEY: DEFAULT_TEST_MEM,
+        DISK_LABEL_KEY: DEFAULT_TEST_DISK,
+        NETWORK_LABEL_KEY: DEFAULT_TEST_NETWORK,
+        IMAGE_LABEL_KEY: DEFAULT_TEST_IMAGE,
         WORKLOAD_TYPE_LABEL_KEY: workload_type
     }
 
