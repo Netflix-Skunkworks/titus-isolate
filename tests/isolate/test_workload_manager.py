@@ -19,7 +19,7 @@ from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     IP_ALLOCATOR_TIMEBOUND_COUNT, ALLOCATOR_CALL_DURATION, FULL_CORES_KEY, HALF_CORES_KEY, \
-    EMPTY_CORES_KEY
+    EMPTY_CORES_KEY, EXTRA_BURST_THREADS_KEY, OVERSUBSCRIBED_THREADS_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
 from titus_isolate.model.workload import Workload
@@ -303,3 +303,52 @@ class TestWorkloadManager(unittest.TestCase):
         for allocator in noop_allocators:
             wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
             self.assertTrue(wm.is_isolated(uuid.uuid4()))
+
+    def test_extra_burst_threads_computation(self):
+        for allocator in ALLOCATORS:
+            static_thread_count = 2
+            burst_thread_count = 4
+            w_static = Workload("s", static_thread_count, STATIC)
+            w_burst = Workload("b", burst_thread_count, BURST)
+
+            cgroup_manager = MockCgroupManager()
+            registry = Registry()
+
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
+            workload_manager.set_registry(registry)
+            workload_manager.add_workload(w_static)
+            workload_manager.add_workload(w_burst)
+
+            self.assertEqual(burst_thread_count, workload_manager._WorkloadManager__get_burst_allocation_size())
+            self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - static_thread_count, workload_manager._WorkloadManager__get_burst_occupied_thread_count())
+            expected_extra_burst_thread_count = DEFAULT_TOTAL_THREAD_COUNT - static_thread_count - burst_thread_count
+            self.assertEqual(expected_extra_burst_thread_count, workload_manager._WorkloadManager__get_extra_burst_thread_count())
+
+            workload_manager.report_metrics({})
+            self.assertTrue(gauge_value_equals(registry, EXTRA_BURST_THREADS_KEY, expected_extra_burst_thread_count))
+
+    def test_over_subscription_computation(self):
+        for allocator in ALLOCATORS:
+            static_thread_count = 2
+            burst_thread_count = 4
+            w_static = Workload("s", static_thread_count, STATIC)
+            w_burst = Workload("b", burst_thread_count, BURST)
+
+            cgroup_manager = MockCgroupManager()
+            registry = Registry()
+
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
+            workload_manager.set_registry(registry)
+            workload_manager.add_workload(w_static)
+            workload_manager.add_workload(w_burst)
+
+            self.assertEqual(0, workload_manager._WorkloadManager__get_oversubscribed_thread_count())
+
+            # Claim every thread for the burst workload which will oversubscribe the static threads
+            for t in workload_manager.get_cpu().get_threads():
+                t.claim(w_burst.get_id())
+
+            self.assertEqual(static_thread_count, workload_manager._WorkloadManager__get_oversubscribed_thread_count())
+
+            workload_manager.report_metrics({})
+            self.assertTrue(gauge_value_equals(registry, OVERSUBSCRIBED_THREADS_KEY, static_thread_count))

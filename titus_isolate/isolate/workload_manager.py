@@ -2,21 +2,23 @@ import copy
 from threading import Lock, Thread
 import time
 
-import schedule
-
-from titus_isolate import log
+from titus_isolate import log, model
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
+from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.update import get_updates
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
-    ADDED_TO_FULL_CPU_ERROR_KEY, FULL_CORES_KEY, HALF_CORES_KEY, EMPTY_CORES_KEY
+    ADDED_TO_FULL_CPU_ERROR_KEY, FULL_CORES_KEY, HALF_CORES_KEY, EMPTY_CORES_KEY, EXTRA_BURST_THREADS_KEY, \
+    OVERSUBSCRIBED_THREADS_KEY
 from titus_isolate.metrics.event_log import report_cpu
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
+from titus_isolate.model import processor
 from titus_isolate.model.processor.cpu import Cpu
+from titus_isolate.model.utils import get_burst_workloads
 from titus_isolate.numa.utils import update_numa_balancing
 
 
@@ -178,6 +180,53 @@ class WorkloadManager(MetricsReporter):
     def __get_occupied_thread_count(core):
         return len([t for t in core.get_threads() if t.is_claimed()])
 
+    def __get_burst_allocation_size(self):
+        burst_allocation_size = 0
+        for w in  get_burst_workloads(self.get_workloads()):
+            burst_allocation_size += w.get_thread_count()
+
+        return burst_allocation_size
+
+    def __get_burst_occupied_thread_count(self):
+        workload_map = copy.deepcopy(self.__workloads)
+        cpu = copy.deepcopy(self.get_cpu())
+
+        burst_occupied_thread_count = 0
+        for t in cpu.get_threads():
+            if self.__is_occupied_by_burst(t, workload_map):
+                burst_occupied_thread_count += 1
+
+        return burst_occupied_thread_count
+
+    def __is_occupied_by_burst(self, thread, workload_map: dict) -> bool:
+        return self.__is_occupied_by_type(thread, BURST, workload_map)
+
+    def __is_occupied_by_static(self, thread, workload_map: dict) -> bool:
+        return self.__is_occupied_by_type(thread, STATIC, workload_map)
+
+    @staticmethod
+    def __is_occupied_by_type(thread, type, workload_map: dict) -> bool:
+        for w_id in thread.get_workload_ids():
+            if w_id in workload_map:
+                if workload_map[w_id].get_type() == type:
+                    return True
+
+        return False
+
+    def __get_extra_burst_thread_count(self):
+        return self.__get_burst_occupied_thread_count() - self.__get_burst_allocation_size()
+
+    def __get_oversubscribed_thread_count(self):
+        workload_map = copy.deepcopy(self.__workloads)
+        cpu = copy.deepcopy(self.get_cpu())
+
+        oversubscribed_thread_count = 0
+        for t in cpu.get_threads():
+            if self.__is_occupied_by_burst(t, workload_map) and self.__is_occupied_by_static(t, workload_map):
+                oversubscribed_thread_count += 1
+
+        return oversubscribed_thread_count
+
     @staticmethod
     def __report_cpu_state(old_cpu, new_cpu):
         log.info("old cpu: {}\nnew cpu: {}".format(old_cpu, new_cpu))
@@ -204,6 +253,8 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(FULL_CORES_KEY, tags).set(self.__get_full_core_count())
         self.__reg.gauge(HALF_CORES_KEY, tags).set(self.__get_half_core_count())
         self.__reg.gauge(EMPTY_CORES_KEY, tags).set(self.__get_empty_core_count())
+        self.__reg.gauge(EXTRA_BURST_THREADS_KEY, tags).set(self.__get_extra_burst_thread_count())
+        self.__reg.gauge(OVERSUBSCRIBED_THREADS_KEY, tags).set(self.__get_oversubscribed_thread_count())
 
         # Have the sub-components report metrics
         self.__cpu_allocator.report_metrics(tags)
