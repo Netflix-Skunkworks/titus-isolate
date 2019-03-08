@@ -1,6 +1,7 @@
 import unittest
 
 from tests.event.mock_docker import MockDockerClient, MockContainer
+from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE
 from titus_isolate import log
 from titus_isolate.event.constants import STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY
 from titus_isolate.event.utils import get_current_workloads
@@ -97,4 +98,12 @@ class TestUtils(unittest.TestCase):
 
     @staticmethod
     def __get_test_container(name, thread_count):
-        return MockContainer(Workload(name, thread_count, STATIC))
+        return MockContainer(
+            Workload(
+                name,
+                thread_count,
+                DEFAULT_TEST_MEM,
+                DEFAULT_TEST_DISK,
+                DEFAULT_TEST_NETWORK,
+                DEFAULT_TEST_IMAGE,
+                STATIC))

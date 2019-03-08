@@ -1,11 +1,11 @@
 import unittest
 import uuid
 
+from tests.utils import get_test_workload
 from titus_isolate.event.constants import STATIC
 from titus_isolate.isolate.balance import has_better_isolation
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.model.processor.config import get_cpu
-from titus_isolate.model.workload import Workload
 
 
 class TestBalance(unittest.TestCase):
@@ -15,7 +15,7 @@ class TestBalance(unittest.TestCase):
         self.assertFalse(has_better_isolation(cpu, cpu))
 
     def test_no_change_populated_cpu(self):
-        w0 = Workload(uuid.uuid4(), 4, STATIC)
+        w0 = get_test_workload(uuid.uuid4(), 4, STATIC)
 
         cur_cpu = get_cpu()
         new_cpu = get_cpu()

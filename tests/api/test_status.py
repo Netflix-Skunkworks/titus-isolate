@@ -5,6 +5,7 @@ import uuid
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import MockEventProvider
+from tests.utils import get_test_workload
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.api import status
 from titus_isolate.api.status import get_workloads, get_violations, get_wm_status, get_isolated_workload_ids, \
@@ -15,8 +16,6 @@ from titus_isolate.event.event_manager import EventManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT
-from titus_isolate.model.workload import Workload
-from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.utils import set_config_manager, set_workload_manager, set_event_manager
 
 
@@ -27,7 +26,7 @@ class TestStatus(unittest.TestCase):
 
         thread_count = 2
         workload_id = str(uuid.uuid4())
-        workload = Workload(workload_id, thread_count, STATIC)
+        workload = get_test_workload(workload_id, thread_count, STATIC)
 
         workload_manager = self.__get_default_workload_manager()
         set_workload_manager(workload_manager)
@@ -49,7 +48,7 @@ class TestStatus(unittest.TestCase):
         isolated_workload_ids = json.loads(get_isolated_workload_ids())
         self.assertEqual(0, len(isolated_workload_ids))
 
-        workload = Workload(str(uuid.uuid4()), 2, BURST)
+        workload = get_test_workload(str(uuid.uuid4()), 2, BURST)
         workload_manager.add_workload(workload)
 
         isolated_workload_ids = json.loads(get_isolated_workload_ids())
@@ -63,7 +62,7 @@ class TestStatus(unittest.TestCase):
         _, code, _ = isolate_workload(str(uuid.uuid4()), timeout=0.5)
         self.assertEqual(404, code)
 
-        workload = Workload(str(uuid.uuid4()), 2, BURST)
+        workload = get_test_workload(str(uuid.uuid4()), 2, BURST)
         workload_manager.add_workload(workload)
 
         _, code, _ = isolate_workload(workload.get_id(), timeout=0.5)

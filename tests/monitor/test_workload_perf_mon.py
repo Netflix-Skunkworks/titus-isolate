@@ -1,14 +1,14 @@
 import calendar
 from collections import deque
-from datetime import datetime as dt, timedelta as td
+from datetime import datetime as dt
 import unittest
 import uuid
 from unittest.mock import MagicMock
 
 import numpy as np
 
+from tests.utils import get_test_workload
 from titus_isolate.event.constants import STATIC
-from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
 from titus_isolate.monitor.cpu_usage import CpuUsage, CpuUsageSnapshot
 from titus_isolate.monitor.workload_monitor_manager import DEFAULT_SAMPLE_FREQUENCY_SEC
@@ -18,7 +18,7 @@ from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
 class TestWorkloadPerfMon(unittest.TestCase):
 
     def test_single_sample(self):
-        workload = Workload(uuid.uuid4(), 2, STATIC)
+        workload = get_test_workload(uuid.uuid4(), 2, STATIC)
         metrics_provider = CgroupMetricsProvider(workload)
         perf_mon = WorkloadPerformanceMonitor(metrics_provider, DEFAULT_SAMPLE_FREQUENCY_SEC)
 

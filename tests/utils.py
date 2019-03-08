@@ -9,9 +9,13 @@ from titus_isolate.event.free_event_handler import FreeEventHandler
 from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
-from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
+from titus_isolate.model.workload import Workload
 
 DEFAULT_TIMEOUT_SECONDS = 3
+DEFAULT_TEST_MEM = 256
+DEFAULT_TEST_DISK = 512
+DEFAULT_TEST_NETWORK = 1024
+DEFAULT_TEST_IMAGE = 'test_image'
 
 
 def wait_until(func, timeout=DEFAULT_TIMEOUT_SECONDS, period=0.01):
@@ -39,6 +43,17 @@ def gauge_value_reached(registry, key, min_expected_value):
 
 def get_threads_with_workload(cpu, workload_id):
     return [t for t in cpu.get_threads() if workload_id in t.get_workload_ids()]
+
+
+def get_test_workload(identifier, thread_count, w_type):
+    return Workload(
+        identifier,
+        thread_count,
+        DEFAULT_TEST_MEM,
+        DEFAULT_TEST_DISK,
+        DEFAULT_TEST_NETWORK,
+        DEFAULT_TEST_IMAGE,
+        w_type)
 
 
 def config_logs(level):

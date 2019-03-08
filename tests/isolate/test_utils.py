@@ -2,7 +2,7 @@ import logging
 import unittest
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.utils import config_logs
+from tests.utils import config_logs, get_test_workload
 from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
@@ -13,7 +13,6 @@ from titus_isolate.config.constants import CPU_ALLOCATOR, NOOP, AB_TEST, GREEDY,
 from titus_isolate.event.constants import STATIC
 from titus_isolate.isolate.utils import get_allocator, get_ab_bucket, _get_ab_bucket_int
 from titus_isolate.model.utils import get_sorted_workloads
-from titus_isolate.model.workload import Workload
 
 config_logs(logging.DEBUG)
 
@@ -220,9 +219,9 @@ class TestUtils(unittest.TestCase):
             self.assertEqual(odd_hour_to_bucket_map[hour], bucket_int)
 
     def test_get_sorted_workloads(self):
-        w_a = Workload('a', 1, STATIC)
-        w_b = Workload('b', 1, STATIC)
-        w_c = Workload('c', 1, STATIC)
+        w_a = get_test_workload('a', 1, STATIC)
+        w_b = get_test_workload('b', 1, STATIC)
+        w_c = get_test_workload('c', 1, STATIC)
         expected_ids = ['a', 'b', 'c']
 
         scrambled_workloads = [w_b, w_a, w_c]

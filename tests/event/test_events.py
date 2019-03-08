@@ -6,10 +6,11 @@ from spectator import Registry
 
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import get_container_create_event, MockEventProvider, get_event, get_container_die_event
-from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals
+from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals, DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, \
+    DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME, \
-    ACTION, REBALANCE, REBALANCE_EVENT
+    ACTION, REBALANCE, REBALANCE_EVENT, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
@@ -178,7 +179,15 @@ class TestEvents(unittest.TestCase):
             CONTAINER,
             CREATE,
             uuid.uuid4(),
-            {NAME: "container-name", CPU_LABEL_KEY: "1", WORKLOAD_TYPE_LABEL_KEY: "unknown"})
+            {
+                NAME: "container-name",
+                CPU_LABEL_KEY: "1",
+                MEM_LABEL_KEY: str(DEFAULT_TEST_MEM),
+                DISK_LABEL_KEY: str(DEFAULT_TEST_DISK),
+                NETWORK_LABEL_KEY: str(DEFAULT_TEST_NETWORK),
+                IMAGE_LABEL_KEY: DEFAULT_TEST_IMAGE,
+                WORKLOAD_TYPE_LABEL_KEY: "unknown"
+            })
         valid_event = get_container_create_event(1)
         event_iterable = MockEventProvider([unknown_event, valid_event])
         manager = EventManager(
