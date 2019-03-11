@@ -6,7 +6,7 @@ from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWOR
 from titus_isolate import log
 from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, CPU_LABEL_KEY, CREATE, ID, \
     LOWERCASE_ID, NAME, TIME, TYPE, DIE, WORKLOAD_TYPE_LABEL_KEY, STATIC, MEM_LABEL_KEY, DISK_LABEL_KEY, \
-    NETWORK_LABEL_KEY, IMAGE_LABEL_KEY
+    NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, REPO_DIGESTS
 
 
 class MockEventProvider:
@@ -32,6 +32,11 @@ class MockEventProvider:
         self.__closed = True
 
 
+class MockImage:
+    def __init__(self, attrs):
+        self.attrs = attrs
+
+
 class MockContainer:
     def __init__(self, workload):
         self.name = workload.get_id()
@@ -44,6 +49,11 @@ class MockContainer:
             WORKLOAD_TYPE_LABEL_KEY: workload.get_type()
         }
         self.update_calls = []
+        repo_digests = ["registry:7002/name@sha256:digest"]
+        attrs = {
+           REPO_DIGESTS: repo_digests
+        }
+        self.image = MockImage(attrs)
 
     def update(self, **kwargs):
         log.info("update called with: '{}'".format(kwargs))

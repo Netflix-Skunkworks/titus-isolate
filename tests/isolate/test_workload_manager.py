@@ -9,18 +9,18 @@ from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, TestContext, gauge_value_equals, gauge_value_reached, get_threads_with_workload, \
     get_test_workload
 from titus_isolate import log
+from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
+from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.constants import STATIC, BURST
-from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
-from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.isolate.detect import get_cross_package_violations
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
-    WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
-    IP_ALLOCATOR_TIMEBOUND_COUNT, ALLOCATOR_CALL_DURATION, FULL_CORES_KEY, HALF_CORES_KEY, \
-    EMPTY_CORES_KEY, EXTRA_BURST_THREADS_KEY, OVERSUBSCRIBED_THREADS_KEY
+    WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, IP_ALLOCATOR_TIMEBOUND_COUNT, \
+    ALLOCATOR_CALL_DURATION, OVERSUBSCRIBED_THREADS_KEY, STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, \
+    BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, UNALLOCATED_SIZE_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
 from titus_isolate.utils import set_config_manager
@@ -214,9 +214,8 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, PACKAGE_VIOLATIONS_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, CORE_VIOLATIONS_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, IP_ALLOCATOR_TIMEBOUND_COUNT, 0))
-        self.assertTrue(gauge_value_equals(registry, FULL_CORES_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, HALF_CORES_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, EMPTY_CORES_KEY, len(test_context.get_cpu().get_cores())))
+        self.assertTrue(gauge_value_equals(registry, ALLOCATED_SIZE_KEY, 0))
+        self.assertTrue(gauge_value_equals(registry, UNALLOCATED_SIZE_KEY, len(test_context.get_cpu().get_threads())))
 
     def test_add_metrics(self):
         test_context = TestContext()
@@ -224,7 +223,8 @@ class TestWorkloadManager(unittest.TestCase):
         reporter = test_context.get_workload_manager()
         reporter.set_registry(registry)
 
-        reporter.add_workload(get_test_workload(uuid.uuid4(), 2, STATIC))
+        workload = get_test_workload(uuid.uuid4(), 2, STATIC)
+        reporter.add_workload(workload)
         reporter.report_metrics({})
 
         self.assertTrue(gauge_value_equals(registry, RUNNING, 1))
@@ -236,9 +236,10 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, PACKAGE_VIOLATIONS_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, CORE_VIOLATIONS_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, IP_ALLOCATOR_TIMEBOUND_COUNT, 0))
-        self.assertTrue(gauge_value_equals(registry, FULL_CORES_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, HALF_CORES_KEY, 2))
-        self.assertTrue(gauge_value_equals(registry, EMPTY_CORES_KEY, 6))
+        self.assertTrue(gauge_value_equals(registry, ALLOCATED_SIZE_KEY, workload.get_thread_count()))
+
+        expected_unallocated_size = len(test_context.get_cpu().get_threads()) - workload.get_thread_count()
+        self.assertTrue(gauge_value_equals(registry, UNALLOCATED_SIZE_KEY, expected_unallocated_size))
 
     def test_edge_case_ip_allocator_metrics(self):
         # This is a specific scenario causing troubles to the solver.
@@ -304,7 +305,7 @@ class TestWorkloadManager(unittest.TestCase):
             wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
             self.assertTrue(wm.is_isolated(uuid.uuid4()))
 
-    def test_extra_burst_threads_computation(self):
+    def test_thread_allocation_computation(self):
         for allocator in ALLOCATORS:
             static_thread_count = 2
             burst_thread_count = 4
@@ -318,37 +319,25 @@ class TestWorkloadManager(unittest.TestCase):
             workload_manager.set_registry(registry)
             workload_manager.add_workload(w_static)
             workload_manager.add_workload(w_burst)
-
-            self.assertEqual(burst_thread_count, workload_manager._WorkloadManager__get_burst_allocation_size())
-            self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - static_thread_count, workload_manager._WorkloadManager__get_burst_occupied_thread_count())
-            expected_extra_burst_thread_count = DEFAULT_TOTAL_THREAD_COUNT - static_thread_count - burst_thread_count
-            self.assertEqual(expected_extra_burst_thread_count, workload_manager._WorkloadManager__get_extra_burst_thread_count())
 
             workload_manager.report_metrics({})
-            self.assertTrue(gauge_value_equals(registry, EXTRA_BURST_THREADS_KEY, expected_extra_burst_thread_count))
-
-    def test_over_subscription_computation(self):
-        for allocator in ALLOCATORS:
-            static_thread_count = 2
-            burst_thread_count = 4
-            w_static = get_test_workload("s", static_thread_count, STATIC)
-            w_burst = get_test_workload("b", burst_thread_count, BURST)
-
-            cgroup_manager = MockCgroupManager()
-            registry = Registry()
-
-            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
-            workload_manager.set_registry(registry)
-            workload_manager.add_workload(w_static)
-            workload_manager.add_workload(w_burst)
-
-            self.assertEqual(0, workload_manager._WorkloadManager__get_oversubscribed_thread_count())
+            total_thread_count = len(workload_manager.get_cpu().get_threads())
+            expected_burst_allocation_size = total_thread_count - static_thread_count
+            self.assertTrue(gauge_value_equals(registry, ALLOCATED_SIZE_KEY, total_thread_count))
+            self.assertTrue(gauge_value_equals(registry, UNALLOCATED_SIZE_KEY, 0))
+            self.assertTrue(gauge_value_equals(registry, STATIC_ALLOCATED_SIZE_KEY, static_thread_count))
+            self.assertTrue(gauge_value_equals(registry, BURST_ALLOCATED_SIZE_KEY, expected_burst_allocation_size))
+            self.assertTrue(gauge_value_equals(registry, BURST_REQUESTED_SIZE_KEY, burst_thread_count))
+            self.assertTrue(gauge_value_equals(registry, OVERSUBSCRIBED_THREADS_KEY, 0))
 
             # Claim every thread for the burst workload which will oversubscribe the static threads
             for t in workload_manager.get_cpu().get_threads():
                 t.claim(w_burst.get_id())
 
-            self.assertEqual(static_thread_count, workload_manager._WorkloadManager__get_oversubscribed_thread_count())
-
             workload_manager.report_metrics({})
+            self.assertTrue(gauge_value_equals(registry, ALLOCATED_SIZE_KEY, total_thread_count))
+            self.assertTrue(gauge_value_equals(registry, UNALLOCATED_SIZE_KEY, 0))
+            self.assertTrue(gauge_value_equals(registry, STATIC_ALLOCATED_SIZE_KEY, static_thread_count))
+            self.assertTrue(gauge_value_equals(registry, BURST_ALLOCATED_SIZE_KEY, total_thread_count))
+            self.assertTrue(gauge_value_equals(registry, BURST_REQUESTED_SIZE_KEY, burst_thread_count))
             self.assertTrue(gauge_value_equals(registry, OVERSUBSCRIBED_THREADS_KEY, static_thread_count))

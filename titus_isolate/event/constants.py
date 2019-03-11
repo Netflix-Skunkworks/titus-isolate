@@ -6,6 +6,7 @@ ATTRIBUTES = "Attributes"
 ID = "ID"
 LOWERCASE_ID = "id"
 NAME = "name"
+REPO_DIGESTS = 'RepoDigests'
 TIME = "time"
 TYPE = "Type"
 
@@ -26,7 +27,6 @@ REQUIRED_LABELS = [
     MEM_LABEL_KEY,
     DISK_LABEL_KEY,
     NETWORK_LABEL_KEY,
-    IMAGE_LABEL_KEY,
     WORKLOAD_TYPE_LABEL_KEY]
 
 STATIC = "static"
