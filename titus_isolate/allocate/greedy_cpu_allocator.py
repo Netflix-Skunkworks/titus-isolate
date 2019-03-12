@@ -63,13 +63,16 @@ class GreedyCpuAllocator(CpuAllocator):
         return claimed_threads + self.__assign_threads(
             cpu,
             Workload(
-                workload.get_id(),
-                thread_count,
-                workload.get_mem(),
-                workload.get_disk(),
-                workload.get_network(),
-                workload.get_image(),
-                workload.get_type()))
+                identifier=workload.get_id(),
+                thread_count=thread_count,
+                mem=workload.get_mem(),
+                disk=workload.get_disk(),
+                network=workload.get_network(),
+                app_name=workload.get_app_name(),
+                owner_email=workload.get_owner_email(),
+                image=workload.get_image(),
+                job_type=workload.get_job_type(),
+                workload_type=workload.get_type()))
 
     def set_registry(self, registry):
         pass

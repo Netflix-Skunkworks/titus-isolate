@@ -15,7 +15,10 @@ DEFAULT_TIMEOUT_SECONDS = 3
 DEFAULT_TEST_MEM = 256
 DEFAULT_TEST_DISK = 512
 DEFAULT_TEST_NETWORK = 1024
+DEFAULT_TEST_APP_NAME = 'test_app_name'
+DEFAULT_TEST_OWNER_EMAIL = 'user@email.org'
 DEFAULT_TEST_IMAGE = 'test_image'
+DEFAULT_TEST_JOB_TYPE = 'SERVICE'
 
 
 def wait_until(func, timeout=DEFAULT_TIMEOUT_SECONDS, period=0.01):
@@ -45,15 +48,18 @@ def get_threads_with_workload(cpu, workload_id):
     return [t for t in cpu.get_threads() if workload_id in t.get_workload_ids()]
 
 
-def get_test_workload(identifier, thread_count, w_type):
+def get_test_workload(identifier, thread_count, workload_type):
     return Workload(
-        identifier,
-        thread_count,
-        DEFAULT_TEST_MEM,
-        DEFAULT_TEST_DISK,
-        DEFAULT_TEST_NETWORK,
-        DEFAULT_TEST_IMAGE,
-        w_type)
+        identifier=identifier,
+        thread_count=thread_count,
+        mem=DEFAULT_TEST_MEM,
+        disk=DEFAULT_TEST_DISK,
+        network=-DEFAULT_TEST_NETWORK,
+        app_name=DEFAULT_TEST_APP_NAME,
+        owner_email=DEFAULT_TEST_OWNER_EMAIL,
+        image=DEFAULT_TEST_IMAGE,
+        job_type=DEFAULT_TEST_JOB_TYPE,
+        workload_type=workload_type)
 
 
 def config_logs(level):

@@ -7,10 +7,11 @@ from spectator import Registry
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import get_container_create_event, MockEventProvider, get_event, get_container_die_event
 from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals, DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, \
-    DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE
+    DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE, DEFAULT_TEST_APP_NAME, DEFAULT_TEST_JOB_TYPE, DEFAULT_TEST_OWNER_EMAIL
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME, \
-    ACTION, REBALANCE, REBALANCE_EVENT, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY
+    ACTION, REBALANCE, REBALANCE_EVENT, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, \
+    APP_NAME_LABEL_KEY, JOB_TYPE_LABEL_KEY, OWNER_EMAIL_LABEL_KEY
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
@@ -181,12 +182,15 @@ class TestEvents(unittest.TestCase):
             uuid.uuid4(),
             {
                 NAME: "container-name",
+                APP_NAME_LABEL_KEY: DEFAULT_TEST_APP_NAME,
                 CPU_LABEL_KEY: "1",
                 MEM_LABEL_KEY: str(DEFAULT_TEST_MEM),
                 DISK_LABEL_KEY: str(DEFAULT_TEST_DISK),
                 NETWORK_LABEL_KEY: str(DEFAULT_TEST_NETWORK),
+                JOB_TYPE_LABEL_KEY: DEFAULT_TEST_JOB_TYPE,
+                WORKLOAD_TYPE_LABEL_KEY: "unknown",
+                OWNER_EMAIL_LABEL_KEY: DEFAULT_TEST_OWNER_EMAIL,
                 IMAGE_LABEL_KEY: DEFAULT_TEST_IMAGE,
-                WORKLOAD_TYPE_LABEL_KEY: "unknown"
             })
         valid_event = get_container_create_event(1)
         event_iterable = MockEventProvider([unknown_event, valid_event])
