@@ -94,11 +94,11 @@ def set_cpu_usage_predictor_manager(cpu_usage_predictor_manager):
         __cpu_usage_predictor_manager = cpu_usage_predictor_manager
 
 
-def get_cpu_usage_predictor():
+def get_cpu_usage_predictor_manager():
     global __cpu_usage_predictor_manager
 
     with cpu_usage_predictor_manager_lock:
-        return __cpu_usage_predictor_manager.get_predictor()
+        return __cpu_usage_predictor_manager
 
 
 def start_periodic_scheduling():

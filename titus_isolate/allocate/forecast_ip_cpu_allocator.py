@@ -16,13 +16,13 @@ from titus_isolate.utils import get_workload_monitor_manager
 
 class ForecastIPCpuAllocator(CpuAllocator):
 
-    def __init__(self, cpu_usage_predictor, solver_max_runtime_secs=5):
+    def __init__(self, cpu_usage_predictor_manager, solver_max_runtime_secs=5):
         self.__reg = None
         self.__time_bound_call_count = 0
         self.__ip_solver_params = IPSolverParameters()
 
         self.__solver_max_runtime_secs = solver_max_runtime_secs
-        self.__cpu_usage_predictor = cpu_usage_predictor
+        self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
         self.__cnt_rebalance_calls = 0
 
     def assign_threads(self, cpu : Cpu, workload_id, workloads) -> Cpu:
@@ -59,7 +59,8 @@ class ForecastIPCpuAllocator(CpuAllocator):
     
     def __predict_usage_static(self, workloads, default_value=None) -> dict:
         res = {}
-        if self.__cpu_usage_predictor is None:
+        cpu_usage_predictor = self.__cpu_usage_predictor_manager.get_predictor()
+        if cpu_usage_predictor is None:
             if default_value is None:
                 return res
             for w in workloads.values():
@@ -71,7 +72,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         cpu_usages = wmm.get_cpu_usage(3600)
         for w in workloads.values(): # TODO: batch the call
             if w.get_type() == STATIC:
-                pred = self.__cpu_usage_predictor.predict(w, cpu_usages.get(w.get_id(), None))
+                pred = cpu_usage_predictor.predict(w, cpu_usages.get(w.get_id(), None))
                 if default_value is not None and pred is None:
                     pred = default_value
                 res[w.get_id()] = pred
