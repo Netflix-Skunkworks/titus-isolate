@@ -2,8 +2,11 @@ import logging
 import unittest
 import uuid
 
+import numpy as np
+
 from tests.utils import config_logs, get_test_workload
 from titus_isolate import log
+from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.event.constants import STATIC
@@ -13,7 +16,7 @@ from titus_isolate.model.workload import Workload
 
 config_logs(logging.DEBUG)
 
-ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator()]
+ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), ForecastIPCpuAllocator(None)]
 
 
 class TestCpu(unittest.TestCase):
@@ -37,22 +40,22 @@ class TestCpu(unittest.TestCase):
         """
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         """
-        cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator()
-        w = get_test_workload(uuid.uuid4(), 2, STATIC)
+        for allocator in [IntegerProgramCpuAllocator(), ForecastIPCpuAllocator(None)]:
+            cpu = get_cpu()
+            w = get_test_workload(uuid.uuid4(), 2, STATIC)
 
-        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
-        self.assertEqual(2, len(cpu.get_claimed_threads()))
+            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
+            self.assertEqual(2, len(cpu.get_claimed_threads()))
 
-        # Expected core and threads
-        core00 = cpu.get_packages()[0].get_cores()[0]
-        core01 = cpu.get_packages()[0].get_cores()[1]
-        thread0 = core00.get_threads()[0]
-        self.assertEqual(0, thread0.get_id())
-        self.assertTrue(thread0.is_claimed())
-        thread1 = core01.get_threads()[0]
-        self.assertEqual(1, thread1.get_id())
-        self.assertTrue(thread1.is_claimed())
+            # Expected core and threads
+            core00 = cpu.get_packages()[0].get_cores()[0]
+            core01 = cpu.get_packages()[0].get_cores()[1]
+            thread0 = core00.get_threads()[0]
+            self.assertEqual(0, thread0.get_id())
+            self.assertTrue(thread0.is_claimed())
+            thread1 = core01.get_threads()[0]
+            self.assertEqual(1, thread1.get_id())
+            self.assertTrue(thread1.is_claimed())
 
     def test_assign_two_threads_empty_cpu_greedy(self):
         """
@@ -79,36 +82,36 @@ class TestCpu(unittest.TestCase):
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         Workload 1: 1 thread  --> (p:1 c:0 t:0)
         """
-        cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator()
-        w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
-        w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
+        for allocator in [IntegerProgramCpuAllocator(), ForecastIPCpuAllocator(None)]:
+            cpu = get_cpu()
+            w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
+            w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
 
-        cpu = allocator.assign_threads(cpu, w0.get_id(), {w0.get_id(): w0})
-        cpu = allocator.assign_threads(cpu, w1.get_id(),
-                                       {
-                                           w0.get_id(): w0,
-                                           w1.get_id(): w1
-                                       })
-        self.assertEqual(3, len(cpu.get_claimed_threads()))
+            cpu = allocator.assign_threads(cpu, w0.get_id(), {w0.get_id(): w0})
+            cpu = allocator.assign_threads(cpu, w1.get_id(),
+                                        {
+                                            w0.get_id(): w0,
+                                            w1.get_id(): w1
+                                        })
+            self.assertEqual(3, len(cpu.get_claimed_threads()))
 
-        packages = cpu.get_packages()
+            packages = cpu.get_packages()
 
-        # WORKLOAD 0
-        core00 = packages[0].get_cores()[0]
-        core01 = packages[0].get_cores()[1]
-        thread0 = core00.get_threads()[0]
-        self.assertEqual(0, thread0.get_id())
-        self.assertTrue(thread0.is_claimed())
-        thread1 = core01.get_threads()[0]
-        self.assertEqual(1, thread1.get_id())
-        self.assertTrue(thread1.is_claimed())
+            # WORKLOAD 0
+            core00 = packages[0].get_cores()[0]
+            core01 = packages[0].get_cores()[1]
+            thread0 = core00.get_threads()[0]
+            self.assertEqual(0, thread0.get_id())
+            self.assertTrue(thread0.is_claimed())
+            thread1 = core01.get_threads()[0]
+            self.assertEqual(1, thread1.get_id())
+            self.assertTrue(thread1.is_claimed())
 
-        # WORKLOAD 1
-        core00 = packages[1].get_cores()[0]
-        thread4 = core00.get_threads()[0]
-        self.assertEqual(4, thread4.get_id())
-        self.assertTrue(thread4.is_claimed())
+            # WORKLOAD 1
+            core00 = packages[1].get_cores()[0]
+            thread4 = core00.get_threads()[0]
+            self.assertEqual(4, thread4.get_id())
+            self.assertTrue(thread4.is_claimed())
 
     def test_assign_two_workloads_empty_cpu_greedy(self):
         """
@@ -154,19 +157,19 @@ class TestCpu(unittest.TestCase):
         | 1 | 1 | 1 | 1 |
         |   |   |   |   |
         """
-        cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator()
-        w = get_test_workload(uuid.uuid4(), 10, STATIC)
+        for allocator in [IntegerProgramCpuAllocator(), ForecastIPCpuAllocator(None)]:
+            cpu = get_cpu()
+            w = get_test_workload(uuid.uuid4(), 10, STATIC)
 
-        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
-        self.assertEqual(10, len(cpu.get_claimed_threads()))
+            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
+            self.assertEqual(10, len(cpu.get_claimed_threads()))
 
-        expected_thread_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12]
+            expected_thread_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12]
 
-        thread_ids = [thread.get_id() for thread in cpu.get_claimed_threads()]
-        thread_ids.sort()
+            thread_ids = [thread.get_id() for thread in cpu.get_claimed_threads()]
+            thread_ids.sort()
 
-        self.assertEqual(expected_thread_ids, thread_ids)
+            self.assertEqual(expected_thread_ids, thread_ids)
 
     def test_fill_cpu(self):
         """

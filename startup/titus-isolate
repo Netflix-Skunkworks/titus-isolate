@@ -7,7 +7,6 @@ import docker
 import schedule
 
 from titus_isolate import log
-from titus_isolate.allocate.utils import download_latest_cpu_model
 from titus_isolate.api.status import app
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 from titus_isolate.config.constants import RESTART_PROPERTIES
@@ -25,9 +24,10 @@ from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
+from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
 from titus_isolate.real_exit_handler import RealExitHandler
 from titus_isolate.utils import start_periodic_scheduling, get_config_manager, set_workload_manager, \
-    set_workload_monitor_manager, set_event_manager
+    set_workload_monitor_manager, set_event_manager, set_cpu_usage_predictor_manager
 
 
 @click.command()
@@ -35,10 +35,6 @@ from titus_isolate.utils import start_periodic_scheduling, get_config_manager, s
 def main(admin_port):
     # Set the schedule library's logging level higher so it doesn't spam messages every time it schedules a task
     logging.getLogger('schedule').setLevel(logging.WARN)
-
-    log.info("Getting latest cpu model...")
-    download_latest_cpu_model()
-    schedule.every(1).hour.do(download_latest_cpu_model)
 
     exit_handler = RealExitHandler()
 
@@ -51,6 +47,11 @@ def main(admin_port):
     # Start period scheduling
     log.info("Starting periodic event scheduling...")
     start_periodic_scheduling()
+
+    # Start the cpu usage predictor manager
+    log.info("Setting up the cpu usage predictor manager...")
+    cpu_predictor_manager = CpuUsagePredictorManager()
+    set_cpu_usage_predictor_manager(cpu_predictor_manager)
 
     # Setup the workload manager
     log.info("Setting up the workload manager...")

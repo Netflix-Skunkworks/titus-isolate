@@ -59,7 +59,6 @@ class WorkloadPerformanceMonitor:
             slice_ts_max = np.searchsorted(timestamps, ts_max, 'right')
             if slice_ts_max == len(timestamps):
                 slice_ts_max -= 1
-            log.debug(slice_ts_min, slice_ts_max, timestamps[slice_ts_max], np.isnan(timestamps[slice_ts_max]))
 
             ts_max = ts_min
 
