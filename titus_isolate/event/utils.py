@@ -6,7 +6,7 @@ from titus_isolate.model.workload import Workload
 
 
 def get_container_name(event):
-    return event[ACTOR][ATTRIBUTES][NAME]
+    return __get_attribute(event, NAME)
 
 
 def get_cpu(create_event):
@@ -26,27 +26,36 @@ def get_network(create_event):
 
 
 def get_app_name(create_event):
-    return create_event[ACTOR][ATTRIBUTES][APP_NAME_LABEL_KEY]
+    return __get_attribute(create_event, APP_NAME_LABEL_KEY)
 
 
 def get_owner_email(create_event):
-    return create_event[ACTOR][ATTRIBUTES][OWNER_EMAIL_LABEL_KEY]
+    return __get_attribute(create_event, OWNER_EMAIL_LABEL_KEY)
 
 
 def get_image(create_event):
-    return create_event[ACTOR][ATTRIBUTES][IMAGE_LABEL_KEY]
+    return __get_attribute(create_event, IMAGE_LABEL_KEY)
 
 
 def get_job_type(create_event):
-    return create_event[ACTOR][ATTRIBUTES][JOB_TYPE_LABEL_KEY]
+    return __get_attribute(create_event, JOB_TYPE_LABEL_KEY)
 
 
 def get_workload_type(create_event):
-    return create_event[ACTOR][ATTRIBUTES][WORKLOAD_TYPE_LABEL_KEY]
+    return __get_attribute(create_event, WORKLOAD_TYPE_LABEL_KEY)
 
 
 def __get_int_attribute(event, key):
-    return int(event[ACTOR][ATTRIBUTES][key])
+    return int(__get_attribute(event, key, -1))
+
+
+def __get_attribute(event, key, default=''):
+    attributes = event[ACTOR][ATTRIBUTES]
+    return __get_value(attributes, key, default)
+
+
+def __get_value(dictionary, key, default=''):
+    return dictionary.get(key, default)
 
 
 def get_current_workloads(docker_client):
@@ -55,15 +64,16 @@ def get_current_workloads(docker_client):
         workload_id = container.name
         if __has_required_labels(container):
             try:
-                cpu = int(container.labels[CPU_LABEL_KEY])
-                mem = int(container.labels[MEM_LABEL_KEY])
-                disk = int(container.labels[DISK_LABEL_KEY])
-                network = int(container.labels[NETWORK_LABEL_KEY])
-                app_name = container.labels[APP_NAME_LABEL_KEY]
-                owner_email = container.labels[OWNER_EMAIL_LABEL_KEY]
+                labels = container.labels
+                cpu = int(__get_value(labels, CPU_LABEL_KEY, -1))
+                mem = int(__get_value(labels, MEM_LABEL_KEY, -1))
+                disk = int(__get_value(labels, DISK_LABEL_KEY, -1))
+                network = int(__get_value(labels, DISK_LABEL_KEY, -1))
+                app_name = __get_value(labels, APP_NAME_LABEL_KEY)
+                owner_email = __get_value(labels, OWNER_EMAIL_LABEL_KEY)
+                job_type = __get_value(labels, JOB_TYPE_LABEL_KEY)
+                workload_type = __get_value(labels, WORKLOAD_TYPE_LABEL_KEY)
                 image = __get_image(container)
-                job_type = container.labels[JOB_TYPE_LABEL_KEY]
-                workload_type = container.labels[WORKLOAD_TYPE_LABEL_KEY]
 
                 workloads.append(
                     Workload(
