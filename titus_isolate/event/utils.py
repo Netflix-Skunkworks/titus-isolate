@@ -1,6 +1,7 @@
 from titus_isolate import log
 from titus_isolate.event.constants import ACTOR, ATTRIBUTES, NAME, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, \
-    REQUIRED_LABELS, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, REPO_DIGESTS
+    REQUIRED_LABELS, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, REPO_DIGESTS, \
+    JOB_TYPE_LABEL_KEY, OWNER_EMAIL_LABEL_KEY, APP_NAME_LABEL_KEY
 from titus_isolate.model.workload import Workload
 
 
@@ -24,16 +25,28 @@ def get_network(create_event):
     return __get_int_attribute(create_event, NETWORK_LABEL_KEY)
 
 
-def __get_int_attribute(event, key):
-    return int(event[ACTOR][ATTRIBUTES][key])
+def get_app_name(create_event):
+    return create_event[ACTOR][ATTRIBUTES][APP_NAME_LABEL_KEY]
+
+
+def get_owner_email(create_event):
+    return create_event[ACTOR][ATTRIBUTES][OWNER_EMAIL_LABEL_KEY]
 
 
 def get_image(create_event):
     return create_event[ACTOR][ATTRIBUTES][IMAGE_LABEL_KEY]
 
 
+def get_job_type(create_event):
+    return create_event[ACTOR][ATTRIBUTES][JOB_TYPE_LABEL_KEY]
+
+
 def get_workload_type(create_event):
     return create_event[ACTOR][ATTRIBUTES][WORKLOAD_TYPE_LABEL_KEY]
+
+
+def __get_int_attribute(event, key):
+    return int(event[ACTOR][ATTRIBUTES][key])
 
 
 def get_current_workloads(docker_client):
@@ -46,9 +59,24 @@ def get_current_workloads(docker_client):
                 mem = int(container.labels[MEM_LABEL_KEY])
                 disk = int(container.labels[DISK_LABEL_KEY])
                 network = int(container.labels[NETWORK_LABEL_KEY])
-                workload_type = container.labels[WORKLOAD_TYPE_LABEL_KEY]
+                app_name = container.labels[APP_NAME_LABEL_KEY]
+                owner_email = container.labels[OWNER_EMAIL_LABEL_KEY]
                 image = __get_image(container)
-                workloads.append(Workload(workload_id, cpu, mem, disk, network, image, workload_type))
+                job_type = container.labels[JOB_TYPE_LABEL_KEY]
+                workload_type = container.labels[WORKLOAD_TYPE_LABEL_KEY]
+
+                workloads.append(
+                    Workload(
+                        identifier=workload_id,
+                        thread_count=cpu,
+                        mem=mem,
+                        disk=disk,
+                        network=network,
+                        app_name=app_name,
+                        owner_email=owner_email,
+                        image=image,
+                        job_type=job_type,
+                        workload_type=workload_type))
                 log.info("Found running workload: '{}'".format(workload_id))
             except:
                 log.exception("Failed to parse labels for container: '{}'".format(container.name))
