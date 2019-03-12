@@ -45,7 +45,7 @@ class CpuUsagePredictor:
                 None, # job_type
                 None, # region
                 None, # env
-                dt.utcnow(),
+                dt.utcnow().hour,
                 build_ts_features(cpu_usage_last_hour)
             )
 
