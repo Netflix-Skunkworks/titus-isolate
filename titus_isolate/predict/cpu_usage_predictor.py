@@ -9,6 +9,9 @@ from titus_isolate.model.workload import Workload
 from titus_optimize.data import Query, build_ts_features
 from titus_optimize.predictors import PredictorWithFilter
 
+from titus_isolate.utils import get_config_manager
+
+
 class CpuUsagePredictor:
 
     def __init__(self, model_path, use_whitelist=True):
@@ -35,16 +38,17 @@ class CpuUsagePredictor:
                 build_ts_features(cpu_usage_last_hour)
             )
         else:
+            config_manager = get_config_manager()
             q = Query(
-                None, # user
-                None, # app_name
+                workload.get_owner_email(),
+                workload.get_app_name(),
                 workload.get_thread_count(),
                 workload.get_mem(),
                 workload.get_disk(),
                 workload.get_network(),
-                None, # job_type
-                None, # region
-                None, # env
+                workload.get_job_type(),
+                config_manager.get_region(),
+                config_manager.get_environment(),
                 dt.utcnow().hour,
                 build_ts_features(cpu_usage_last_hour)
             )
