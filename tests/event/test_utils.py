@@ -1,7 +1,8 @@
 import unittest
 
 from tests.event.mock_docker import MockDockerClient, MockContainer
-from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE
+from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE, \
+    DEFAULT_TEST_APP_NAME, DEFAULT_TEST_OWNER_EMAIL, DEFAULT_TEST_JOB_TYPE
 from titus_isolate import log
 from titus_isolate.event.constants import STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY
 from titus_isolate.event.utils import get_current_workloads
@@ -16,6 +17,7 @@ class BadContainer:
 
 
 class TestUtils(unittest.TestCase):
+
     def test_get_current_workloads(self):
         docker_client = MockDockerClient()
         self.assertEqual(0, len(get_current_workloads(docker_client)))
@@ -100,10 +102,13 @@ class TestUtils(unittest.TestCase):
     def __get_test_container(name, thread_count):
         return MockContainer(
             Workload(
-                name,
-                thread_count,
-                DEFAULT_TEST_MEM,
-                DEFAULT_TEST_DISK,
-                DEFAULT_TEST_NETWORK,
-                DEFAULT_TEST_IMAGE,
-                STATIC))
+                identifier=name,
+                thread_count=thread_count,
+                mem=DEFAULT_TEST_MEM,
+                disk=DEFAULT_TEST_DISK,
+                network=DEFAULT_TEST_NETWORK,
+                app_name=DEFAULT_TEST_APP_NAME,
+                owner_email=DEFAULT_TEST_OWNER_EMAIL,
+                image=DEFAULT_TEST_IMAGE,
+                job_type=DEFAULT_TEST_JOB_TYPE,
+                workload_type=STATIC))

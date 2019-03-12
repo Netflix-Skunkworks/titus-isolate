@@ -12,7 +12,10 @@ class Workload:
             mem,
             disk,
             network,
+            app_name,
+            owner_email,
             image,
+            job_type,
             workload_type):
 
         self.__creation_time = datetime.datetime.utcnow()
@@ -22,7 +25,10 @@ class Workload:
         self.__mem = mem
         self.__disk = disk
         self.__network = network
+        self.__app_name = app_name
+        self.__owner_email = owner_email,
         self.__image = image
+        self.__job_type = job_type,
         self.__type = workload_type.lower()
 
         if self.__thread_count < 0:
@@ -50,11 +56,20 @@ class Workload:
     def get_network(self):
         return self.__network
 
+    def get_app_name(self):
+        return self.__app_name
+
+    def get_owner_email(self):
+        return self.__owner_email
+
     def get_image(self):
         return self.__image
 
     def get_type(self):
         return self.__type
+
+    def get_job_type(self):
+        return self.__job_type
 
     def get_creation_time(self):
         return self.__creation_time
