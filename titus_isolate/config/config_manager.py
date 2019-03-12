@@ -13,3 +13,9 @@ class ConfigManager:
             return default
         else:
             return value
+
+    def get_region(self):
+        return self.__property_provider.get('EC2_REGION')
+
+    def get_environment(self):
+        return self.__property_provider.get('NETFLIX_ENVIRONMENT')
