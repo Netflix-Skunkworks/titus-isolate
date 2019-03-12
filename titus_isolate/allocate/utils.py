@@ -14,8 +14,9 @@ def get_cpu_model_bucket_name():
     if format_str is None:
         return None
 
-    region = os.environ['EC2_REGION']
-    env = os.environ['NETFLIX_ENVIRONMENT']
+    config_manager = get_config_manager()
+    region = config_manager.get_region()
+    env = config_manager.get_environment()
 
     return format_str.format(region, env)
 
