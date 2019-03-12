@@ -6,6 +6,7 @@ import uuid
 import requests
 
 from titus_isolate import log
+from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import EVENT_LOG_FORMAT_STR
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.utils import get_config_manager
@@ -52,8 +53,9 @@ def get_event(cpu: Cpu):
 
 
 def report_cpu(cpu: Cpu):
-    region = os.environ['EC2_REGION']
-    env = os.environ['NETFLIX_ENVIRONMENT']
+    config_manager = get_config_manager()
+    region = config_manager.get_region()
+    env = config_manager.get_environment()
     stream = 'titus_isolate'
 
     address = get_address(region, env, stream)
