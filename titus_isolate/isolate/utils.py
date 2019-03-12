@@ -3,17 +3,19 @@ import datetime
 from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
+from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAULT_ALLOCATOR, \
-    CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, IP, GREEDY, NOOP, \
+    CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, IP, GREEDY, NOOP, FORECAST_CPU_IP, \
     NOOP_RESET, FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER, EMPTY, THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
     TOTAL_THRESHOLD, DEFAULT_THRESHOLD_TOTAL_DURATION_SEC, THRESHOLD_TOTAL_DURATION_SEC, DEFAULT_PER_WORKLOAD_THRESHOLD, \
     PER_WORKLOAD_THRESHOLD, DEFAULT_PER_WORKLOAD_DURATION_SEC, PER_WORKLOAD_DURATION_SEC
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
+from titus_isolate.utils import get_cpu_usage_predictor_manager
 
 BUCKETS = ["A", "B"]
 
@@ -22,6 +24,7 @@ CPU_ALLOCATOR_NAME_TO_CLASS_MAP = {
     GREEDY: GreedyCpuAllocator,
     NOOP: NoopCpuAllocator,
     NOOP_RESET: NoopResetCpuAllocator,
+    FORECAST_CPU_IP: ForecastIPCpuAllocator
 }
 
 
@@ -64,8 +67,10 @@ def __get_allocator(allocator_str, config_manager):
         log.error("Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(allocator_str, DEFAULT_ALLOCATOR))
         allocator_str = DEFAULT_ALLOCATOR
 
-    free_thread_provider = get_free_thread_provider(config_manager)
-    return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str](free_thread_provider)
+    if allocator_str != FORECAST_CPU_IP:
+        free_thread_provider = get_free_thread_provider(config_manager)
+        return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str](free_thread_provider)
+    return ForecastIPCpuAllocator(get_cpu_usage_predictor_manager())
 
 
 def __get_ab_allocator(config_manager, hour):
