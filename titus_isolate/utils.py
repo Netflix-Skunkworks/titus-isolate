@@ -24,6 +24,9 @@ __event_manager = None
 workload_monitor_manager_lock = Lock()
 __workload_monitor_manager = None
 
+cpu_usage_predictor_manager_lock = Lock()
+__cpu_usage_predictor_manager = None
+
 
 def get_config_manager(property_provider=AgentPropertyProvider()):
     global __config_manager
@@ -82,6 +85,20 @@ def get_workload_monitor_manager():
 
     with workload_monitor_manager_lock:
         return __workload_monitor_manager
+
+
+def set_cpu_usage_predictor_manager(cpu_usage_predictor_manager):
+    global __cpu_usage_predictor_manager
+
+    with cpu_usage_predictor_manager_lock:
+        __cpu_usage_predictor_manager = cpu_usage_predictor_manager
+
+
+def get_cpu_usage_predictor():
+    global __cpu_usage_predictor_manager
+
+    with cpu_usage_predictor_manager_lock:
+        return __cpu_usage_predictor_manager.get_predictor()
 
 
 def start_periodic_scheduling():
