@@ -70,7 +70,7 @@ def __get_allocator(allocator_str, config_manager):
     if allocator_str != FORECAST_CPU_IP:
         free_thread_provider = get_free_thread_provider(config_manager)
         return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str](free_thread_provider)
-    return ForecastIPCpuAllocator(get_cpu_usage_predictor_manager())
+    return ForecastIPCpuAllocator(cpu_usage_predictor_manager=get_cpu_usage_predictor_manager())
 
 
 def __get_ab_allocator(config_manager, hour):
