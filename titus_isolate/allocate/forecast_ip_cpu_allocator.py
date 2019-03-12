@@ -16,13 +16,14 @@ from titus_isolate.utils import get_workload_monitor_manager
 
 class ForecastIPCpuAllocator(CpuAllocator):
 
-    def __init__(self, cpu_usage_predictor_manager, solver_max_runtime_secs=5):
+    def __init__(self, cpu_usage_predictor=None, cpu_usage_predictor_manager=None, solver_max_runtime_secs=5):
         self.__reg = None
         self.__time_bound_call_count = 0
         self.__ip_solver_params = IPSolverParameters()
 
         self.__solver_max_runtime_secs = solver_max_runtime_secs
         self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
+        self.__cpu_usage_predictor = cpu_usage_predictor
         self.__cnt_rebalance_calls = 0
 
     def assign_threads(self, cpu : Cpu, workload_id, workloads) -> Cpu:
@@ -59,7 +60,11 @@ class ForecastIPCpuAllocator(CpuAllocator):
     
     def __predict_usage_static(self, workloads, default_value=None) -> dict:
         res = {}
-        cpu_usage_predictor = self.__cpu_usage_predictor_manager.get_predictor()
+        cpu_usage_predictor = None
+        if self.__cpu_usage_predictor is not None:
+            cpu_usage_predictor = self.__cpu_usage_predictor # priority to override
+        elif self.__cpu_usage_predictor_manager is not None:
+            cpu_usage_predictor = self.__cpu_usage_predictor_manager.get_predictor()
         if cpu_usage_predictor is None:
             if default_value is None:
                 return res
