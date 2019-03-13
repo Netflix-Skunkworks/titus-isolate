@@ -46,9 +46,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
         self.__cnt_rebalance_calls = 0
 
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
-        if is_cpu_full(cpu):
-            raise ValueError("CPU is full, failed to add workload: '{}'".format(workload_id))
-
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, True)
@@ -241,7 +238,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         if num_req_static < num_threads / 2 and burst_pool_size_req > 0:
             ip_params = copy.deepcopy(ip_params)
             th_num_cores_static = ceil(num_req_static)
-            ip_params.max_burst_pool_increase_ratio = floor((num_threads / 2 - th_num_cores_static)/burst_pool_size_req)
+            ip_params.max_burst_pool_increase_ratio = floor((num_threads - th_num_cores_static)/burst_pool_size_req)
 
         placement, status = optimize_ip(
             requested_units,
