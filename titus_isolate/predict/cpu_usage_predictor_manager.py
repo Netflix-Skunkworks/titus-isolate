@@ -14,6 +14,7 @@ class CpuUsagePredictorManager:
         self.__lock = Lock()
         self.__predictor = None
 
+        self.__update_predictor()
         schedule.every(1).hour.do(self.__update_predictor)
 
     def __update_predictor(self):
