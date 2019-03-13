@@ -117,7 +117,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         # TODO: (maybe?) add burst pool current placement to curr_placement_vectors_static
 
-        log.debug("workloads: {}".format(workloads.values()))
+        log.debug("workloads: {}".format(list(workloads.keys())))
         log.debug("cu_vector: {}".format(cu_vector))
         log.debug("predicted_usage_static: {}".format(predicted_usage_static))
 
