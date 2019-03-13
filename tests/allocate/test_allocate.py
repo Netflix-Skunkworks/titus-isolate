@@ -355,4 +355,4 @@ class TestCpu(unittest.TestCase):
         cpu = allocator.rebalance(cpu, {"a": w1, "b": w2})
         
         self.assertLessEqual(2 + 4, len(cpu.get_claimed_threads()))
-        self.assertListEqual(["a", "b"], list(set(t.get_workload_ids()[0] for t in cpu.get_claimed_threads())))
+        self.assertListEqual(["a", "b"], sorted(list(set(t.get_workload_ids()[0] for t in cpu.get_claimed_threads()))))
