@@ -53,14 +53,14 @@ class CpuUsagePredictor:
                 workload.get_mem(),
                 workload.get_disk(),
                 workload.get_network(),
-                workload.get_job_type(),
+                workload.get_job_type().lower(),
                 pred_env.region,
                 pred_env.nflx_env,
                 pred_env.hour_of_day,
                 build_ts_features(cpu_usage_last_hour)
             )
 
-        return self.__model.ml_model.predict_single(q)
+        return min(self.__model.ml_model.predict_single(q), workload.get_thread_count())
     
     def get_model(self):
         return self.__model
