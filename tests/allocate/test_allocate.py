@@ -355,4 +355,32 @@ class TestCpu(unittest.TestCase):
         cpu = allocator.rebalance(cpu, {"a": w1, "b": w2})
         
         self.assertLessEqual(2 + 4, len(cpu.get_claimed_threads()))
-        self.assertListEqual(["a", "b"], sorted(list(set(t.get_workload_ids()[0] for t in cpu.get_claimed_threads()))))
+
+        def get_w2t():
+            w2t = {"a": [], "b": []}
+            for t in cpu.get_claimed_threads():
+                self.assertEqual(1, len(t.get_workload_ids())) # no over-subscription
+                w2t[t.get_workload_ids()[0]].append(t.get_id())
+            return w2t
+
+        w2t = get_w2t()
+        self.assertEqual(2, len(w2t["a"]))
+        self.assertLessEqual(4, len(w2t["b"])) # burst got at least 4
+
+        for _ in range(20):
+            cpu = allocator.rebalance(cpu, {"a": w1, "b": w2})
+
+        w2t = get_w2t()
+        self.assertEqual(2, len(w2t["a"]))
+        self.assertLessEqual(4, len(w2t["b"]))
+
+
+    def test_forecast_ip_big_burst_pool_if_empty_instance(self):
+        cpu = get_cpu()
+        allocator = ForecastIPCpuAllocator(None)
+
+        w = get_test_workload("a", 1, BURST)
+
+        cpu = allocator.assign_threads(cpu, "a", {"a": w})
+        # should at least consume all the cores:
+        self.assertLessEqual(len(cpu.get_threads())/2, len(cpu.get_claimed_threads()))

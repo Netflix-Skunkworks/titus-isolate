@@ -1,5 +1,7 @@
 from datetime import datetime as dt
 from collections import defaultdict
+import copy
+from math import ceil, floor
 
 from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSolverParameters
 
@@ -230,14 +232,25 @@ class ForecastIPCpuAllocator(CpuAllocator):
             current_placement,
             predicted_usage_static):
 
+        num_threads = len(cpu.get_threads())
+
+        ip_params = self.__ip_solver_params
+        # if the instance is mostly empty, loosen constraint
+        # on burst pool growth size
+        num_req_static = sum(requested_units)
+        if num_req_static < num_threads / 2 and burst_pool_size_req > 0:
+            ip_params = copy.deepcopy(ip_params)
+            th_num_cores_static = ceil(num_req_static)
+            ip_params.max_burst_pool_increase_ratio = floor((num_threads / 2 - th_num_cores_static)/burst_pool_size_req)
+
         placement, status = optimize_ip(
             requested_units,
             burst_pool_size_req,
-            len(cpu.get_threads()),
+            num_threads,
             len(cpu.get_packages()),
             previous_allocation=current_placement,
             use_per_workload=predicted_usage_static if len(predicted_usage_static) > 0 else None,
-            solver_params=self.__ip_solver_params,
+            solver_params=ip_params,
             verbose=False,
             max_runtime_secs=self.__solver_max_runtime_secs)
 
