@@ -26,6 +26,8 @@ class CpuUsagePredictor:
         image = workload.get_image()
         tokens = image.split('@')
         valid_digest = False
+        if cpu_usage_last_hour is None:
+            cpu_usage_last_hour = np.full((60,), np.nan, dtype=np.float32)
         if len(tokens) == 2 and tokens[-1].startswith("sha256:"):
             valid_digest = True
             entry_point = "" # TODO: add proper one
