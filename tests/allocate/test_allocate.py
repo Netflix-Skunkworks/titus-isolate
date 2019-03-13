@@ -1,22 +1,61 @@
 import logging
+import numpy as np
 import unittest
 import uuid
 
-import numpy as np
-
+from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, get_test_workload
 from titus_isolate import log
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.event.constants import STATIC, BURST
+from titus_isolate.config.config_manager import ConfigManager
+from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
+from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
+from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
+from titus_isolate.utils import set_config_manager, set_workload_monitor_manager
 
 config_logs(logging.DEBUG)
 
-ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), ForecastIPCpuAllocator(None)]
+
+
+class TestCpuUsagePredictor:
+
+    def __init__(self, prediction: float = None):
+        self.__prediction = prediction
+
+    def predict(self, workload: Workload, cpu_usage_last_hour: np.array, pred_env: PredEnvironment) -> float:
+        return self.__prediction
+
+
+class TestCpuUsagePredictorManager:
+
+    def __init__(self, predictor=TestCpuUsagePredictor()):
+        self.__predictor = predictor
+
+    def get_predictor(self):
+        return self.__predictor
+
+    def set_predictor(self, predictor):
+        self.__predictor = predictor
+
+
+class TestWorkloadMonitorManager(CpuUsageProvider):
+
+    def __init__(self, cpu_usage={}):
+        self.__cpu_usage = cpu_usage
+
+    def get_cpu_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
+        return self.__cpu_usage
+
+
+ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), ForecastIPCpuAllocator(TestCpuUsagePredictorManager())]
+set_config_manager(ConfigManager(TestPropertyProvider({})))
+set_workload_monitor_manager(TestWorkloadMonitorManager())
 
 
 class TestCpu(unittest.TestCase):
@@ -40,7 +79,7 @@ class TestCpu(unittest.TestCase):
         """
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         """
-        for allocator in [IntegerProgramCpuAllocator(), ForecastIPCpuAllocator(None)]:
+        for allocator in [IntegerProgramCpuAllocator(), ForecastIPCpuAllocator(TestCpuUsagePredictorManager())]:
             cpu = get_cpu()
             w = get_test_workload(uuid.uuid4(), 2, STATIC)
 
@@ -353,7 +392,7 @@ class TestCpu(unittest.TestCase):
         cpu = allocator.assign_threads(cpu, "a", {"a": w1})
         cpu = allocator.assign_threads(cpu, "b", {"a": w1, "b": w2})
         cpu = allocator.rebalance(cpu, {"a": w1, "b": w2})
-        
+
         self.assertLessEqual(2 + 4, len(cpu.get_claimed_threads()))
 
         w2t = cpu.get_workload_ids_to_thread_ids()
