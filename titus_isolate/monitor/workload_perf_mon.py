@@ -27,8 +27,11 @@ class WorkloadPerformanceMonitor:
         with self.__buffer_lock:
             return calendar.timegm(dt.utcnow().timetuple()), list(self.__timestamps), [list(e) for e in self.__buffers]
     
-    def get_normalized_cpu_usage_last_hour(self):
-        return WorkloadPerformanceMonitor.normalize_data(*self.get_buffers())
+    def get_normalized_cpu_usage_last_seconds(self, seconds, agg_granularity_secs=60):
+        num_buckets = ceil(seconds / agg_granularity_secs)
+        if num_buckets > self.__max_buffer_size:
+            raise Exception("Aggregation buffer too small to satisfy query.")
+        return WorkloadPerformanceMonitor.normalize_data(*self.get_buffers(), num_buckets, agg_granularity_secs)
 
     def sample(self):
         cpu_usage_snapshot = self.__metrics_provider.get_cpu_usage()
@@ -47,12 +50,12 @@ class WorkloadPerformanceMonitor:
             log.debug("Took snapshot of metrics for workload: '{}'".format(self.get_workload().get_id()))
 
     @staticmethod
-    def normalize_data(ts_snapshot, timestamps, buffers):
-        proc_time = np.full((60,), np.nan, dtype=np.float32)
+    def normalize_data(ts_snapshot, timestamps, buffers, num_buckets=60, bucket_size_secs=60):
+        proc_time = np.full((num_buckets,), np.nan, dtype=np.float32)
 
         ts_max = ts_snapshot
-        for i in range(60):
-            ts_min = ts_max - 60
+        for i in range(num_buckets):
+            ts_min = ts_max - bucket_size_secs
 
             # get slice:
             slice_ts_min = np.searchsorted(timestamps, ts_min)
@@ -65,15 +68,15 @@ class WorkloadPerformanceMonitor:
             if slice_ts_min == slice_ts_max:
                 continue
 
-            if timestamps[slice_ts_max] < ts_min - 60:
+            if timestamps[slice_ts_max] < ts_min - bucket_size_secs:
                 continue
-            # TODO: linear interpolation? or match Atlas?
+            # this should be matching Atlas:
             time_diff_ns = (timestamps[slice_ts_max] - timestamps[slice_ts_min]) * 1000000000
             s = 0.0
             for b in buffers: # sum across all cpus
                 s += b[slice_ts_max] - b[slice_ts_min]
             if time_diff_ns > 0:
                 s /= time_diff_ns
-            proc_time[59 - i] = s
+            proc_time[num_buckets - 1 - i] = s
 
         return proc_time

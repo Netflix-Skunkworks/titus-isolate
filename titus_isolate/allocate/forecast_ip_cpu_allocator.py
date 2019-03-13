@@ -95,7 +95,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         cm = get_config_manager()
         pred_env = PredEnvironment(cm.get_region(), cm.get_environment(), dt.utcnow().hour)
 
-        cpu_usages = wmm.get_cpu_usage(3600)
+        cpu_usages = wmm.get_cpu_usage(3600, 60)
         for w in workloads.values():  # TODO: batch the call
             if w.get_type() == STATIC:
                 pred = cpu_usage_predictor.predict(w, cpu_usages.get(w.get_id(), None), pred_env)
