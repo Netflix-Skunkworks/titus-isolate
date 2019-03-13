@@ -1,5 +1,4 @@
 import os
-from datetime import datetime as dt
 
 import numpy as np
 
@@ -9,7 +8,11 @@ from titus_isolate.model.workload import Workload
 from titus_optimize.data import Query, build_ts_features
 from titus_optimize.predictors import PredictorWithFilter
 
-from titus_isolate.utils import get_config_manager
+class PredEnvironment:
+    def __init__(self, region, nflx_env, hour_of_day):
+        self.region = region
+        self.nflx_env = nflx_env
+        self.hour_of_day = hour_of_day
 
 
 class CpuUsagePredictor:
@@ -19,15 +22,20 @@ class CpuUsagePredictor:
         self.__use_whitelist = use_whitelist
         self.__model = pf
     
-    def predict(self, workload : Workload, cpu_usage_last_hour : np.array) -> float:
+    def predict(self, workload : Workload, cpu_usage_last_hour : np.array, pred_env : PredEnvironment) -> float:
         image = workload.get_image()
-        # todo split
-        if self.__use_whitelist and (image not in self.__model.filter):
+        tokens = image.split('@')
+        valid_digest = False
+        if len(tokens) == 2 and tokens[-1].startswith("sha256:"):
+            valid_digest = True
+            entry_point = "" # TODO: add proper one
+            filter_key = "%s@%s" % (tokens[-1], entry_point)
+        if self.__use_whitelist and valid_digest and (filter_key not in self.__model.filter):
             # not in whitelist, predict without context features
             q = Query(
                 None, # user
                 None, # app_name
-                None, # num_cpu_requested TODO
+                workload.get_thread_count(),
                 None, # ram_requested
                 None, # disk_requested
                 None, # network_requested
@@ -38,7 +46,6 @@ class CpuUsagePredictor:
                 build_ts_features(cpu_usage_last_hour)
             )
         else:
-            config_manager = get_config_manager()
             q = Query(
                 workload.get_owner_email(),
                 workload.get_app_name(),
@@ -47,14 +54,17 @@ class CpuUsagePredictor:
                 workload.get_disk(),
                 workload.get_network(),
                 workload.get_job_type(),
-                config_manager.get_region(),
-                config_manager.get_environment(),
-                dt.utcnow().hour,
+                pred_env.region,
+                pred_env.nflx_env,
+                pred_env.hour_of_day,
                 build_ts_features(cpu_usage_last_hour)
             )
 
         return self.__model.ml_model.predict_single(q)
     
+    def get_model(self):
+        return self.__model
+
     @staticmethod
     def __load_model_from_file(path):
         if not os.path.isfile(path):

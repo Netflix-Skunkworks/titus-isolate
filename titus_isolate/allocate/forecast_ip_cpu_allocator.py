@@ -1,16 +1,18 @@
+from datetime import datetime as dt
 from collections import defaultdict
+
+from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSolverParameters
 
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSolverParameters
-
 from titus_isolate.event.constants import STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import is_cpu_full
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads
 from titus_isolate.model.utils import get_sorted_workloads
-from titus_isolate.utils import get_workload_monitor_manager
+from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
+from titus_isolate.utils import get_config_manager, get_workload_monitor_manager
 
 
 class CUVector:
@@ -90,10 +92,13 @@ class ForecastIPCpuAllocator(CpuAllocator):
             return res
 
         wmm = get_workload_monitor_manager()
+        cm = get_config_manager()
+        pred_env = PredEnvironment(cm.get_region(), cm.get_environment(), dt.utcnow().hour)
+
         cpu_usages = wmm.get_cpu_usage(3600)
         for w in workloads.values():  # TODO: batch the call
             if w.get_type() == STATIC:
-                pred = cpu_usage_predictor.predict(w, cpu_usages.get(w.get_id(), None))
+                pred = cpu_usage_predictor.predict(w, cpu_usages.get(w.get_id(), None), pred_env)
                 if default_value is not None and pred is None:
                     pred = default_value
                 res[w.get_id()] = pred
