@@ -26,9 +26,9 @@ class Workload:
         self.__disk = disk
         self.__network = network
         self.__app_name = app_name
-        self.__owner_email = owner_email,
+        self.__owner_email = owner_email
         self.__image = image
-        self.__job_type = job_type,
+        self.__job_type = job_type
         self.__type = workload_type.lower()
 
         if self.__thread_count < 0:
