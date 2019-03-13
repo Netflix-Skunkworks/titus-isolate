@@ -9,7 +9,7 @@ from titus_isolate import log
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
-from titus_isolate.event.constants import STATIC
+from titus_isolate.event.constants import STATIC, BURST
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
@@ -341,3 +341,18 @@ class TestCpu(unittest.TestCase):
         workloads[workload.get_id()] = workload
         allocator.assign_threads(cpu, workload.get_id(), workloads)
         self.assertEqual(5, len(allocator._IntegerProgramCpuAllocator__cache))
+
+    def test_balance_forecast_ip(self):
+        cpu = get_cpu()
+
+        w1 = get_test_workload("a", 2, STATIC)
+        w2 = get_test_workload("b", 4, BURST)
+
+        allocator = ForecastIPCpuAllocator(None)
+
+        cpu = allocator.assign_threads(cpu, "a", {"a": w1})
+        cpu = allocator.assign_threads(cpu, "b", {"a": w1, "b": w2})
+        cpu = allocator.rebalance(cpu, {"a": w1, "b": w2})
+        
+        self.assertLessEqual(2 + 4, len(cpu.get_claimed_threads()))
+        self.assertListEqual(["a", "b"], list(set(t.get_workload_ids()[0] for t in cpu.get_claimed_threads())))

@@ -153,9 +153,11 @@ class ForecastIPCpuAllocator(CpuAllocator):
             if (changed_workload is not None) and (changed_workload.get_type() == STATIC) and (not is_add):
                 requested_cus = [len(curr_ids_per_workload[wid]) if wid != changed_workload.get_id() else 0 for wid in
                                  ordered_workload_ids_static]
-            else:
+            elif changed_workload is not None:
                 requested_cus = [len(curr_ids_per_workload[wid]) for wid in ordered_workload_ids_static if
-                                 (changed_workload is not None) and wid != changed_workload.get_id()]
+                                 wid != changed_workload.get_id()]
+            else:
+                requested_cus = [len(curr_ids_per_workload[wid]) for wid in ordered_workload_ids_static]
 
         if (changed_workload is not None) and (changed_workload.get_type() == STATIC) and is_add:
             requested_cus += [changed_workload.get_thread_count()]
