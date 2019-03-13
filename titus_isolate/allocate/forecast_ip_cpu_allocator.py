@@ -13,6 +13,22 @@ from titus_isolate.model.utils import get_sorted_workloads
 from titus_isolate.utils import get_workload_monitor_manager
 
 
+class CUVector:
+    def __init__(
+            self,
+            requested_cus,
+            curr_placement_vectors_static,
+            ordered_workload_ids_static,
+            ordered_workload_ids_burst,
+            burst_pool_size_req):
+
+        self.requested_cus = requested_cus
+        self.curr_placement_vectors_static = curr_placement_vectors_static
+        self.ordered_workload_ids_static = ordered_workload_ids_static
+        self.ordered_workload_ids_burst = ordered_workload_ids_burst
+        self.burst_pool_size_req = burst_pool_size_req
+
+
 class ForecastIPCpuAllocator(CpuAllocator):
 
     def __init__(self, cpu_usage_predictor=None, cpu_usage_predictor_manager=None, solver_max_runtime_secs=5):
@@ -87,27 +103,24 @@ class ForecastIPCpuAllocator(CpuAllocator):
     def __place_threads(self, cpu, workload_id, workloads, curr_ids_per_workload, is_add):
         # this will predict against the new or deleted workload too if it's static
         predicted_usage_static = self.__predict_usage_static(workloads)
-
-        requested_cus, curr_placement_vectors_static, \
-        ordered_workload_ids_static, ordered_workload_ids_burst, burst_pool_size_req = \
-            self.__get_requested_cu_vector(cpu, workload_id, workloads, curr_ids_per_workload, is_add)
+        cu_vector = self.__get_requested_cu_vector(cpu, workload_id, workloads, curr_ids_per_workload, is_add)
 
         # TODO: (maybe?) add burst pool current placement to curr_placement_vectors_static
 
         cpu = self.__compute_apply_placement(
             cpu,
-            requested_cus,
-            burst_pool_size_req,
-            curr_placement_vectors_static,
+            cu_vector.requested_cus,
+            cu_vector.burst_pool_size_req,
+            cu_vector.curr_placement_vectors_static,
             predicted_usage_static,
             workloads,
-            ordered_workload_ids_static,
-            ordered_workload_ids_burst)
+            cu_vector.ordered_workload_ids_static,
+            cu_vector.ordered_workload_ids_burst)
 
         return cpu
 
     @staticmethod
-    def __get_requested_cu_vector(cpu, workload_id, workloads, curr_ids_per_workload, is_add):
+    def __get_requested_cu_vector(cpu, workload_id, workloads, curr_ids_per_workload, is_add) -> CUVector:
         n_compute_units = len(cpu.get_threads())
         tid_2order = cpu.get_natural_indexing_2_original_indexing()
 
@@ -145,7 +158,12 @@ class ForecastIPCpuAllocator(CpuAllocator):
         burst_workloads = get_burst_workloads(workloads.values())
         burst_pool_size_req = sum([w.get_thread_count() for w in burst_workloads]) if len(burst_workloads) > 0 else 0
 
-        return requested_cus, curr_placement_vectors_static, ordered_workload_ids_static, ordered_workload_ids_burst, burst_pool_size_req
+        return CUVector(
+            requested_cus,
+            curr_placement_vectors_static,
+            ordered_workload_ids_static,
+            ordered_workload_ids_burst,
+            burst_pool_size_req)
 
     @staticmethod
     def __assign_new_mapping(cpu, thread_id2workload_ids):
