@@ -86,7 +86,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
     def __get_cpu_usage_predictor(self):
         return self.__cpu_usage_predictor_manager.get_predictor()
 
-    def __predict_usage_static(self, workloads, default_value=None) -> dict:
+    def __predict_usage_static(self, workloads) -> dict:
         res = {}
         cpu_usage_predictor = self.__get_cpu_usage_predictor()
 
@@ -99,8 +99,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
         for w in workloads.values():  # TODO: batch the call
             if w.get_type() == STATIC:
                 pred = cpu_usage_predictor.predict(w, cpu_usages.get(w.get_id(), None), pred_env)
-                if default_value is not None and pred is None:
-                    pred = default_value
                 res[w.get_id()] = pred
         log.info("Usage prediction per workload: " + str(res))
         return res
