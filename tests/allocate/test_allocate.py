@@ -1,19 +1,59 @@
 import logging
+import numpy as np
 import unittest
 import uuid
 
+from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, get_test_workload
 from titus_isolate import log
+from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
+from titus_isolate.event.constants import STATIC, BURST
+from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
+from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
+from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 
 config_logs(logging.DEBUG)
 
-ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator()]
+
+class TestCpuUsagePredictor:
+
+    def __init__(self, constant_percent_busy: float = 100):
+        self.__constant_percent_busy = constant_percent_busy
+
+    def predict(self, workload: Workload, cpu_usage_last_hour: np.array, pred_env: PredEnvironment) -> float:
+        return workload.get_thread_count() * self.__constant_percent_busy / 100
+
+
+class TestCpuUsagePredictorManager:
+
+    def __init__(self, predictor=TestCpuUsagePredictor()):
+        self.__predictor = predictor
+
+    def get_predictor(self):
+        return self.__predictor
+
+    def set_predictor(self, predictor):
+        self.__predictor = predictor
+
+
+class TestWorkloadMonitorManager(CpuUsageProvider):
+
+    def __init__(self, cpu_usage={}):
+        self.__cpu_usage = cpu_usage
+
+    def get_cpu_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
+        return self.__cpu_usage
+
+
+forecast_ip_alloc_simple = ForecastIPCpuAllocator(TestCpuUsagePredictorManager(), ConfigManager(TestPropertyProvider({})), TestWorkloadMonitorManager())
+
+ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
 
 
 class TestCpu(unittest.TestCase):
@@ -29,30 +69,32 @@ class TestCpu(unittest.TestCase):
             w = get_test_workload(uuid.uuid4(), 1, STATIC)
 
             cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
+            log.info(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 1, len(cpu.get_empty_threads()))
             self.assertEqual(1, len(cpu.get_claimed_threads()))
-            self.assertEqual(0, cpu.get_claimed_threads()[0].get_id())
+            self.assertEqual(w.get_id(), cpu.get_claimed_threads()[0].get_workload_ids()[0])
 
     def test_assign_two_threads_empty_cpu_ip(self):
         """
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         """
-        cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator()
-        w = get_test_workload(uuid.uuid4(), 2, STATIC)
+        for allocator in [forecast_ip_alloc_simple]:#[IntegerProgramCpuAllocator(), forecast_ip_alloc_simple]:
+            cpu = get_cpu()
+            w = get_test_workload(uuid.uuid4(), 2, STATIC)
 
-        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
-        self.assertEqual(2, len(cpu.get_claimed_threads()))
+            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
+            log.info(cpu)
+            self.assertEqual(2, len(cpu.get_claimed_threads()))
 
-        # Expected core and threads
-        core00 = cpu.get_packages()[0].get_cores()[0]
-        core01 = cpu.get_packages()[0].get_cores()[1]
-        thread0 = core00.get_threads()[0]
-        self.assertEqual(0, thread0.get_id())
-        self.assertTrue(thread0.is_claimed())
-        thread1 = core01.get_threads()[0]
-        self.assertEqual(1, thread1.get_id())
-        self.assertTrue(thread1.is_claimed())
+            # Expected core and threads
+            core00 = cpu.get_packages()[0].get_cores()[0]
+            core01 = cpu.get_packages()[0].get_cores()[1]
+            thread0 = core00.get_threads()[0]
+            self.assertEqual(0, thread0.get_id())
+            self.assertTrue(thread0.is_claimed())
+            thread1 = core01.get_threads()[0]
+            self.assertEqual(1, thread1.get_id())
+            self.assertTrue(thread1.is_claimed())
 
     def test_assign_two_threads_empty_cpu_greedy(self):
         """
@@ -79,36 +121,36 @@ class TestCpu(unittest.TestCase):
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         Workload 1: 1 thread  --> (p:1 c:0 t:0)
         """
-        cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator()
-        w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
-        w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
+        for allocator in [IntegerProgramCpuAllocator(), forecast_ip_alloc_simple]:
+            cpu = get_cpu()
+            w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
+            w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
 
-        cpu = allocator.assign_threads(cpu, w0.get_id(), {w0.get_id(): w0})
-        cpu = allocator.assign_threads(cpu, w1.get_id(),
-                                       {
-                                           w0.get_id(): w0,
-                                           w1.get_id(): w1
-                                       })
-        self.assertEqual(3, len(cpu.get_claimed_threads()))
+            cpu = allocator.assign_threads(cpu, w0.get_id(), {w0.get_id(): w0})
+            cpu = allocator.assign_threads(cpu, w1.get_id(),
+                                        {
+                                            w0.get_id(): w0,
+                                            w1.get_id(): w1
+                                        })
+            self.assertEqual(3, len(cpu.get_claimed_threads()))
 
-        packages = cpu.get_packages()
+            packages = cpu.get_packages()
 
-        # WORKLOAD 0
-        core00 = packages[0].get_cores()[0]
-        core01 = packages[0].get_cores()[1]
-        thread0 = core00.get_threads()[0]
-        self.assertEqual(0, thread0.get_id())
-        self.assertTrue(thread0.is_claimed())
-        thread1 = core01.get_threads()[0]
-        self.assertEqual(1, thread1.get_id())
-        self.assertTrue(thread1.is_claimed())
+            # WORKLOAD 0
+            core00 = packages[0].get_cores()[0]
+            core01 = packages[0].get_cores()[1]
+            thread0 = core00.get_threads()[0]
+            self.assertEqual(0, thread0.get_id())
+            self.assertTrue(thread0.is_claimed())
+            thread1 = core01.get_threads()[0]
+            self.assertEqual(1, thread1.get_id())
+            self.assertTrue(thread1.is_claimed())
 
-        # WORKLOAD 1
-        core00 = packages[1].get_cores()[0]
-        thread4 = core00.get_threads()[0]
-        self.assertEqual(4, thread4.get_id())
-        self.assertTrue(thread4.is_claimed())
+            # WORKLOAD 1
+            core00 = packages[1].get_cores()[0]
+            thread4 = core00.get_threads()[0]
+            self.assertEqual(4, thread4.get_id())
+            self.assertTrue(thread4.is_claimed())
 
     def test_assign_two_workloads_empty_cpu_greedy(self):
         """
@@ -154,19 +196,19 @@ class TestCpu(unittest.TestCase):
         | 1 | 1 | 1 | 1 |
         |   |   |   |   |
         """
-        cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator()
-        w = get_test_workload(uuid.uuid4(), 10, STATIC)
+        for allocator in [IntegerProgramCpuAllocator(), forecast_ip_alloc_simple]:
+            cpu = get_cpu()
+            w = get_test_workload(uuid.uuid4(), 10, STATIC)
 
-        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
-        self.assertEqual(10, len(cpu.get_claimed_threads()))
+            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
+            self.assertEqual(10, len(cpu.get_claimed_threads()))
 
-        expected_thread_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12]
+            expected_thread_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12]
 
-        thread_ids = [thread.get_id() for thread in cpu.get_claimed_threads()]
-        thread_ids.sort()
+            thread_ids = [thread.get_id() for thread in cpu.get_claimed_threads()]
+            thread_ids.sort()
 
-        self.assertEqual(expected_thread_ids, thread_ids)
+            self.assertEqual(expected_thread_ids, thread_ids)
 
     def test_fill_cpu(self):
         """
@@ -338,3 +380,44 @@ class TestCpu(unittest.TestCase):
         workloads[workload.get_id()] = workload
         allocator.assign_threads(cpu, workload.get_id(), workloads)
         self.assertEqual(5, len(allocator._IntegerProgramCpuAllocator__cache))
+
+    def test_balance_forecast_ip(self):
+        cpu = get_cpu()
+
+        w1 = get_test_workload("a", 2, STATIC)
+        w2 = get_test_workload("b", 4, BURST)
+
+        allocator = forecast_ip_alloc_simple
+
+        cpu = allocator.assign_threads(cpu, "a", {"a": w1})
+        cpu = allocator.assign_threads(cpu, "b", {"a": w1, "b": w2})
+        cpu = allocator.rebalance(cpu, {"a": w1, "b": w2})
+
+        self.assertLessEqual(2 + 4, len(cpu.get_claimed_threads()))
+
+        w2t = cpu.get_workload_ids_to_thread_ids()
+        self.assertEqual(2, len(w2t["a"]))
+        self.assertLessEqual(4, len(w2t["b"])) # burst got at least 4
+
+        for _ in range(20):
+            cpu = allocator.rebalance(cpu, {"a": w1, "b": w2})
+
+        w2t = cpu.get_workload_ids_to_thread_ids()
+        self.assertEqual(2, len(w2t["a"]))
+        self.assertLessEqual(4, len(w2t["b"]))
+
+
+    def test_forecast_ip_big_burst_pool_if_empty_instance(self):
+        cpu = get_cpu()
+        allocator = forecast_ip_alloc_simple
+
+        w = get_test_workload("a", 1, BURST)
+
+        cpu = allocator.assign_threads(cpu, "a", {"a": w})
+        # should at least consume all the cores:
+        self.assertLessEqual(len(cpu.get_threads())/2, len(cpu.get_claimed_threads()))
+        print(cpu)
+
+        w2 = get_test_workload("b", 3, STATIC)
+        cpu = allocator.assign_threads(cpu, "b", {"a": w, "b": w2})
+        print(cpu)

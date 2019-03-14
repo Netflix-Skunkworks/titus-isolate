@@ -51,6 +51,9 @@ class Cpu:
                     res[w_id] += [t.get_id()]
         return res
 
+    def get_natural_indexing_2_original_indexing(self):
+        return {i: t.get_id() for i, t in enumerate(self.get_threads())}
+
     def to_dict(self):
         packages = []
         for p in self.get_packages():

@@ -10,7 +10,7 @@ from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals
     DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE, DEFAULT_TEST_APP_NAME, DEFAULT_TEST_JOB_TYPE, DEFAULT_TEST_OWNER_EMAIL
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME, \
-    ACTION, REBALANCE, REBALANCE_EVENT, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, \
+    REBALANCE_EVENT, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, \
     APP_NAME_LABEL_KEY, JOB_TYPE_LABEL_KEY, OWNER_EMAIL_LABEL_KEY
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY

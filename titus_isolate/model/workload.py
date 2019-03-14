@@ -87,13 +87,16 @@ class Workload:
     def to_dict(self):
         return {
             "creation_time": str(self.__creation_time),
-            "id": self.get_id(),
-            "type": self.get_type(),
+            "id": str(self.get_id()),
             "thread_count": self.get_thread_count(),
             "mem": self.get_mem(),
             "disk": self.get_disk(),
             "network": self.get_network(),
-            "image": self.get_image()
+            "app_name": self.get_app_name(),
+            "owner_email": self.get_owner_email(),
+            "image": self.get_image(),
+            "job_type": self.get_job_type(),
+            "type": self.get_type(),
         }
 
     def __str__(self):

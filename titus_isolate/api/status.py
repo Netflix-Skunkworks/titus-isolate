@@ -76,9 +76,9 @@ def get_metrics():
     return json.dumps(get_workload_monitor_manager().to_dict())
 
 
-@app.route('/metrics/cpu_usage/<workload_id>/<seconds>')
-def get_cpu_usage(workload_id, seconds):
-    cpu_usage = get_workload_monitor_manager().get_cpu_usage(seconds)
+@app.route('/metrics/cpu_usage/<workload_id>/<seconds>/<granularity>')
+def get_cpu_usage(workload_id, seconds, granularity):
+    cpu_usage = get_workload_monitor_manager().get_cpu_usage(seconds, granularity)
 
     if workload_id.lower() == 'all':
         return json.dumps(cpu_usage)

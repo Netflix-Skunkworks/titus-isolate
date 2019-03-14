@@ -32,7 +32,7 @@ class TestCpuUsageProvider(CpuUsageProvider):
             total_workload_duration_sec: total_usage
         }
 
-    def get_cpu_usage(self, seconds: int) -> dict:
+    def get_cpu_usage(self, seconds: int, agg_granularity_secs : int) -> dict:
         return self.__usage[seconds]
 
 

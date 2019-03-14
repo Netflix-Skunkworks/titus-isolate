@@ -23,12 +23,10 @@ class WorkloadMonitorManager(CpuUsageProvider):
     def get_monitors(self):
         return self.__monitors
 
-    def get_cpu_usage(self, seconds: int) -> dict:
-        if seconds != 3600:
-            raise Exception("Only usage supported for now is over the last hour.")
+    def get_cpu_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
         cpu_usage = {}
         for workload_id, monitor in self.get_monitors().items():
-            cpu_usage[workload_id] = monitor.get_normalized_cpu_usage_last_hour()
+            cpu_usage[workload_id] = monitor.get_normalized_cpu_usage_last_seconds(seconds, agg_granularity_secs)
 
         return cpu_usage
 
