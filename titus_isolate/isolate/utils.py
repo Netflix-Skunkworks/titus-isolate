@@ -15,7 +15,7 @@ from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAUL
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
-from titus_isolate.utils import get_cpu_usage_predictor_manager
+from titus_isolate.utils import get_config_manager, get_cpu_usage_predictor_manager, get_workload_monitor_manager
 
 BUCKETS = ["A", "B"]
 
@@ -70,7 +70,10 @@ def __get_allocator(allocator_str, config_manager):
     if allocator_str != FORECAST_CPU_IP:
         free_thread_provider = get_free_thread_provider(config_manager)
         return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str](free_thread_provider)
-    return ForecastIPCpuAllocator(cpu_usage_predictor_manager=get_cpu_usage_predictor_manager())
+    return ForecastIPCpuAllocator(cpu_usage_predictor_manager=get_cpu_usage_predictor_manager(),
+         config_manager=get_config_manager(),
+         workload_monitor_manager=get_workload_monitor_manager()
+    )
 
 
 def __get_ab_allocator(config_manager, hour):

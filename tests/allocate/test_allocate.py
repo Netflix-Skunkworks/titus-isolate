@@ -17,18 +17,17 @@ from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
-from titus_isolate.utils import set_config_manager, set_workload_monitor_manager
 
 config_logs(logging.DEBUG)
 
 
 class TestCpuUsagePredictor:
 
-    def __init__(self, prediction: float = 10):
-        self.__prediction = prediction
+    def __init__(self, constant_percent_busy: float = 100):
+        self.__constant_percent_busy = constant_percent_busy
 
     def predict(self, workload: Workload, cpu_usage_last_hour: np.array, pred_env: PredEnvironment) -> float:
-        return self.__prediction
+        return workload.get_thread_count() * self.__constant_percent_busy / 100
 
 
 class TestCpuUsagePredictorManager:
@@ -52,9 +51,9 @@ class TestWorkloadMonitorManager(CpuUsageProvider):
         return self.__cpu_usage
 
 
-ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), ForecastIPCpuAllocator(TestCpuUsagePredictorManager())]
-set_config_manager(ConfigManager(TestPropertyProvider({})))
-set_workload_monitor_manager(TestWorkloadMonitorManager())
+forecast_ip_alloc_simple = ForecastIPCpuAllocator(TestCpuUsagePredictorManager(), ConfigManager(TestPropertyProvider({})), TestWorkloadMonitorManager())
+
+ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
 
 
 class TestCpu(unittest.TestCase):
@@ -79,7 +78,7 @@ class TestCpu(unittest.TestCase):
         """
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         """
-        for allocator in [IntegerProgramCpuAllocator(), ForecastIPCpuAllocator(TestCpuUsagePredictorManager())]:
+        for allocator in [forecast_ip_alloc_simple]:#[IntegerProgramCpuAllocator(), forecast_ip_alloc_simple]:
             cpu = get_cpu()
             w = get_test_workload(uuid.uuid4(), 2, STATIC)
 
@@ -122,7 +121,7 @@ class TestCpu(unittest.TestCase):
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         Workload 1: 1 thread  --> (p:1 c:0 t:0)
         """
-        for allocator in [IntegerProgramCpuAllocator(), ForecastIPCpuAllocator(TestCpuUsagePredictorManager())]:
+        for allocator in [IntegerProgramCpuAllocator(), forecast_ip_alloc_simple]:
             cpu = get_cpu()
             w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
             w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
@@ -197,7 +196,7 @@ class TestCpu(unittest.TestCase):
         | 1 | 1 | 1 | 1 |
         |   |   |   |   |
         """
-        for allocator in [IntegerProgramCpuAllocator(), ForecastIPCpuAllocator(TestCpuUsagePredictorManager())]:
+        for allocator in [IntegerProgramCpuAllocator(), forecast_ip_alloc_simple]:
             cpu = get_cpu()
             w = get_test_workload(uuid.uuid4(), 10, STATIC)
 
@@ -388,7 +387,7 @@ class TestCpu(unittest.TestCase):
         w1 = get_test_workload("a", 2, STATIC)
         w2 = get_test_workload("b", 4, BURST)
 
-        allocator = ForecastIPCpuAllocator(TestCpuUsagePredictorManager())
+        allocator = forecast_ip_alloc_simple
 
         cpu = allocator.assign_threads(cpu, "a", {"a": w1})
         cpu = allocator.assign_threads(cpu, "b", {"a": w1, "b": w2})
@@ -410,7 +409,7 @@ class TestCpu(unittest.TestCase):
 
     def test_forecast_ip_big_burst_pool_if_empty_instance(self):
         cpu = get_cpu()
-        allocator = ForecastIPCpuAllocator(TestCpuUsagePredictorManager())
+        allocator = forecast_ip_alloc_simple
 
         w = get_test_workload("a", 1, BURST)
 

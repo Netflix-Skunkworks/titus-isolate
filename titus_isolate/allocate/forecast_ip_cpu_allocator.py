@@ -41,13 +41,18 @@ class CUVector:
 
 class ForecastIPCpuAllocator(CpuAllocator):
 
-    def __init__(self, cpu_usage_predictor_manager: CpuUsagePredictorManager, solver_max_runtime_secs: int = 5):
+    def __init__(self, cpu_usage_predictor_manager: CpuUsagePredictorManager,
+            config_manager : ConfigManager,
+            workload_monitor_manager : WorkloadMonitorManager,
+            solver_max_runtime_secs: int = 5):
         self.__reg = None
         self.__time_bound_call_count = 0
         self.__ip_solver_params = IPSolverParameters()
 
         self.__solver_max_runtime_secs = solver_max_runtime_secs
         self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
+        self.__config_manager = config_manager
+        self.__workload_monitor_manager = workload_monitor_manager
         self.__cnt_rebalance_calls = 0
 
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
@@ -85,8 +90,8 @@ class ForecastIPCpuAllocator(CpuAllocator):
         res = {}
         cpu_usage_predictor = self.__get_cpu_usage_predictor()
 
-        wmm: WorkloadMonitorManager = get_workload_monitor_manager()
-        cm: ConfigManager = get_config_manager()
+        wmm = self.__workload_monitor_manager
+        cm = self.__config_manager
         pred_env = PredEnvironment(cm.get_region(), cm.get_environment(), dt.utcnow().hour)
 
         cpu_usages = wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)

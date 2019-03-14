@@ -53,6 +53,11 @@ def main(admin_port):
     cpu_predictor_manager = CpuUsagePredictorManager()
     set_cpu_usage_predictor_manager(cpu_predictor_manager)
 
+    # Start performance monitoring
+    log.info("Starting performance monitoring...")
+    workload_monitor_manager = WorkloadMonitorManager()
+    set_workload_monitor_manager(workload_monitor_manager)
+
     # Setup the workload manager
     log.info("Setting up the workload manager...")
     cgroup_manager = FileCgroupManager()
@@ -61,13 +66,6 @@ def main(admin_port):
         cgroup_manager=cgroup_manager,
         cpu_allocator=get_allocator(get_config_manager()))
     set_workload_manager(workload_manager)
-
-    log.info("Using free cpu provider: {}".format(get_free_thread_provider(get_config_manager()).__class__.__name__))
-
-    # Start performance monitoring
-    log.info("Starting performance monitoring...")
-    workload_monitor_manager = WorkloadMonitorManager()
-    set_workload_monitor_manager(workload_monitor_manager)
 
     # Setup the event handlers
     log.info("Setting up the Docker event handlers...")
