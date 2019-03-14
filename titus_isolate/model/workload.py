@@ -77,7 +77,7 @@ class Workload:
     def to_dict(self):
         return {
             "creation_time": str(self.__creation_time),
-            "id": self.get_id(),
+            "id": str(self.get_id()),
             "thread_count": self.get_thread_count(),
             "mem": self.get_mem(),
             "disk": self.get_disk(),
