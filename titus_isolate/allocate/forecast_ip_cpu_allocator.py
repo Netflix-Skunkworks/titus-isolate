@@ -201,12 +201,16 @@ class ForecastIPCpuAllocator(CpuAllocator):
             ordered_workload_ids_static,
             ordered_workload_ids_burst):
 
+        predicted_usage_static_vector = None
+        if len(predicted_usage_static) > 0:
+            predicted_usage_static_vector = [predicted_usage_static[w_id] for w_id in ordered_workload_ids_static]
+
         new_placement_vectors = self.__compute_new_placement(
             cpu,
             requested_cus,
             burst_pool_size_req,
             curr_placement_vectors_static,
-            predicted_usage_static)
+            predicted_usage_static_vector)
 
         new_placement_vectors_static = new_placement_vectors[:-1] if burst_pool_size_req != 0 else new_placement_vectors
         new_placement_vector_burst = new_placement_vectors[-1] if burst_pool_size_req != 0 else None
@@ -256,7 +260,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             num_threads,
             len(cpu.get_packages()),
             previous_allocation=current_placement,
-            use_per_workload=predicted_usage_static if len(predicted_usage_static) > 0 else None,
+            use_per_workload=predicted_usage_static,
             solver_params=ip_params,
             verbose=False,
             max_runtime_secs=self.__solver_max_runtime_secs)
