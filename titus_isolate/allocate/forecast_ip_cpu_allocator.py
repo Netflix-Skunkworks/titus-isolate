@@ -1,4 +1,3 @@
-import json
 from datetime import datetime as dt
 from collections import defaultdict
 import copy
@@ -36,17 +35,8 @@ class CUVector:
         self.ordered_workload_ids_burst = ordered_workload_ids_burst
         self.burst_pool_size_req = burst_pool_size_req
 
-    def to_dict(self):
-        return {
-            "requested_cus": self.requested_cus,
-            "curr_placement_vectors_static": self.curr_placement_vectors_static,
-            "ordered_workload_ids_static": [str(w_id) for w_id in self.ordered_workload_ids_static],
-            "ordered_workload_ids_burst": [str(w_id) for w_id in self.ordered_workload_ids_burst],
-            "burst_pool_size_req": self.burst_pool_size_req
-        }
-
     def __str__(self):
-        return json.dumps(self.to_dict())
+        return  str(vars(self))
 
 
 class ForecastIPCpuAllocator(CpuAllocator):
