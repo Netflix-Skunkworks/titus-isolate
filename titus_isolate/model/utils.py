@@ -1,6 +1,6 @@
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.event.utils import get_container_name, get_cpu, get_mem, get_disk, get_network, get_workload_type, \
-    get_image, get_app_name, get_job_type, get_owner_email
+    get_image, get_app_name, get_job_type, get_owner_email, get_command, get_entrypoint
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
@@ -15,6 +15,8 @@ def get_workload_from_event(event):
     app_name = get_app_name(event)
     owner_email = get_owner_email(event)
     image = get_image(event)
+    command = get_command(event)
+    entrypoint = get_entrypoint(event)
     job_type = get_job_type(event)
     workload_type = get_workload_type(event)
 
@@ -27,6 +29,8 @@ def get_workload_from_event(event):
         app_name=app_name,
         owner_email=owner_email,
         image=image,
+        command=command,
+        entrypoint=entrypoint,
         job_type=job_type,
         workload_type=workload_type)
 
