@@ -18,6 +18,8 @@ DEFAULT_TEST_NETWORK = 1024
 DEFAULT_TEST_APP_NAME = 'test_app_name'
 DEFAULT_TEST_OWNER_EMAIL = 'user@email.org'
 DEFAULT_TEST_IMAGE = 'test_image'
+DEFAULT_TEST_CMD = 'test_cmd'
+DEFAULT_TEST_ENTRYPOINT = 'test_entrypoint'
 DEFAULT_TEST_JOB_TYPE = 'SERVICE'
 
 
@@ -58,6 +60,8 @@ def get_test_workload(identifier, thread_count, workload_type):
         app_name=DEFAULT_TEST_APP_NAME,
         owner_email=DEFAULT_TEST_OWNER_EMAIL,
         image=DEFAULT_TEST_IMAGE,
+        command=DEFAULT_TEST_CMD,
+        entrypoint=DEFAULT_TEST_ENTRYPOINT,
         job_type=DEFAULT_TEST_JOB_TYPE,
         workload_type=workload_type)
 

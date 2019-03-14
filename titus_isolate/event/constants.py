@@ -24,6 +24,8 @@ NETWORK_LABEL_KEY = "com.netflix.titus.network"
 JOB_TYPE_LABEL_KEY = "com.netflix.titus.job.type"
 WORKLOAD_TYPE_LABEL_KEY = "com.netflix.titus.workload.type"
 OWNER_EMAIL_LABEL_KEY = "com.netflix.titus.owner.email"
+COMMAND_LABEL_KEY = "com.netflix.titus.command"
+ENTRYPOINT_LABEL_KEY = "com.netflix.titus.entrypoint"
 IMAGE_LABEL_KEY = "image"
 
 REQUIRED_LABELS = [

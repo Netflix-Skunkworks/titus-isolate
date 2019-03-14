@@ -15,6 +15,8 @@ class Workload:
             app_name,
             owner_email,
             image,
+            command,
+            entrypoint,
             job_type,
             workload_type):
 
@@ -26,9 +28,11 @@ class Workload:
         self.__disk = disk
         self.__network = network
         self.__app_name = app_name
-        self.__owner_email = owner_email,
+        self.__owner_email = owner_email
         self.__image = image
-        self.__job_type = job_type,
+        self.__command = command
+        self.__entrypoint = entrypoint
+        self.__job_type = job_type
         self.__type = workload_type.lower()
 
         if self.__thread_count < 0:
@@ -64,6 +68,12 @@ class Workload:
 
     def get_image(self):
         return self.__image
+
+    def get_command(self):
+        return self.__command
+
+    def get_entrypoint(self):
+        return self.__entrypoint
 
     def get_type(self):
         return self.__type

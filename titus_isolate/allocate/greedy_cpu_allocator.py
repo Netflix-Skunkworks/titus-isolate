@@ -71,6 +71,8 @@ class GreedyCpuAllocator(CpuAllocator):
                 app_name=workload.get_app_name(),
                 owner_email=workload.get_owner_email(),
                 image=workload.get_image(),
+                command=workload.get_command(),
+                entrypoint=workload.get_entrypoint(),
                 job_type=workload.get_job_type(),
                 workload_type=workload.get_type()))
 
