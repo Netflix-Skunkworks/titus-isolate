@@ -32,6 +32,8 @@ class CpuUsagePredictor:
         if len(tokens) == 2 and tokens[-1].startswith("sha256:"):
             valid_digest = True
             entry_point = workload.get_entrypoint()
+            if entry_point is None:
+                entry_point = ""
             filter_key = "%s@%s" % (tokens[-1], entry_point)
         if self.__use_whitelist and valid_digest and (filter_key not in self.__model.filter):
             # not in whitelist, predict without context features
