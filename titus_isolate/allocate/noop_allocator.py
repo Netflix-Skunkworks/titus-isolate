@@ -14,7 +14,7 @@ class NoopCpuAllocator(CpuAllocator):
         log.info("Ignoring attempt to free threads for workload: '{}'".format(workload_id))
 
     def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
-        pass
+        return cpu
 
     def set_registry(self, registry):
         pass
