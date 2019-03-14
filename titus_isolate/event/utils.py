@@ -1,7 +1,7 @@
 from titus_isolate import log
 from titus_isolate.event.constants import ACTOR, ATTRIBUTES, NAME, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, \
     REQUIRED_LABELS, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, REPO_DIGESTS, \
-    JOB_TYPE_LABEL_KEY, OWNER_EMAIL_LABEL_KEY, APP_NAME_LABEL_KEY
+    JOB_TYPE_LABEL_KEY, OWNER_EMAIL_LABEL_KEY, APP_NAME_LABEL_KEY, ENTRYPOINT_LABEL_KEY, COMMAND_LABEL_KEY
 from titus_isolate.model.workload import Workload
 
 
@@ -45,6 +45,14 @@ def get_workload_type(create_event):
     return __get_attribute(create_event, WORKLOAD_TYPE_LABEL_KEY)
 
 
+def get_command(create_event):
+    return __get_attribute(create_event, COMMAND_LABEL_KEY)
+
+
+def get_entrypoint(create_event):
+    return __get_attribute(create_event, ENTRYPOINT_LABEL_KEY)
+
+
 def __get_int_attribute(event, key):
     return int(__get_attribute(event, key, -1))
 
@@ -71,6 +79,8 @@ def get_current_workloads(docker_client):
                 network = int(__get_value(labels, DISK_LABEL_KEY, -1))
                 app_name = __get_value(labels, APP_NAME_LABEL_KEY)
                 owner_email = __get_value(labels, OWNER_EMAIL_LABEL_KEY)
+                command = __get_value(labels, COMMAND_LABEL_KEY)
+                entrypoint = __get_value(labels, ENTRYPOINT_LABEL_KEY)
                 job_type = __get_value(labels, JOB_TYPE_LABEL_KEY)
                 workload_type = __get_value(labels, WORKLOAD_TYPE_LABEL_KEY)
                 image = __get_image(container)
@@ -85,6 +95,8 @@ def get_current_workloads(docker_client):
                         app_name=app_name,
                         owner_email=owner_email,
                         image=image,
+                        command=command,
+                        entrypoint=entrypoint,
                         job_type=job_type,
                         workload_type=workload_type))
                 log.info("Found running workload: '{}'".format(workload_id))
