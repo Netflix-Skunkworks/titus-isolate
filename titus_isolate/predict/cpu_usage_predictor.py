@@ -31,7 +31,7 @@ class CpuUsagePredictor:
             cpu_usage_last_hour = np.full((60,), np.nan, dtype=np.float32)
         if len(tokens) == 2 and tokens[-1].startswith("sha256:"):
             valid_digest = True
-            entry_point = "" # TODO: add proper one
+            entry_point = workload.get_entrypoint()
             filter_key = "%s@%s" % (tokens[-1], entry_point)
         if self.__use_whitelist and valid_digest and (filter_key not in self.__model.filter):
             # not in whitelist, predict without context features
