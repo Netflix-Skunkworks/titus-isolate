@@ -12,7 +12,7 @@ registry = GlobalRegistry
 
 class MetricsManager:
 
-    def __init__(self, reporters, reg=registry, report_interval=30):
+    def __init__(self, reporters, reg=registry, report_interval=60):
         self.__reporters = reporters
         self.__reg = reg
 

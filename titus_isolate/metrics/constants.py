@@ -25,4 +25,6 @@ BURST_ALLOCATED_SIZE_KEY = 'titus-isolate.burstAllocatedSize'
 BURST_REQUESTED_SIZE_KEY = 'titus-isolate.burstRequestedSize'
 OVERSUBSCRIBED_THREADS_KEY = 'titus-isolate.oversubscribedThreads'
 
+BURST_POOL_USAGE_KEY = 'titus-isolate.burstPoolUsage'
+
 RUNNING = 'titus-isolate.running'

@@ -4,7 +4,6 @@ from threading import Thread
 
 import click
 import docker
-import schedule
 
 from titus_isolate import log
 from titus_isolate.api.status import app
@@ -19,7 +18,7 @@ from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.event.reconcile_event_handler import ReconcileEventHandler
 from titus_isolate.event.utils import get_current_workloads
 from titus_isolate.isolate.reconciler import Reconciler
-from titus_isolate.isolate.utils import get_allocator, get_free_thread_provider
+from titus_isolate.isolate.utils import get_allocator
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.model.processor.config import get_cpu_from_env
@@ -82,7 +81,7 @@ def main(admin_port):
 
     # Report metrics
     log.info("Starting metrics reporting...")
-    MetricsManager([workload_manager, event_manager])
+    MetricsManager([workload_manager, event_manager, workload_monitor_manager])
 
     # Initialize currently running containers as workloads
     log.info("Isolating currently running workloads...")
