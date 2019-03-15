@@ -11,13 +11,11 @@ from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.constants import STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.processor.utils import is_cpu_full
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads
 from titus_isolate.model.utils import get_sorted_workloads
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
-from titus_isolate.utils import get_config_manager, get_workload_monitor_manager
 
 
 class CUVector:
@@ -28,7 +26,6 @@ class CUVector:
             ordered_workload_ids_static,
             ordered_workload_ids_burst,
             burst_pool_size_req):
-
         self.requested_cus = requested_cus
         self.curr_placement_vectors_static = curr_placement_vectors_static
         self.ordered_workload_ids_static = ordered_workload_ids_static
@@ -36,15 +33,16 @@ class CUVector:
         self.burst_pool_size_req = burst_pool_size_req
 
     def __str__(self):
-        return  str(vars(self))
+        return str(vars(self))
 
 
 class ForecastIPCpuAllocator(CpuAllocator):
 
-    def __init__(self, cpu_usage_predictor_manager: CpuUsagePredictorManager,
-            config_manager : ConfigManager,
-            workload_monitor_manager : WorkloadMonitorManager,
-            solver_max_runtime_secs: int = 5):
+    def __init__(self,
+                 cpu_usage_predictor_manager: CpuUsagePredictorManager,
+                 config_manager: ConfigManager,
+                 workload_monitor_manager: WorkloadMonitorManager,
+                 solver_max_runtime_secs: int = 5):
         self.__reg = None
         self.__time_bound_call_count = 0
         self.__ip_solver_params = IPSolverParameters()
@@ -245,7 +243,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         if num_req_static < num_threads / 2 and burst_pool_size_req > 0:
             ip_params = copy.deepcopy(ip_params)
             th_num_cores_static = ceil(num_req_static)
-            ip_params.max_burst_pool_increase_ratio = floor((num_threads - th_num_cores_static)/burst_pool_size_req)
+            ip_params.max_burst_pool_increase_ratio = floor((num_threads - th_num_cores_static) / burst_pool_size_req)
 
         placement, status = optimize_ip(
             requested_units,
