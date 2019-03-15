@@ -29,8 +29,8 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
             log.debug("Workload monitor manager is not yet set.")
             return []
 
-        total_usage = wmm.get_cpu_usage(self.__total_duration_sec, 60)
-        workload_usage = wmm.get_cpu_usage(self.__per_workload_duration_sec, 60)
+        total_usage = wmm.get_cpu_usage(self.__total_duration_sec, self.__total_duration_sec)
+        workload_usage = wmm.get_cpu_usage(self.__per_workload_duration_sec, self.__per_workload_duration_sec)
 
         # A thread is free if no workload has claimed it or its combined usage is below the threshold
         free_threads = [t for t in cpu.get_threads() if self.__is_free(t, workload_usage, total_usage)]
