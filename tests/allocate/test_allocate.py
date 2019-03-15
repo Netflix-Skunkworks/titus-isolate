@@ -414,10 +414,11 @@ class TestCpu(unittest.TestCase):
         w = get_test_workload("a", 1, BURST)
 
         cpu = allocator.assign_threads(cpu, "a", {"a": w})
+        original_burst_claim_sz = len(cpu.get_claimed_threads())
         # should at least consume all the cores:
-        self.assertLessEqual(len(cpu.get_threads())/2, len(cpu.get_claimed_threads()))
-        print(cpu)
+        self.assertLessEqual(len(cpu.get_threads())/2, original_burst_claim_sz)
 
         w2 = get_test_workload("b", 3, STATIC)
         cpu = allocator.assign_threads(cpu, "b", {"a": w, "b": w2})
-        print(cpu)
+        self.assertLess(len(cpu.get_claimed_threads()), original_burst_claim_sz)
+        

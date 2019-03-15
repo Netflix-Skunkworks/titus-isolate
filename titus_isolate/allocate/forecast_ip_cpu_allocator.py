@@ -141,7 +141,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         curr_placement_vectors_static = []
         for wid in ordered_workload_ids_static:
-            if (changed_workload is not None) and (wid == changed_workload.get_id()):
+            if (changed_workload is not None) and (wid == changed_workload.get_id()) and is_add:
                 continue
             cids = curr_ids_per_workload[wid]
             v = [1 if tid_2order[i] in cids else 0 for i in range(n_compute_units)]
