@@ -19,6 +19,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
 from titus_isolate.metrics.event_log import report_cpu
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
+from titus_isolate.model.processor.utils import visualize_cpu_comparison
 from titus_isolate.numa.utils import update_numa_balancing
 
 
@@ -172,7 +173,7 @@ class WorkloadManager(MetricsReporter):
 
     @staticmethod
     def __report_cpu_state(old_cpu, new_cpu):
-        log.info("old cpu: {}\nnew cpu: {}".format(old_cpu, new_cpu))
+        log.info(visualize_cpu_comparison(old_cpu, new_cpu))
         Thread(target=report_cpu, args=[new_cpu]).start()
 
     def report_metrics(self, tags):
