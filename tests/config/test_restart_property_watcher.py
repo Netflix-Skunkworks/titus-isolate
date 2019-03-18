@@ -6,7 +6,7 @@ from tests.test_exit_handler import TestExitHandler
 from tests.utils import config_logs
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, NOOP, IP, AB_TEST, CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, \
-    EC2_INSTANCE_ID
+    EC2_INSTANCE_ID, GREEDY
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.constants import ALLOCATOR_CONFIG_CHANGE_EXIT
 
@@ -22,7 +22,7 @@ class TestCpuAllocatorWatcher(unittest.TestCase):
         self.assertEqual(None, config_manager.get(CPU_ALLOCATOR))
         watcher = RestartPropertyWatcher(config_manager, exit_handler, [CPU_ALLOCATOR])
 
-        property_provider.map[CPU_ALLOCATOR] = IP
+        property_provider.map[CPU_ALLOCATOR] = GREEDY
         watcher.detect_changes()
         self.assertEqual(ALLOCATOR_CONFIG_CHANGE_EXIT, exit_handler.last_code)
 

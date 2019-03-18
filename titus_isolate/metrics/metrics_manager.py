@@ -38,7 +38,7 @@ class MetricsManager:
         if ec2_instance_id in os.environ:
             tags["node"] = os.environ[ec2_instance_id]
 
-        allocator_name = get_allocator(get_config_manager()).__class__.__name__
+        allocator_name = get_allocator(get_config_manager()).get_primary_allocator().__class__.__name__
         tags["cpu_allocator"] = allocator_name
 
         return tags

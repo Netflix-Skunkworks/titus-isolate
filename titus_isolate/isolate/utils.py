@@ -1,6 +1,7 @@
 import datetime
 
 from titus_isolate import log
+from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
@@ -11,7 +12,8 @@ from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAUL
     CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, IP, GREEDY, NOOP, FORECAST_CPU_IP, \
     NOOP_RESET, FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER, EMPTY, THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
     TOTAL_THRESHOLD, DEFAULT_THRESHOLD_TOTAL_DURATION_SEC, THRESHOLD_TOTAL_DURATION_SEC, DEFAULT_PER_WORKLOAD_THRESHOLD, \
-    PER_WORKLOAD_THRESHOLD, DEFAULT_PER_WORKLOAD_DURATION_SEC, PER_WORKLOAD_DURATION_SEC
+    PER_WORKLOAD_THRESHOLD, DEFAULT_PER_WORKLOAD_DURATION_SEC, PER_WORKLOAD_DURATION_SEC, FALLBACK_ALLOCATOR, \
+    DEFAULT_FALLBACK_ALLOCATOR
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
@@ -50,30 +52,39 @@ def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvide
     return free_thread_provider
 
 
-def get_allocator(config_manager, hour=None):
+def get_allocator(config_manager, hour=None) -> FallbackCpuAllocator:
     if hour is None:
         hour = datetime.datetime.utcnow().hour
 
-    alloc_str = config_manager.get(CPU_ALLOCATOR)
+    primary_alloc_str = config_manager.get(CPU_ALLOCATOR)
+    secondary_alloc_str = config_manager.get(FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR)
 
-    if alloc_str == AB_TEST:
-        return __get_ab_allocator(config_manager, hour)
+    if primary_alloc_str == AB_TEST:
+        primary_allocator = __get_ab_allocator(config_manager, hour)
     else:
-        return __get_allocator(alloc_str, config_manager)
+        primary_allocator = __get_allocator(primary_alloc_str, config_manager)
+
+    secondary_allocator = __get_allocator(secondary_alloc_str, config_manager)
+
+    return FallbackCpuAllocator(primary_allocator, secondary_allocator)
 
 
 def __get_allocator(allocator_str, config_manager):
     if allocator_str not in CPU_ALLOCATORS:
-        log.error("Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(allocator_str, DEFAULT_ALLOCATOR))
+        log.error(
+            "Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(
+                allocator_str,
+                DEFAULT_ALLOCATOR))
         allocator_str = DEFAULT_ALLOCATOR
 
     if allocator_str != FORECAST_CPU_IP:
         free_thread_provider = get_free_thread_provider(config_manager)
         return CPU_ALLOCATOR_NAME_TO_CLASS_MAP[allocator_str](free_thread_provider)
-    return ForecastIPCpuAllocator(cpu_usage_predictor_manager=get_cpu_usage_predictor_manager(),
-         config_manager=get_config_manager(),
-         workload_monitor_manager=get_workload_monitor_manager()
-    )
+
+    return ForecastIPCpuAllocator(
+        cpu_usage_predictor_manager=get_cpu_usage_predictor_manager(),
+        config_manager=get_config_manager(),
+        workload_monitor_manager=get_workload_monitor_manager())
 
 
 def __get_ab_allocator(config_manager, hour):
@@ -86,7 +97,8 @@ def __get_ab_allocator(config_manager, hour):
     bucket = get_ab_bucket(config_manager, hour)
 
     if bucket not in BUCKETS:
-        log.error("Unexpected A/B bucket specified: '{}', falling back to default: '{}'".format(bucket, DEFAULT_ALLOCATOR))
+        log.error(
+            "Unexpected A/B bucket specified: '{}', falling back to default: '{}'".format(bucket, DEFAULT_ALLOCATOR))
         return __get_allocator("UNDEFINED_AB_BUCKET", config_manager)
 
     return {
@@ -96,7 +108,6 @@ def __get_ab_allocator(config_manager, hour):
 
 
 def get_ab_bucket(config_manager, hour):
-
     instance_id = config_manager.get(EC2_INSTANCE_ID)
     if instance_id is None:
         log.error("Failed to find: '{}' in config manager, is the environment variable set?".format(EC2_INSTANCE_ID))

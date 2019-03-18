@@ -26,7 +26,7 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
         allocator = get_allocator(config_manager)
-        self.assertEqual(NoopCpuAllocator, allocator.__class__)
+        self.assertEqual(NoopCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_ab_allocator_selection(self):
         even_instance_id = 'i-0cfefd19c9a8db976'
@@ -40,7 +40,7 @@ class TestUtils(unittest.TestCase):
         config_manager = ConfigManager(property_provider)
 
         allocator = get_allocator(config_manager, 12)
-        self.assertEqual(IntegerProgramCpuAllocator, allocator.__class__)
+        self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
         odd_instance_id = 'i-0cfefd19c9a8db977'
         property_provider = TestPropertyProvider(
@@ -53,7 +53,7 @@ class TestUtils(unittest.TestCase):
         config_manager = ConfigManager(property_provider)
 
         allocator = get_allocator(config_manager, 12)
-        self.assertEqual(GreedyCpuAllocator, allocator.__class__)
+        self.assertEqual(GreedyCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_ab_allocator_fallback(self):
         property_provider = TestPropertyProvider(
@@ -63,10 +63,10 @@ class TestUtils(unittest.TestCase):
         config_manager = ConfigManager(property_provider)
 
         allocator = get_allocator(config_manager)
-        self.assertEqual(NoopCpuAllocator, allocator.__class__)
+        self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
         allocator = get_allocator(config_manager)
-        self.assertEqual(NoopCpuAllocator, allocator.__class__)
+        self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_real_instance_ids(self):
         even_instance_id = 'i-0cfefd19c9a8db976'
@@ -80,7 +80,7 @@ class TestUtils(unittest.TestCase):
         config_manager = ConfigManager(property_provider)
 
         allocator = get_allocator(config_manager, 12)
-        self.assertEqual(IntegerProgramCpuAllocator, allocator.__class__)
+        self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
         odd_instance_id = 'i-0cfefd19c9a8db977'
         property_provider = TestPropertyProvider(
@@ -93,7 +93,7 @@ class TestUtils(unittest.TestCase):
         config_manager = ConfigManager(property_provider)
 
         allocator = get_allocator(config_manager, 12)
-        self.assertEqual(GreedyCpuAllocator, allocator.__class__)
+        self.assertEqual(GreedyCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_undefined_instance_id(self):
         property_provider = TestPropertyProvider(
@@ -105,7 +105,7 @@ class TestUtils(unittest.TestCase):
         config_manager = ConfigManager(property_provider)
 
         allocator = get_allocator(config_manager)
-        self.assertEqual(NoopCpuAllocator, allocator.__class__)
+        self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_get_ab_bucket(self):
         even_instance_id = 'i-0cfefd19c9a8db976'
