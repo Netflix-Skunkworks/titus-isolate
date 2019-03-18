@@ -29,7 +29,6 @@ ENTRYPOINT_LABEL_KEY = "com.netflix.titus.entrypoint"
 IMAGE_LABEL_KEY = "image"
 
 REQUIRED_LABELS = [
-    APP_NAME_LABEL_KEY,
     CPU_LABEL_KEY,
     MEM_LABEL_KEY,
     DISK_LABEL_KEY,
