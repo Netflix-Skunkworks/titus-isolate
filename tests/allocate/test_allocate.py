@@ -4,12 +4,12 @@ import unittest
 import uuid
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.utils import config_logs, get_test_workload
+from tests.utils import config_logs, get_test_workload, get_threads_with_workload
 from titus_isolate import log
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
-from titus_isolate.event.constants import STATIC, BURST
+from titus_isolate.event.constants import BURST
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
@@ -51,7 +51,8 @@ class TestWorkloadMonitorManager(CpuUsageProvider):
         return self.__cpu_usage
 
 
-forecast_ip_alloc_simple = ForecastIPCpuAllocator(TestCpuUsagePredictorManager(), ConfigManager(TestPropertyProvider({})), TestWorkloadMonitorManager())
+forecast_ip_alloc_simple = ForecastIPCpuAllocator(TestCpuUsagePredictorManager(),
+                                                  ConfigManager(TestPropertyProvider({})), TestWorkloadMonitorManager())
 
 ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
 
@@ -78,7 +79,7 @@ class TestCpu(unittest.TestCase):
         """
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         """
-        for allocator in [forecast_ip_alloc_simple]:#[IntegerProgramCpuAllocator(), forecast_ip_alloc_simple]:
+        for allocator in [forecast_ip_alloc_simple]:  # [IntegerProgramCpuAllocator(), forecast_ip_alloc_simple]:
             cpu = get_cpu()
             w = get_test_workload(uuid.uuid4(), 2, STATIC)
 
@@ -128,10 +129,10 @@ class TestCpu(unittest.TestCase):
 
             cpu = allocator.assign_threads(cpu, w0.get_id(), {w0.get_id(): w0})
             cpu = allocator.assign_threads(cpu, w1.get_id(),
-                                        {
-                                            w0.get_id(): w0,
-                                            w1.get_id(): w1
-                                        })
+                                           {
+                                               w0.get_id(): w0,
+                                               w1.get_id(): w1
+                                           })
             self.assertEqual(3, len(cpu.get_claimed_threads()))
 
             packages = cpu.get_packages()
@@ -397,7 +398,7 @@ class TestCpu(unittest.TestCase):
 
         w2t = cpu.get_workload_ids_to_thread_ids()
         self.assertEqual(2, len(w2t["a"]))
-        self.assertLessEqual(4, len(w2t["b"])) # burst got at least 4
+        self.assertLessEqual(4, len(w2t["b"]))  # burst got at least 4
 
         for _ in range(20):
             cpu = allocator.rebalance(cpu, {"a": w1, "b": w2})
@@ -406,7 +407,6 @@ class TestCpu(unittest.TestCase):
         self.assertEqual(2, len(w2t["a"]))
         self.assertLessEqual(4, len(w2t["b"]))
 
-
     def test_forecast_ip_big_burst_pool_if_empty_instance(self):
         cpu = get_cpu()
         allocator = forecast_ip_alloc_simple
@@ -414,11 +414,17 @@ class TestCpu(unittest.TestCase):
         w = get_test_workload("a", 1, BURST)
 
         cpu = allocator.assign_threads(cpu, "a", {"a": w})
+        log.info(cpu)
         original_burst_claim_sz = len(cpu.get_claimed_threads())
         # should at least consume all the cores:
-        self.assertLessEqual(len(cpu.get_threads())/2, original_burst_claim_sz)
+        self.assertLessEqual(len(cpu.get_threads()) / 2, original_burst_claim_sz)
 
         w2 = get_test_workload("b", 3, STATIC)
         cpu = allocator.assign_threads(cpu, "b", {"a": w, "b": w2})
-        self.assertLess(len(cpu.get_claimed_threads()), original_burst_claim_sz)
-        
+        log.info(cpu)
+
+        new_burst_claim_sz = len(get_threads_with_workload(cpu, w2.get_id()))
+        self.assertLess(new_burst_claim_sz, original_burst_claim_sz)
+
+        total_claim_sz = len(cpu.get_claimed_threads())
+        self.assertEqual(total_claim_sz, original_burst_claim_sz)
