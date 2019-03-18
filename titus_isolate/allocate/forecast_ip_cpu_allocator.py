@@ -8,6 +8,11 @@ from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSol
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
+from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC, DEFAULT_ALPHA_LLC, ALPHA_L12, \
+    DEFAULT_ALPHA_L12, ALPHA_ORDER, DEFAULT_ALPHA_ORDER, ALPHA_PREV, DEFAULT_ALPHA_PREV, BURST_MULTIPLIER, \
+    DEFAULT_BURST_MULTIPLIER, MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO, \
+    BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH, WEIGHT_CPU_USE_BURST, \
+    DEFAULT_WEIGHT_CPU_USE_BURST
 from titus_isolate.event.constants import STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
 from titus_isolate.model.processor.cpu import Cpu
@@ -45,7 +50,16 @@ class ForecastIPCpuAllocator(CpuAllocator):
                  solver_max_runtime_secs: int = 5):
         self.__reg = None
         self.__time_bound_call_count = 0
-        self.__ip_solver_params = IPSolverParameters()
+        self.__ip_solver_params = IPSolverParameters(
+            alpha_nu=config_manager.get(ALPHA_NU, DEFAULT_ALPHA_NU),
+            alpha_llc=config_manager.get(ALPHA_LLC, DEFAULT_ALPHA_LLC),
+            alpha_l12=config_manager.get(ALPHA_L12, DEFAULT_ALPHA_L12),
+            alpha_order=config_manager.get(ALPHA_ORDER, DEFAULT_ALPHA_ORDER),
+            alpha_prev=config_manager.get(ALPHA_PREV, DEFAULT_ALPHA_PREV),
+            burst_multiplier=config_manager.get(BURST_MULTIPLIER, DEFAULT_BURST_MULTIPLIER),
+            max_burst_pool_increase_ratio=config_manager.get(MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO),
+            burst_core_colloc_usage_thresh=config_manager.get(BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH),
+            weight_cpu_use_burst=config_manager.get(WEIGHT_CPU_USE_BURST, DEFAULT_WEIGHT_CPU_USE_BURST))
 
         self.__solver_max_runtime_secs = solver_max_runtime_secs
         self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
