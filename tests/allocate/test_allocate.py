@@ -135,23 +135,23 @@ class TestCpu(unittest.TestCase):
                                            })
             self.assertEqual(3, len(cpu.get_claimed_threads()))
 
-            packages = cpu.get_packages()
+            ids_per_socket = []
+            for pid, p in enumerate(cpu.get_packages()):
+                r = []
+                for cid, c in enumerate(p.get_cores()):
+                    for tid, t in enumerate(c.get_threads()):
+                        if t.is_claimed():
+                            self.assertEqual(1, len(t.get_workload_ids()))
+                            r.append((t.get_workload_ids()[0], c.get_id()))
+                ids_per_socket.append(r)
 
-            # WORKLOAD 0
-            core00 = packages[0].get_cores()[0]
-            core01 = packages[0].get_cores()[1]
-            thread0 = core00.get_threads()[0]
-            self.assertEqual(0, thread0.get_id())
-            self.assertTrue(thread0.is_claimed())
-            thread1 = core01.get_threads()[0]
-            self.assertEqual(1, thread1.get_id())
-            self.assertTrue(thread1.is_claimed())
+            for r in ids_per_socket:
+                # each workload should be on a different socket
+                self.assertEqual(1, len(set([e[0] for e in r])))
+                # assigned threads should be on different coreds
+                core_ids = [e[1] for e in r]
+                self.assertEqual(len(set(core_ids)), len(core_ids))
 
-            # WORKLOAD 1
-            core00 = packages[1].get_cores()[0]
-            thread4 = core00.get_threads()[0]
-            self.assertEqual(4, thread4.get_id())
-            self.assertTrue(thread4.is_claimed())
 
     def test_assign_two_workloads_empty_cpu_greedy(self):
         """
@@ -414,17 +414,17 @@ class TestCpu(unittest.TestCase):
         w = get_test_workload("a", 1, BURST)
 
         cpu = allocator.assign_threads(cpu, "a", {"a": w})
-        log.info(cpu)
+
         original_burst_claim_sz = len(cpu.get_claimed_threads())
         # should at least consume all the cores:
         self.assertLessEqual(len(cpu.get_threads()) / 2, original_burst_claim_sz)
 
         w2 = get_test_workload("b", 3, STATIC)
         cpu = allocator.assign_threads(cpu, "b", {"a": w, "b": w2})
-        log.info(cpu)
 
         new_burst_claim_sz = len(get_threads_with_workload(cpu, w2.get_id()))
         self.assertLess(new_burst_claim_sz, original_burst_claim_sz)
 
         total_claim_sz = len(cpu.get_claimed_threads())
-        self.assertEqual(total_claim_sz, original_burst_claim_sz)
+        self.assertLessEqual(3 + 1, total_claim_sz)
+        self.assertLessEqual(1, new_burst_claim_sz)
