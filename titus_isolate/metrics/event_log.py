@@ -26,22 +26,20 @@ def send_event_msg(msg, address):
     log.debug("Received response: '{}'".format(r))
 
 
-def get_event_msg(cpu: Cpu):
+def get_event_msg(event):
     app_name = "titus-isolate"
     host_name = socket.gethostname()
     ack = True
-
-    events = [get_event(cpu)]
 
     return {
         "appName": app_name,
         "hostname": host_name,
         "ack": ack,
-        "event": events
+        "event": [event]
     }
 
 
-def get_event(cpu: Cpu):
+def get_cpu_state_event(cpu: Cpu):
     return {
         "uuid": str(uuid.uuid4()),
         "payload": {
@@ -52,7 +50,42 @@ def get_event(cpu: Cpu):
     }
 
 
-def report_cpu(cpu: Cpu):
+def get_cpu_usage_event(usage: dict):
+    return {
+        "uuid": str(uuid.uuid4()),
+        "payload": {
+            "ts": str(datetime.datetime.utcnow()),
+            "instance": os.environ['EC2_INSTANCE_ID'],
+            "cpu_usage": usage
+        }
+    }
+
+
+def report_cpu_state(cpu: Cpu):
+    address = __get_address()
+    if address is None:
+        return
+
+    msg = get_event_msg(get_cpu_state_event(cpu))
+    log.debug("cpu_state: {}".format(msg))
+    send_event_msg(msg, address)
+
+
+def report_cpu_usage(usage: dict):
+    address = __get_address()
+    if address is None:
+        return
+
+    serializable_usage = {}
+    for w_id, usage in usage.items():
+        serializable_usage[w_id] = [str(u) for u in usage]
+
+    msg = get_event_msg(get_cpu_usage_event(serializable_usage))
+    log.debug("cpu_usage: {}".format(msg))
+    send_event_msg(msg, address)
+
+
+def __get_address():
     config_manager = get_config_manager()
     region = config_manager.get_region()
     env = config_manager.get_environment()
@@ -62,7 +95,6 @@ def report_cpu(cpu: Cpu):
     if address is None:
         log.error("Failed to retrieve event log address for region: '{}', env: '{}', stream: '{}'".format(
             region, env, stream))
-        return
+        return None
 
-    msg = get_event_msg(cpu)
-    send_event_msg(msg, address)
+    return address

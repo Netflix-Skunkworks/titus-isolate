@@ -16,7 +16,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
     UNALLOCATED_SIZE_KEY
-from titus_isolate.metrics.event_log import report_cpu
+from titus_isolate.metrics.event_log import report_cpu_state
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import visualize_cpu_comparison
@@ -174,7 +174,7 @@ class WorkloadManager(MetricsReporter):
     @staticmethod
     def __report_cpu_state(old_cpu, new_cpu):
         log.info(visualize_cpu_comparison(old_cpu, new_cpu))
-        Thread(target=report_cpu, args=[new_cpu]).start()
+        Thread(target=report_cpu_state, args=[new_cpu]).start()
 
     def report_metrics(self, tags):
         cpu = self.get_cpu_copy()

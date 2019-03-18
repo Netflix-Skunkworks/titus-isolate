@@ -6,8 +6,8 @@ import schedule
 from titus_isolate import log
 from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.event.constants import BURST, STATIC
-from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import BURST_POOL_USAGE_KEY, STATIC_POOL_USAGE_KEY
+from titus_isolate.metrics.event_log import report_cpu_usage
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
 from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
@@ -45,29 +45,31 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
             log.debug("Not reporting metrics because there's no workload manager available yet.")
             return
 
-        static_pool_cpu_usage = self.__get_pool_usage(STATIC)
-        burst_pool_cpu_usage = self.__get_pool_usage(BURST)
+        usage = self.get_cpu_usage(3600, 60)
+        static_pool_cpu_usage = self.__get_pool_usage(STATIC, usage)
+        burst_pool_cpu_usage = self.__get_pool_usage(BURST, usage)
 
         self.__registry.gauge(STATIC_POOL_USAGE_KEY, tags).set(static_pool_cpu_usage)
         self.__registry.gauge(BURST_POOL_USAGE_KEY, tags).set(burst_pool_cpu_usage)
+        report_cpu_usage(usage)
 
-    def __get_pool_usage(self, workload_type):
+    @staticmethod
+    def __get_pool_usage(workload_type, usage):
         wm = get_workload_manager()
         if wm is None:
             log.debug("Not reporting metrics because there's no workload manager available yet.")
             return
 
-        cpu_usage = self.get_cpu_usage(60, 60)
         workload_map = wm.get_workload_map_copy()
 
         pool_cpu_usage = 0.0
-        for w_id, usage in cpu_usage.items():
+        for w_id, usage in usage.items():
             if w_id not in workload_map:
                 continue
 
             workload = workload_map[w_id]
             if workload.get_type() == workload_type:
-                pool_cpu_usage += usage[0]
+                pool_cpu_usage += usage[len(usage) - 1]
 
         return pool_cpu_usage
 
