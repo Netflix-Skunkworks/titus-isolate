@@ -20,7 +20,7 @@ class FallbackCpuAllocator(CpuAllocator):
 
         self.__secondary_allocator_calls_count = 0
 
-        log.info(
+        log.debug(
             "Created FallbackCpuAllocator with primary cpu allocator: '{}' and secondary cpu allocator: '{}'".format(
                 self.__primary_allocator.__class__.__name__,
                 self.__secondary_allocator.__class__.__name__))

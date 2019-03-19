@@ -60,10 +60,14 @@ def main(admin_port):
     # Setup the workload manager
     log.info("Setting up the workload manager...")
     cgroup_manager = FileCgroupManager()
+    cpu_allocator = get_allocator(get_config_manager())
+    log.info("Created Fallback CPU allocator with primary: '{}' and secondary: '{}".format(
+        cpu_allocator.get_primary_allocator().__class__.__name__,
+        cpu_allocator.get_secondary_allocator().__class__.__name__))
     workload_manager = WorkloadManager(
         cpu=cpu,
         cgroup_manager=cgroup_manager,
-        cpu_allocator=get_allocator(get_config_manager()))
+        cpu_allocator=cpu_allocator)
     set_workload_manager(workload_manager)
 
     # Setup the event handlers
