@@ -71,10 +71,7 @@ def get_allocator(config_manager, hour=None) -> FallbackCpuAllocator:
 
 def __get_allocator(allocator_str, config_manager):
     if allocator_str not in CPU_ALLOCATORS:
-        log.error(
-            "Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(
-                allocator_str,
-                DEFAULT_ALLOCATOR))
+        log.error("Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(allocator_str, DEFAULT_ALLOCATOR))
         allocator_str = DEFAULT_ALLOCATOR
 
     if allocator_str != FORECAST_CPU_IP:
