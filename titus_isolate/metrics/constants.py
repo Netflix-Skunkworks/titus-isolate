@@ -24,6 +24,7 @@ STATIC_ALLOCATED_SIZE_KEY = 'titus-isolate.staticAllocatedSize'
 BURST_ALLOCATED_SIZE_KEY = 'titus-isolate.burstAllocatedSize'
 BURST_REQUESTED_SIZE_KEY = 'titus-isolate.burstRequestedSize'
 OVERSUBSCRIBED_THREADS_KEY = 'titus-isolate.oversubscribedThreads'
+FALLBACK_ALLOCATOR_COUNT = 'titus-isolate.fallbackCount'
 
 STATIC_POOL_USAGE_KEY = 'titus-isolate.staticPoolUsage'
 BURST_POOL_USAGE_KEY = 'titus-isolate.burstPoolUsage'

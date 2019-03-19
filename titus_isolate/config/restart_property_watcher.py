@@ -24,7 +24,8 @@ class RestartPropertyWatcher:
         for p in properties:
             self.__original_properties[p] = config_manager.get(p)
 
-        self.__original_cpu_allocator_name = get_allocator(config_manager).__class__.__name__
+        self.__original_primary_allocator_name =\
+            get_allocator(config_manager).get_primary_allocator().__class__.__name__
 
         log.info("Starting watching for changes to properties: {}".format(properties))
         for k, v in self.__original_properties.items():
@@ -49,8 +50,8 @@ class RestartPropertyWatcher:
                 self.__exit_handler.exit(GENERIC_PROPERTY_CHANGE_EXIT)
 
     def __detect_ab_changes(self):
-        curr_allocator_name = get_allocator(self.__config_manager).__class__.__name__
-        if self.__original_cpu_allocator_name != curr_allocator_name:
-            log.info("Restarting because CPU allocator changed from: '{}' to: '{}'".format(
-                self.__original_cpu_allocator_name, curr_allocator_name))
+        curr_primary_allocator_name = get_allocator(self.__config_manager).get_primary_allocator().__class__.__name__
+        if self.__original_primary_allocator_name != curr_primary_allocator_name:
+            log.info("Restarting because primary CPU allocator changed from: '{}' to: '{}'".format(
+                self.__original_primary_allocator_name, curr_primary_allocator_name))
             self.__exit_handler.exit(ALLOCATOR_CONFIG_CHANGE_EXIT)
