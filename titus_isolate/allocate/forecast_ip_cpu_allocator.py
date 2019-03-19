@@ -12,8 +12,8 @@ from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC
     DEFAULT_ALPHA_L12, ALPHA_ORDER, DEFAULT_ALPHA_ORDER, ALPHA_PREV, DEFAULT_ALPHA_PREV, BURST_MULTIPLIER, \
     DEFAULT_BURST_MULTIPLIER, MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO, \
     BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH, WEIGHT_CPU_USE_BURST, \
-    DEFAULT_WEIGHT_CPU_USE_BURST
-from titus_isolate.event.constants import STATIC
+    DEFAULT_WEIGHT_CPU_USE_BURST, FORECAST_IP_REBALANCE_FREQ, DEFAULT_FORECAST_IP_REBALANCE_FREQ
+from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads
@@ -86,7 +86,8 @@ class ForecastIPCpuAllocator(CpuAllocator):
         if len(workloads) == 0:
             return cpu
 
-        if (self.__cnt_rebalance_calls - 1) % 10 == 0:
+        freq = self.__config_manager.get(FORECAST_IP_REBALANCE_FREQ, DEFAULT_FORECAST_IP_REBALANCE_FREQ)
+        if (self.__cnt_rebalance_calls - 1) % freq == 0:
             log.info("Rebalancing with predictions...")
             # slow path, predict and adjust
             curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
@@ -98,8 +99,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
     def __get_cpu_usage_predictor(self):
         return self.__cpu_usage_predictor_manager.get_predictor()
 
-    def __predict_usage_static(self, workloads) -> dict:
-        res = {}
+    def __predict_usage(self, workloads) -> dict:
+        res_static = {}
+        res_burst = {}
         cpu_usage_predictor = self.__get_cpu_usage_predictor()
 
         wmm = self.__workload_monitor_manager
@@ -109,15 +111,18 @@ class ForecastIPCpuAllocator(CpuAllocator):
         cpu_usages = wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
 
         for w in workloads.values():  # TODO: batch the call
+            pred = cpu_usage_predictor.predict(w, cpu_usages.get(w.get_id(), None), pred_env)
             if w.get_type() == STATIC:
-                pred = cpu_usage_predictor.predict(w, cpu_usages.get(w.get_id(), None), pred_env)
-                res[w.get_id()] = pred
-        log.info("Usage prediction per workload: " + str(res))
-        return res
+                res_static[w.get_id()] = pred
+            elif w.get_type() == BURST:
+                res_burst[w.get_id()] = pred
+        log.info("Usage prediction per static workload: " + str(res_static))
+        log.info("Usage prediction per burst workload: " + str(res_burst))
+        return res_static, res_burst
 
     def __place_threads(self, cpu, workload_id, workloads, curr_ids_per_workload, is_add):
         # this will predict against the new or deleted workload too if it's static
-        predicted_usage_static = self.__predict_usage_static(workloads)
+        predicted_usage_static, predicted_usage_burst = self.__predict_usage(workloads)
         cu_vector = self.__get_requested_cu_vector(cpu, workload_id, workloads, curr_ids_per_workload, is_add)
 
         # TODO: (maybe?) add burst pool current placement to curr_placement_vectors_static
@@ -125,6 +130,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         log.debug("workloads: {}".format(list(workloads.keys())))
         log.debug("cu_vector: {}".format(cu_vector))
         log.debug("predicted_usage_static: {}".format(predicted_usage_static))
+        log.debug("predicted_usage_burst: {}".format(predicted_usage_burst))
 
         cpu = self.__compute_apply_placement(
             cpu,
@@ -132,6 +138,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             cu_vector.burst_pool_size_req,
             cu_vector.curr_placement_vectors_static,
             predicted_usage_static,
+            predicted_usage_burst,
             workloads,
             cu_vector.ordered_workload_ids_static,
             cu_vector.ordered_workload_ids_burst)
@@ -202,6 +209,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             burst_pool_size_req,
             curr_placement_vectors_static,
             predicted_usage_static,
+            predicted_usage_burst,
             workloads,
             ordered_workload_ids_static,
             ordered_workload_ids_burst):
@@ -210,10 +218,15 @@ class ForecastIPCpuAllocator(CpuAllocator):
         if len(predicted_usage_static) > 0:
             predicted_usage_static_vector = [predicted_usage_static[w_id] for w_id in ordered_workload_ids_static]
 
+        sum_burst_pred = 0.0
+        if len(predicted_usage_burst) > 0:
+            sum_burst_pred = sum(v for v in predicted_usage_burst.values())
+
         new_placement_vectors = self.__compute_new_placement(
             cpu,
             requested_cus,
             burst_pool_size_req,
+            sum_burst_pred,
             curr_placement_vectors_static,
             predicted_usage_static_vector)
 
@@ -245,12 +258,16 @@ class ForecastIPCpuAllocator(CpuAllocator):
             cpu,
             requested_units,
             burst_pool_size_req,
+            sum_burst_pred,
             current_placement,
             predicted_usage_static):
 
         num_threads = len(cpu.get_threads())
 
         ip_params = self.__ip_solver_params
+        if burst_pool_size_req > 0 and sum_burst_pred > 0:
+            ip_params.weight_cpu_use_burst = sum_burst_pred / burst_pool_size_req
+
         # if the instance is mostly empty, loosen constraint
         # on burst pool growth size
         num_req_static = sum(requested_units)

@@ -11,6 +11,7 @@ from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.event.constants import BURST
 from titus_isolate.config.config_manager import ConfigManager
+from titus_isolate.config.constants import BURST_CORE_COLLOC_USAGE_THRESH, MAX_BURST_POOL_INCREASE_RATIO
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
@@ -204,12 +205,17 @@ class TestCpu(unittest.TestCase):
             cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
             self.assertEqual(10, len(cpu.get_claimed_threads()))
 
-            expected_thread_ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12]
+            threads_per_socket = []
+            for p in cpu.get_packages():
+                ths = []
+                for c in p.get_cores():
+                    for t in c.get_threads():
+                        if t.is_claimed():
+                            ths.append(t)
+                threads_per_socket.append(len(ths))
 
-            thread_ids = [thread.get_id() for thread in cpu.get_claimed_threads()]
-            thread_ids.sort()
-
-            self.assertEqual(expected_thread_ids, thread_ids)
+            self.assertEqual(5, threads_per_socket[0])
+            self.assertEqual(5, threads_per_socket[1])
 
     def test_fill_cpu(self):
         """
@@ -428,3 +434,59 @@ class TestCpu(unittest.TestCase):
         total_claim_sz = len(cpu.get_claimed_threads())
         self.assertLessEqual(3 + 1, total_claim_sz)
         self.assertLessEqual(1, new_burst_claim_sz)
+
+        # there shouldn't be an empty core
+        for p in cpu.get_packages():
+            for c in p.get_cores():
+                self.assertLess(0, sum(t.is_claimed() for t in c.get_threads()))
+
+        cpu = allocator.free_threads(cpu, "b", {"a": w, "b": w2})
+        self.assertEqual(original_burst_claim_sz, len(cpu.get_claimed_threads()))
+
+    def test_forecast_ip_burst_pool_with_usage(self):
+        class UsagePredictorWithBurst:
+            def predict(self, workload: Workload, cpu_usage_last_hour: np.array, pred_env: PredEnvironment) -> float:
+                if workload.get_id() == 'static_a':
+                    return workload.get_thread_count() * 0.8
+                elif workload.get_id() == 'static_b':
+                    return workload.get_thread_count() * 0.01
+                elif workload.get_id() == 'burst_c':
+                    return workload.get_thread_count() * 0.9
+
+        upm = TestCpuUsagePredictorManager(UsagePredictorWithBurst())
+        cm1 = ConfigManager(TestPropertyProvider({BURST_CORE_COLLOC_USAGE_THRESH: 0.9}))
+        allocator1 = ForecastIPCpuAllocator(upm, cm1, TestWorkloadMonitorManager())
+        cm2 = ConfigManager(TestPropertyProvider({BURST_CORE_COLLOC_USAGE_THRESH: 0.0, MAX_BURST_POOL_INCREASE_RATIO: 1.0}))
+        allocator2 = ForecastIPCpuAllocator(upm, cm2, TestWorkloadMonitorManager())
+
+        cpu = get_cpu(package_count=2, cores_per_package=16)
+        w_a = get_test_workload("static_a", 14, STATIC)
+        w_b = get_test_workload("static_b", 14, STATIC)
+        w_c = get_test_workload("burst_c", 2, BURST)
+
+        cpu = allocator1.assign_threads(cpu, "static_a", {"static_a": w_a})
+
+        cpu = allocator1.assign_threads(cpu, "burst_c", {"static_a": w_a, "burst_c": w_c})
+        # with an aggressive burst pool expansion, burst should be collocated with static on cores:
+        self.assertLess(40, len(cpu.get_claimed_threads()))
+        num_burst_1 = len(cpu.get_workload_ids_to_thread_ids()["burst_c"])
+
+        cpu = allocator1.assign_threads(cpu, "static_b", {"static_a": w_a, "static_b": w_b, "burst_c": w_c})
+        # burst should retract, and prefer collocation with b over a:
+        num_burst_2 = len(cpu.get_workload_ids_to_thread_ids()["burst_c"])
+        self.assertLessEqual(num_burst_2, num_burst_1)
+
+        colloc_a = 0
+        colloc_b = 0
+        for p in cpu.get_packages():
+            for c in p.get_cores():
+                t1 = c.get_threads()[0]
+                t2 = c.get_threads()[1]
+                if t1.is_claimed() and t2.is_claimed():
+                    wt1 = t1.get_workload_ids()[0]
+                    wt2 = t2.get_workload_ids()[0]
+                    if (wt1 == 'static_a' and wt2 == 'burst_c') or (wt1 == 'burst_c' and wt2 == 'static_a'):
+                        colloc_a += 1
+                    elif (wt1 == 'static_b' and wt2 == 'burst_c') or (wt1 == 'burst_c' and wt2 == 'static_b'):
+                        colloc_b += 1
+        self.assertLessEqual(colloc_a, colloc_b)
