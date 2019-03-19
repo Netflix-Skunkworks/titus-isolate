@@ -61,6 +61,17 @@ def get_cpu_usage_event(usage: dict):
     }
 
 
+def get_workload_type_event(workload_type_map: dict):
+    return {
+        "uuid": str(uuid.uuid4()),
+        "payload": {
+            "ts": str(datetime.datetime.utcnow()),
+            "instance": os.environ['EC2_INSTANCE_ID'],
+            "workload_types": workload_type_map
+        }
+    }
+
+
 def report_cpu_state(cpu: Cpu):
     address = __get_address()
     if address is None:
@@ -82,6 +93,20 @@ def report_cpu_usage(usage: dict):
 
     msg = get_event_msg(get_cpu_usage_event(serializable_usage))
     log.debug("cpu_usage: {}".format(msg))
+    send_event_msg(msg, address)
+
+
+def report_workload_types(workloads: list):
+    address = __get_address()
+    if address is None:
+        return
+
+    w_type_map = {}
+    for w in workloads:
+        w_type_map[str(w.get_id())] = w.get_type()
+
+    msg = get_event_msg(get_workload_type_event(w_type_map))
+    log.debug("workload_types: {}".format(msg))
     send_event_msg(msg, address)
 
 
