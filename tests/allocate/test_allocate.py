@@ -454,24 +454,22 @@ class TestCpu(unittest.TestCase):
                     return workload.get_thread_count() * 0.9
 
         upm = TestCpuUsagePredictorManager(UsagePredictorWithBurst())
-        cm1 = ConfigManager(TestPropertyProvider({BURST_CORE_COLLOC_USAGE_THRESH: 0.9}))
-        allocator1 = ForecastIPCpuAllocator(upm, cm1, TestWorkloadMonitorManager())
-        cm2 = ConfigManager(TestPropertyProvider({BURST_CORE_COLLOC_USAGE_THRESH: 0.0, MAX_BURST_POOL_INCREASE_RATIO: 1.0}))
-        allocator2 = ForecastIPCpuAllocator(upm, cm2, TestWorkloadMonitorManager())
+        cm = ConfigManager(TestPropertyProvider({BURST_CORE_COLLOC_USAGE_THRESH: 0.9}))
+        allocator = ForecastIPCpuAllocator(upm, cm, TestWorkloadMonitorManager())
 
         cpu = get_cpu(package_count=2, cores_per_package=16)
         w_a = get_test_workload("static_a", 14, STATIC)
         w_b = get_test_workload("static_b", 14, STATIC)
         w_c = get_test_workload("burst_c", 2, BURST)
 
-        cpu = allocator1.assign_threads(cpu, "static_a", {"static_a": w_a})
+        cpu = allocator.assign_threads(cpu, "static_a", {"static_a": w_a})
 
-        cpu = allocator1.assign_threads(cpu, "burst_c", {"static_a": w_a, "burst_c": w_c})
+        cpu = allocator.assign_threads(cpu, "burst_c", {"static_a": w_a, "burst_c": w_c})
         # with an aggressive burst pool expansion, burst should be collocated with static on cores:
         self.assertLess(40, len(cpu.get_claimed_threads()))
         num_burst_1 = len(cpu.get_workload_ids_to_thread_ids()["burst_c"])
 
-        cpu = allocator1.assign_threads(cpu, "static_b", {"static_a": w_a, "static_b": w_b, "burst_c": w_c})
+        cpu = allocator.assign_threads(cpu, "static_b", {"static_a": w_a, "static_b": w_b, "burst_c": w_c})
         # burst should retract, and prefer collocation with b over a:
         num_burst_2 = len(cpu.get_workload_ids_to_thread_ids()["burst_c"])
         self.assertLessEqual(num_burst_2, num_burst_1)
