@@ -53,6 +53,9 @@ class WorkloadPerformanceMonitor:
     def normalize_data(ts_snapshot, timestamps, buffers, num_buckets=60, bucket_size_secs=60):
         proc_time = np.full((num_buckets,), np.nan, dtype=np.float32)
 
+        if len(timestamps) == 0:
+            return proc_time
+
         ts_max = ts_snapshot
         for i in range(num_buckets):
             ts_min = ts_max - bucket_size_secs
