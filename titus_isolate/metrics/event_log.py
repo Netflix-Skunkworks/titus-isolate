@@ -6,10 +6,9 @@ import uuid
 import requests
 
 from titus_isolate import log
-from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import EVENT_LOG_FORMAT_STR
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.utils import get_config_manager
+from titus_isolate.utils import get_config_manager, get_workload_monitor_manager
 
 
 def get_address(region, env, stream):
@@ -39,74 +38,41 @@ def get_event_msg(event):
     }
 
 
-def get_cpu_state_event(cpu: Cpu):
+def get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
     return {
         "uuid": str(uuid.uuid4()),
         "payload": {
             "ts": str(datetime.datetime.utcnow()),
             "instance": os.environ['EC2_INSTANCE_ID'],
-            "cpu": cpu.to_dict()
+            "cpu": cpu.to_dict(),
+            "cpu_usage": usage,
+            "workloads:": workloads
         }
     }
 
 
-def get_cpu_usage_event(usage: dict):
-    return {
-        "uuid": str(uuid.uuid4()),
-        "payload": {
-            "ts": str(datetime.datetime.utcnow()),
-            "instance": os.environ['EC2_INSTANCE_ID'],
-            "cpu_usage": usage
-        }
-    }
-
-
-def get_workload_type_event(workload_type_map: dict):
-    return {
-        "uuid": str(uuid.uuid4()),
-        "payload": {
-            "ts": str(datetime.datetime.utcnow()),
-            "instance": os.environ['EC2_INSTANCE_ID'],
-            "workload_types": workload_type_map
-        }
-    }
-
-
-def report_cpu_state(cpu: Cpu):
+def report_cpu(cpu: Cpu, workloads):
     address = __get_address()
     if address is None:
         return
 
-    msg = get_event_msg(get_cpu_state_event(cpu))
-    log.debug("cpu_state: {}".format(msg))
-    send_event_msg(msg, address)
-
-
-def report_cpu_usage(usage: dict):
-    address = __get_address()
-    if address is None:
+    workload_monitor_manager = get_workload_monitor_manager()
+    if workload_monitor_manager is None:
+        log.debug("Failed to retrieve workload monitor manager to report cpu.")
         return
+
+    usage = workload_monitor_manager.get_cpu_usage(600, 60)
 
     serializable_usage = {}
     for w_id, usage in usage.items():
         serializable_usage[w_id] = [str(u) for u in usage]
 
-    msg = get_event_msg(get_cpu_usage_event(serializable_usage))
-    log.debug("cpu_usage: {}".format(msg))
-    send_event_msg(msg, address)
-
-
-def report_workload_types(workloads: list):
-    address = __get_address()
-    if address is None:
-        return
-
-    w_type_map = {}
+    serializable_workloads = {}
     for w in workloads:
-        w_type_map[str(w.get_id())] = w.get_type()
+        serializable_workloads[w.get_id()] = w.to_dict()
 
-    msg = get_event_msg(get_workload_type_event(w_type_map))
-    log.debug("workload_types: {}".format(msg))
+    msg = get_event_msg(get_cpu_event(cpu, serializable_usage, serializable_workloads))
+    log.debug("reporting cpu: {}".format(msg))
     send_event_msg(msg, address)
 
 

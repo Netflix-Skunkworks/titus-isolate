@@ -7,7 +7,6 @@ from titus_isolate import log
 from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import BURST_POOL_USAGE_KEY, STATIC_POOL_USAGE_KEY
-from titus_isolate.metrics.event_log import report_cpu_usage
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
 from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
@@ -45,13 +44,12 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
             log.debug("Not reporting metrics because there's no workload manager available yet.")
             return
 
-        usage = self.get_cpu_usage(3600, 60)
+        usage = self.get_cpu_usage(60, 60)
         static_pool_cpu_usage = self.__get_pool_usage(STATIC, usage)
         burst_pool_cpu_usage = self.__get_pool_usage(BURST, usage)
 
         self.__registry.gauge(STATIC_POOL_USAGE_KEY, tags).set(static_pool_cpu_usage)
         self.__registry.gauge(BURST_POOL_USAGE_KEY, tags).set(burst_pool_cpu_usage)
-        report_cpu_usage(usage)
 
     @staticmethod
     def __get_pool_usage(workload_type, usage):

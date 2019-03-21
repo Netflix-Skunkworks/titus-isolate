@@ -95,6 +95,8 @@ class Workload:
             "app_name": self.get_app_name(),
             "owner_email": self.get_owner_email(),
             "image": self.get_image(),
+            "command": self.get_command(),
+            "entrypoint": self.get_entrypoint(),
             "job_type": self.get_job_type(),
             "type": self.get_type(),
         }
