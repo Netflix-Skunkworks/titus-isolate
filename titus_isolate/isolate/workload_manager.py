@@ -16,7 +16,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
     UNALLOCATED_SIZE_KEY
-from titus_isolate.metrics.event_log import report_cpu_state, report_workload_types
+from titus_isolate.metrics.event_log import report_cpu
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import visualize_cpu_comparison
@@ -50,7 +50,6 @@ class WorkloadManager(MetricsReporter):
         succeeded = self.__update_workload(self.__add_workload, workload, workload.get_id())
         if succeeded:
             self.__added_count += 1
-            self.__report_workload_types(list(self.get_workload_map_copy().values()))
         else:
             self.__remove_workload(workload.get_id())
 
@@ -172,18 +171,14 @@ class WorkloadManager(MetricsReporter):
         self.__cpu_allocator.set_registry(registry)
         self.__cgroup_manager.set_registry(registry)
 
-    @staticmethod
-    def __report_cpu_state(old_cpu, new_cpu):
+    def __report_cpu_state(self, old_cpu, new_cpu):
         log.info(visualize_cpu_comparison(old_cpu, new_cpu))
-        Thread(target=report_cpu_state, args=[new_cpu]).start()
-
-    @staticmethod
-    def __report_workload_types(workloads: list):
-        Thread(target=report_workload_types, args=[workloads]).start()
+        Thread(target=report_cpu, args=[new_cpu, self.get_workload_map_copy().values()]).start()
 
     def report_metrics(self, tags):
         cpu = self.get_cpu_copy()
         workload_map = self.get_workload_map_copy()
+        Thread(target=report_cpu, args=[cpu, workload_map.values()]).start()
 
         self.__reg.gauge(RUNNING, tags).set(1)
 
