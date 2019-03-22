@@ -12,9 +12,9 @@ from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC
     DEFAULT_ALPHA_L12, ALPHA_ORDER, DEFAULT_ALPHA_ORDER, ALPHA_PREV, DEFAULT_ALPHA_PREV, BURST_MULTIPLIER, \
     DEFAULT_BURST_MULTIPLIER, MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO, \
     BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH, WEIGHT_CPU_USE_BURST, \
-    DEFAULT_WEIGHT_CPU_USE_BURST, FORECAST_IP_REBALANCE_FREQ, DEFAULT_FORECAST_IP_REBALANCE_FREQ
+    DEFAULT_WEIGHT_CPU_USE_BURST
 from titus_isolate.event.constants import BURST, STATIC
-from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
+from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT, FORECAST_REBALANCE_FAILURE_COUNT
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads
 from titus_isolate.model.utils import get_sorted_workloads
@@ -50,6 +50,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
                  solver_max_runtime_secs: int = 5):
         self.__reg = None
         self.__time_bound_call_count = 0
+        self.__rebalance_failure_count = 0
         self.__ip_solver_params = IPSolverParameters(
             alpha_nu=config_manager.get(ALPHA_NU, DEFAULT_ALPHA_NU),
             alpha_llc=config_manager.get(ALPHA_LLC, DEFAULT_ALPHA_LLC),
@@ -86,14 +87,15 @@ class ForecastIPCpuAllocator(CpuAllocator):
         if len(workloads) == 0:
             return cpu
 
-        freq = self.__config_manager.get(FORECAST_IP_REBALANCE_FREQ, DEFAULT_FORECAST_IP_REBALANCE_FREQ)
-        if (self.__cnt_rebalance_calls - 1) % freq == 0:
-            log.info("Rebalancing with predictions...")
-            # slow path, predict and adjust
-            curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
+        log.info("Rebalancing with predictions...")
+        # slow path, predict and adjust
+        curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
+
+        try:
             return self.__place_threads(cpu, None, workloads, curr_ids_per_workload, None)
-        else:
-            # fast check if there is an issue?
+        except:
+            log.error("Failed to rebalance, doing nothing.")
+            self.__rebalance_failure_count += 1
             return cpu
 
     def __get_cpu_usage_predictor(self):
@@ -300,3 +302,4 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
     def report_metrics(self, tags):
         self.__reg.gauge(IP_ALLOCATOR_TIMEBOUND_COUNT, tags).set(self.__time_bound_call_count)
+        self.__reg.gauge(FORECAST_REBALANCE_FAILURE_COUNT, tags).set(self.__rebalance_failure_count)

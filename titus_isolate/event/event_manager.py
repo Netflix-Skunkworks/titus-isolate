@@ -78,7 +78,8 @@ class EventManager(MetricsReporter):
         self.__q.put(REBALANCE_EVENT)
 
     def __reconcile(self):
-        self.__q.put(RECONCILE_EVENT)
+        if self.__q.empty():
+            self.__q.put(RECONCILE_EVENT)
 
     def __pull_events(self):
         for event in self.__events:

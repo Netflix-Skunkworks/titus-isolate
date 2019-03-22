@@ -16,7 +16,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
-    UNALLOCATED_SIZE_KEY
+    UNALLOCATED_SIZE_KEY, REBALANCED_KEY
 from titus_isolate.metrics.event_log import report_cpu
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
@@ -36,6 +36,7 @@ class WorkloadManager(MetricsReporter):
         self.__error_count = 0
         self.__added_count = 0
         self.__removed_count = 0
+        self.__rebalanced_count = 0
         self.__added_to_full_cpu_count = 0
         self.__allocator_call_duration_sum_secs = 0
 
@@ -65,6 +66,7 @@ class WorkloadManager(MetricsReporter):
             new_cpu = self.get_cpu_copy()
             workload_map = self.get_workload_map_copy()
             new_cpu = self.__cpu_allocator.rebalance(new_cpu, workload_map)
+            self.__rebalanced_count += 1
             self.__update_state(new_cpu, workload_map)
             log.debug("Rebalanced")
 
@@ -154,9 +156,13 @@ class WorkloadManager(MetricsReporter):
     def get_removed_count(self):
         return self.__removed_count
 
+    def get_rebalanced_count(self):
+        return self.__removed_count
+
     def get_success_count(self):
         return self.get_added_count() + \
-               self.get_removed_count()
+               self.get_removed_count() + \
+               self.get_rebalanced_count()
 
     def get_error_count(self):
         return self.__error_count
@@ -188,6 +194,7 @@ class WorkloadManager(MetricsReporter):
 
         self.__reg.gauge(ADDED_KEY, tags).set(self.get_added_count())
         self.__reg.gauge(REMOVED_KEY, tags).set(self.get_removed_count())
+        self.__reg.gauge(REBALANCED_KEY, tags).set(self.get_rebalanced_count())
         self.__reg.gauge(SUCCEEDED_KEY, tags).set(self.get_success_count())
         self.__reg.gauge(FAILED_KEY, tags).set(self.get_error_count())
         self.__reg.gauge(WORKLOAD_COUNT_KEY, tags).set(len(self.get_workloads()))
