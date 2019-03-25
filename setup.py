@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import os
 
-from distutils.core import setup
+from setuptools import setup
+
 
 install_requires = [
     'click',
@@ -29,5 +30,4 @@ setup(name='titus-isolate',
           "titus_isolate/numa",
           "titus_isolate/predict"],
       scripts=["startup/titus-isolate"],
-      url="https://github.com/Netflix-Skunkworks/titus-isolate"
-      )
+      url="https://github.com/Netflix-Skunkworks/titus-isolate")
