@@ -84,6 +84,9 @@ class Workload:
     def get_creation_time(self):
         return self.__creation_time
 
+    def set_creation_time(self, creation_time):
+        self.__creation_time = creation_time
+
     def to_dict(self):
         return {
             "creation_time": str(self.__creation_time),
