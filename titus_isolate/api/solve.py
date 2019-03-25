@@ -1,14 +1,12 @@
-import datetime
 from threading import Lock
 
 from flask import Flask, request, jsonify
 
 from titus_isolate import log
-from titus_isolate.model.processor.core import Core
-from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.processor.package import Package
-from titus_isolate.model.processor.thread import Thread
-from titus_isolate.model.workload import Workload
+from titus_isolate.allocate.utils import parse_workload, parse_cpu
+from titus_isolate.config.env_property_provider import EnvPropertyProvider
+from titus_isolate.isolate.utils import get_allocator
+from titus_isolate.utils import get_config_manager
 
 lock = Lock()
 cpu_allocator = None
@@ -19,6 +17,10 @@ app = Flask(__name__)
 def get_cpu_allocator():
     with lock:
         global cpu_allocator
+        if cpu_allocator is None:
+            config_manager = get_config_manager(EnvPropertyProvider())
+            cpu_allocator = get_allocator(config_manager)
+
         return cpu_allocator
 
 
@@ -44,23 +46,6 @@ def __get_workloads(body):
     return workloads
 
 
-def get_threads_body(cpu: Cpu, workload_id: str, workloads: dict) -> dict:
-    w_list = [w.to_dict() for w in workloads.values()]
-    return {
-        "cpu": cpu.to_dict(),
-        "workload_id": workload_id,
-        "workloads": w_list
-    }
-
-
-def get_rebalance_body(cpu: Cpu, workloads: dict) -> dict:
-    w_list = [w.to_dict() for w in workloads.values()]
-    return {
-        "cpu": cpu.to_dict(),
-        "workloads": w_list
-    }
-
-
 def get_threads_arguments(body):
     workload_id = __get_workload_id(body)
     cpu = __get_cpu(body)
@@ -72,45 +57,6 @@ def get_rebalance_arguments(body):
     cpu = __get_cpu(body)
     workloads = __get_workloads(body)
     return cpu, workloads
-
-
-def parse_cpu(cpu_dict: dict) -> Cpu:
-    packages = []
-    for p in cpu_dict["packages"]:
-        cores = []
-        for c in p["cores"]:
-            threads = []
-            for t in c["threads"]:
-                thread = Thread(t["id"])
-                for w_id in t["workload_id"]:
-                    thread.claim(w_id)
-                threads.append(thread)
-            cores.append(Core(c["id"], threads))
-        packages.append(Package(p["id"], cores))
-
-    return Cpu(packages)
-
-
-def parse_workload(workload_dict: dict) -> Workload:
-
-    workload = Workload(
-        identifier=workload_dict['id'],
-        thread_count=workload_dict['thread_count'],
-        mem=workload_dict['mem'],
-        disk=workload_dict['disk'],
-        network=workload_dict['network'],
-        app_name=workload_dict['app_name'],
-        owner_email=workload_dict['owner_email'],
-        image=workload_dict['image'],
-        command=workload_dict['command'],
-        entrypoint=workload_dict['entrypoint'],
-        job_type=workload_dict['job_type'],
-        workload_type=workload_dict['type'])
-
-    # Input example:  "2019-03-23 18:03:50.668041"
-    creation_time = datetime.datetime.strptime(workload_dict["creation_time"], '%Y-%m-%d %H:%M:%S.%f')
-    workload.set_creation_time(creation_time)
-    return workload
 
 
 @app.route('/assign_threads', methods=['PUT'])
