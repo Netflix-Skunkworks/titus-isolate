@@ -89,12 +89,10 @@ jobs:
             echo -e "username = gabrielhartmann" >> ~/.pypirc
             echo -e "password = $PYPI_PASSWORD" >> ~/.pypirc
       - run:
-          name: Setup Environment Variables
-          command: |
-            echo 'export TITSUS_ISOLATE_VERSION="$(git describe --abbrev=0 --tags)"' >> $BASH_ENV
-      - run:
           name: create packages
           command: |
+            export TITUS_ISOLATE_VERSION=$(git describe --abbrev=0 --tags)
+            echo TITUS_ISOLATE_VERSION=$TITUS_ISOLATE_VERSION
             python3 setup.py sdist bdist_wheel
       - run:
           name: upload to pypi
