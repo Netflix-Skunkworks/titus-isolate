@@ -1,4 +1,4 @@
-titus-isolate==20190326.0.0
+titus-isolate==20190326.0.1
 gunicorn
 flask
 boto3
