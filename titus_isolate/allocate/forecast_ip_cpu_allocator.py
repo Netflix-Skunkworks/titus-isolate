@@ -12,7 +12,8 @@ from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC
     DEFAULT_ALPHA_L12, ALPHA_ORDER, DEFAULT_ALPHA_ORDER, ALPHA_PREV, DEFAULT_ALPHA_PREV, BURST_MULTIPLIER, \
     DEFAULT_BURST_MULTIPLIER, MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO, \
     BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH, WEIGHT_CPU_USE_BURST, \
-    DEFAULT_WEIGHT_CPU_USE_BURST, MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME
+    DEFAULT_WEIGHT_CPU_USE_BURST, MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME, \
+    RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP, MIP_SOLVER, DEFAULT_MIP_SOLVER
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT, FORECAST_REBALANCE_FAILURE_COUNT
 from titus_isolate.model.processor.cpu import Cpu
@@ -62,6 +63,8 @@ class ForecastIPCpuAllocator(CpuAllocator):
             weight_cpu_use_burst=config_manager.get(WEIGHT_CPU_USE_BURST, DEFAULT_WEIGHT_CPU_USE_BURST))
 
         self.__solver_max_runtime_secs = 2 * config_manager.get(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
+        self.__solver_name = config_manager.get(MIP_SOLVER, DEFAULT_MIP_SOLVER)
+        self.__solver_mip_gap = config_manager.get(RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP)
         self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
         self.__config_manager = config_manager
         self.__workload_monitor_manager = workload_monitor_manager
@@ -286,7 +289,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
             use_per_workload=predicted_usage_static,
             solver_params=ip_params,
             verbose=False,
-            max_runtime_secs=self.__solver_max_runtime_secs)
+            max_runtime_secs=self.__solver_max_runtime_secs,
+            mip_gap=self.__solver_mip_gap,
+            solver=self.__solver_max_runtime_secs)
 
         if status == IP_SOLUTION_TIME_BOUND:
             self.__time_bound_call_count += 1
