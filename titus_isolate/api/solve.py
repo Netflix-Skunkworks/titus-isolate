@@ -4,6 +4,7 @@ from threading import Lock
 from flask import Flask, request, jsonify
 
 from titus_isolate import log
+from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.utils import parse_workload, parse_cpu
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
@@ -70,6 +71,11 @@ def remote_get_cpu_allocator():
     allocator = get_cpu_allocator()
     if cpu_allocator is None:
         return "CPU allocator not set", 404
+
+    if isinstance(allocator, FallbackCpuAllocator):
+        return "{}:{}".format(
+            allocator.get_primary_allocator().__class__.__name__,
+            allocator.get_secondary_allocator().__class__.__name__)
 
     return allocator.__class__.__name__
 
