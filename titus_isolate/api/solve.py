@@ -1,3 +1,4 @@
+import logging
 from threading import Lock
 
 from flask import Flask, request, jsonify
@@ -12,6 +13,11 @@ lock = Lock()
 cpu_allocator = None
 
 app = Flask(__name__)
+
+if __name__ != '__main__':
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
 
 
 def get_cpu_allocator():
@@ -57,6 +63,15 @@ def get_rebalance_arguments(body):
     cpu = __get_cpu(body)
     workloads = __get_workloads(body)
     return cpu, workloads
+
+
+@app.route('/cpu_allocator', methods=['GET'])
+def get_allocator():
+    allocator = get_cpu_allocator()
+    if cpu_allocator is None:
+        return "CPU allocator not set", 404
+
+    return allocator.__class__.__name__
 
 
 @app.route('/assign_threads', methods=['PUT'])
