@@ -14,6 +14,7 @@ from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramC
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
+from titus_isolate.config.constants import MAX_SOLVER_RUNTIME
 from titus_isolate.event.constants import STATIC, BURST
 from titus_isolate.isolate.detect import get_cross_package_violations
 from titus_isolate.isolate.workload_manager import WorkloadManager
@@ -248,7 +249,8 @@ class TestWorkloadManager(unittest.TestCase):
         registry = Registry()
 
         cpu = get_cpu(2, 16, 2)
-        allocator = IntegerProgramCpuAllocator(solver_max_runtime_secs=0.01)
+        set_config_manager(ConfigManager(TestPropertyProvider({MAX_SOLVER_RUNTIME: 0.01})))
+        allocator = IntegerProgramCpuAllocator()
         test_context = TestContext(cpu, allocator)
 
         workload_manager = test_context.get_workload_manager()
