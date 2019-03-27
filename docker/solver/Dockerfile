@@ -7,4 +7,4 @@ COPY prerequirements.txt /
 RUN pip3 install -r prerequirements.txt
 RUN pip3 install -r requirements.txt
 ENV PYTHONPATH="/usr/local/lib/python3.5/dist-packages"
-CMD gunicorn -w $TITUS_NUM_CPU -b 127.0.0.1:80 --log-level=info titus_isolate.api.solve:app
+CMD gunicorn -w $TITUS_NUM_CPU -b $EC2_LOCAL_IPV4:80 --log-level=info titus_isolate.api.solve:app
