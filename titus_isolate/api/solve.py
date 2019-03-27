@@ -66,7 +66,7 @@ def get_rebalance_arguments(body):
 
 
 @app.route('/cpu_allocator', methods=['GET'])
-def get_allocator():
+def remote_get_cpu_allocator():
     allocator = get_cpu_allocator()
     if cpu_allocator is None:
         return "CPU allocator not set", 404
