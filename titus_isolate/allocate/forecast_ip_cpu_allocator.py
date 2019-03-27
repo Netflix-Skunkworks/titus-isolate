@@ -12,7 +12,7 @@ from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC
     DEFAULT_ALPHA_L12, ALPHA_ORDER, DEFAULT_ALPHA_ORDER, ALPHA_PREV, DEFAULT_ALPHA_PREV, BURST_MULTIPLIER, \
     DEFAULT_BURST_MULTIPLIER, MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO, \
     BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH, WEIGHT_CPU_USE_BURST, \
-    DEFAULT_WEIGHT_CPU_USE_BURST
+    DEFAULT_WEIGHT_CPU_USE_BURST, MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT, FORECAST_REBALANCE_FAILURE_COUNT
 from titus_isolate.model.processor.cpu import Cpu
@@ -46,8 +46,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
     def __init__(self,
                  cpu_usage_predictor_manager: CpuUsagePredictorManager,
                  config_manager: ConfigManager,
-                 workload_monitor_manager: WorkloadMonitorManager,
-                 solver_max_runtime_secs: int = 5):
+                 workload_monitor_manager: WorkloadMonitorManager):
         self.__reg = None
         self.__time_bound_call_count = 0
         self.__rebalance_failure_count = 0
@@ -62,7 +61,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             burst_core_colloc_usage_thresh=config_manager.get(BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH),
             weight_cpu_use_burst=config_manager.get(WEIGHT_CPU_USE_BURST, DEFAULT_WEIGHT_CPU_USE_BURST))
 
-        self.__solver_max_runtime_secs = solver_max_runtime_secs
+        self.__solver_max_runtime_secs = 2 * config_manager.get(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
         self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
         self.__config_manager = config_manager
         self.__workload_monitor_manager = workload_monitor_manager

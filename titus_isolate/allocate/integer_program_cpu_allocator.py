@@ -1,4 +1,6 @@
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
+from titus_isolate.config.constants import DEFAULT_MAX_SOLVER_RUNTIME, MAX_SOLVER_RUNTIME
+from titus_isolate.utils import get_config_manager
 from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
 from titus_isolate.event.constants import STATIC
@@ -12,12 +14,13 @@ from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProv
 
 class IntegerProgramCpuAllocator(CpuAllocator):
 
-    def __init__(self, free_thread_provider=EmptyFreeThreadProvider(), solver_max_runtime_secs=1.5):
+    def __init__(self, free_thread_provider=EmptyFreeThreadProvider()):
+
         self.__reg = None
-        self.__cache = {}  # TODO: use @functools.lru_cache instead
+        self.__cache = {}
         self.__time_bound_call_count = 0
 
-        self.__solver_max_runtime_secs = solver_max_runtime_secs
+        self.__solver_max_runtime_secs = get_config_manager().get(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
         self.__free_thread_provider = free_thread_provider
 
     def assign_threads(self, cpu, workload_id, workloads):
