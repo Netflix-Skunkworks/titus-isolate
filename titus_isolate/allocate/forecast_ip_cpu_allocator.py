@@ -291,7 +291,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             verbose=False,
             max_runtime_secs=self.__solver_max_runtime_secs,
             mip_gap=self.__solver_mip_gap,
-            solver=self.__solver_max_runtime_secs)
+            solver=self.__solver_name)
 
         if status == IP_SOLUTION_TIME_BOUND:
             self.__time_bound_call_count += 1
