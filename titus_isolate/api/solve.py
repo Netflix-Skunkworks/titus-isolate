@@ -9,7 +9,7 @@ from titus_isolate.allocate.utils import parse_workload, parse_cpu
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
-from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_manager
+from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_manager, set_config_manager
 
 lock = Lock()
 cpu_allocator = None
@@ -33,8 +33,10 @@ def get_cpu_allocator():
     with lock:
         global cpu_allocator
         if cpu_allocator is None:
-            set_usage_predictor_manager()
             config_manager = get_config_manager(EnvPropertyProvider())
+            set_config_manager(config_manager)
+
+            set_usage_predictor_manager()
             cpu_allocator = get_allocator(config_manager)
 
         return cpu_allocator
