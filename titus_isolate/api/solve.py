@@ -8,8 +8,10 @@ from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.utils import parse_workload, parse_cpu
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
+from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
-from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_manager, set_config_manager
+from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_manager, set_config_manager, \
+    start_periodic_scheduling, set_workload_monitor_manager
 
 lock = Lock()
 cpu_allocator = None
@@ -22,22 +24,32 @@ if __name__ != '__main__':
     app.logger.setLevel(gunicorn_logger.level)
 
 
-def set_usage_predictor_manager():
+def set_globals():
+    # Set config manager
+    log.info("Setting config manager...")
+    set_config_manager(get_config_manager(EnvPropertyProvider()))
+
+    # Start period scheduling
+    log.info("Starting periodic event scheduling...")
+    start_periodic_scheduling()
+
     # Start the cpu usage predictor manager
     log.info("Setting up the cpu usage predictor manager...")
     cpu_predictor_manager = CpuUsagePredictorManager()
     set_cpu_usage_predictor_manager(cpu_predictor_manager)
+
+    # Start performance monitoring
+    log.info("Starting performance monitoring...")
+    workload_monitor_manager = WorkloadMonitorManager()
+    set_workload_monitor_manager(workload_monitor_manager)
 
 
 def get_cpu_allocator():
     with lock:
         global cpu_allocator
         if cpu_allocator is None:
-            config_manager = get_config_manager(EnvPropertyProvider())
-            set_config_manager(config_manager)
-
-            set_usage_predictor_manager()
-            cpu_allocator = get_allocator(config_manager)
+            set_globals()
+            cpu_allocator = get_allocator(get_config_manager())
 
         return cpu_allocator
 
