@@ -8,7 +8,8 @@ from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.utils import parse_workload, parse_cpu
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
-from titus_isolate.utils import get_config_manager
+from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
+from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_manager
 
 lock = Lock()
 cpu_allocator = None
@@ -21,10 +22,18 @@ if __name__ != '__main__':
     app.logger.setLevel(gunicorn_logger.level)
 
 
+def set_usage_predictor_manager():
+    # Start the cpu usage predictor manager
+    log.info("Setting up the cpu usage predictor manager...")
+    cpu_predictor_manager = CpuUsagePredictorManager()
+    set_cpu_usage_predictor_manager(cpu_predictor_manager)
+
+
 def get_cpu_allocator():
     with lock:
         global cpu_allocator
         if cpu_allocator is None:
+            set_usage_predictor_manager()
             config_manager = get_config_manager(EnvPropertyProvider())
             cpu_allocator = get_allocator(config_manager)
 

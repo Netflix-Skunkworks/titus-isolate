@@ -96,7 +96,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         try:
             return self.__place_threads(cpu, None, workloads, curr_ids_per_workload, None)
         except:
-            log.error("Failed to rebalance, doing nothing.")
+            log.exception("Failed to rebalance, doing nothing.")
             self.__rebalance_failure_count += 1
             return cpu
 
