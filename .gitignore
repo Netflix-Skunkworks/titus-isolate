@@ -4,6 +4,7 @@
 .tox/
 .eggs/
 build/
+cvxpy_test/
 titus_isolate.egg-info/
 dist/
 test-reports/
