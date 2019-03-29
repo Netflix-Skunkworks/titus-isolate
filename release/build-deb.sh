@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e
+
+rm -rf cvxpy_test
+
 echo "Removing old tox files"
 rm -rf .tox
 
@@ -18,9 +21,15 @@ virtualenv --python=/usr/bin/python3 env
 echo "Activating virtualenv (env)"
 . env/bin/activate
 
-echo "Appending special requirements to requirements.txt"
-cp /src/requirements.txt /src/req.txt
-echo systemd >> /src/requirements.txt
+echo "Cloning cvxpy fork"
+touch ~/.ssh/known_hosts
+ssh-keyscan github.com >> ~/.ssh/known_hosts
+git clone -b test git@github.com:rostyboost/cvxpy.git cvxpy_test
+
+echo "Installing cvxpy"
+pushd cvxpy_test
+python3 setup.py sdist
+popd
 
 echo "Creating source distribution"
 python3 setup.py sdist
@@ -59,5 +68,4 @@ deactivate
 echo "Removing virtualenv (env)"
 rm -rf env
 
-echo "Restoring requirements.txt"
-mv /src/req.txt /src/requirements.txt
+rm -rf cvxpy_test
