@@ -25,7 +25,7 @@ echo "Cloning cvxpy fork"
 mkdir -p ~/.ssh
 touch ~/.ssh/known_hosts
 ssh-keyscan github.com >> ~/.ssh/known_hosts
-git clone -b test git@github.com:rostyboost/cvxpy.git cvxpy_test
+git clone -b test https://github.com/rostyboost/cvxpy.git cvxpy_test
 
 echo "Installing cvxpy"
 pushd cvxpy_test
