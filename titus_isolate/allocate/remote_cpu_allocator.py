@@ -1,5 +1,6 @@
 import requests
 
+from titus_isolate import log
 from titus_isolate.allocate.cpu_allocate_exception import CpuAllocationException
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.utils import get_threads_body, parse_cpu, get_rebalance_body
@@ -17,30 +18,36 @@ class RemoteCpuAllocator(CpuAllocator):
         self.__headers = {'Content-Type': "application/json"}
         self.__reg = None
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
+    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         url = "{}/assign_threads".format(self.__url)
-        body = get_threads_body(cpu, workload_id, workloads)
+        body = get_threads_body(cpu, workload_id, workloads, cpu_usage)
+        log.debug("url: {}, body: {}".format(url, body))
         response = requests.put(url, json=body, headers=self.__headers, timeout=self.__solver_max_runtime_secs)
+        log.debug("assign_threads response code: {}".format(response.status_code))
 
         if response.status_code == 200:
             return parse_cpu(response.json())
 
         raise CpuAllocationException("Failed to assign threads: {}".format(response.text))
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
+    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         url = "{}/free_threads".format(self.__url)
-        body = get_threads_body(cpu, workload_id, workloads)
+        body = get_threads_body(cpu, workload_id, workloads, cpu_usage)
+        log.debug("url: {}, body: {}".format(url, body))
         response = requests.put(url, json=body, headers=self.__headers, timeout=self.__solver_max_runtime_secs)
+        log.debug("free_threads response code: {}".format(response.status_code))
 
         if response.status_code == 200:
             return parse_cpu(response.json())
 
         raise CpuAllocationException("Failed to free threads: {}".format(response.text))
 
-    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
         url = "{}/rebalance".format(self.__url)
-        body = get_rebalance_body(cpu, workloads)
+        body = get_rebalance_body(cpu, workloads, cpu_usage)
+        log.debug("url: {}, body: {}".format(url, body))
         response = requests.put(url, json=body, headers=self.__headers, timeout=self.__solver_max_runtime_secs)
+        log.debug("rebalance response code: {}".format(response.status_code))
 
         if response.status_code == 200:
             return parse_cpu(response.json())

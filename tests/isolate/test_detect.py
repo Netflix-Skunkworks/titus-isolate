@@ -23,7 +23,7 @@ class TestDetect(unittest.TestCase):
         violations = get_cross_package_violations(cpu)
         self.assertEqual(0, len(violations))
 
-        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
+        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {})
         violations = get_cross_package_violations(cpu)
         self.assertEqual(0, len(violations))
 
@@ -32,7 +32,7 @@ class TestDetect(unittest.TestCase):
         allocator = IntegerProgramCpuAllocator()
         w = get_test_workload(uuid.uuid4(), 9, STATIC)
 
-        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w})
+        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {})
         violations = get_cross_package_violations(cpu)
         self.assertEqual(1, len(violations))
 
@@ -45,7 +45,7 @@ class TestDetect(unittest.TestCase):
         workloads = {
             w.get_id(): w
         }
-        cpu = allocator.assign_threads(cpu, w.get_id(), workloads)
+        cpu = allocator.assign_threads(cpu, w.get_id(), workloads, {})
         log.info("{}".format(cpu))
         violations = get_shared_core_violations(cpu)
         log.info("shared core violations: {}".format(violations))
@@ -54,7 +54,7 @@ class TestDetect(unittest.TestCase):
         # Assign another workload which will force core sharing
         w = get_test_workload(uuid.uuid4(), 1, STATIC)
         workloads[w.get_id()] = w
-        cpu = allocator.assign_threads(cpu, w.get_id(), workloads)
+        cpu = allocator.assign_threads(cpu, w.get_id(), workloads, {})
         log.info("{}".format(cpu))
         violations = get_shared_core_violations(cpu)
         log.info("shared core violations: {}".format(violations))
@@ -82,7 +82,7 @@ class TestDetect(unittest.TestCase):
         workloads = {
             w.get_id(): w
         }
-        cpu = allocator.assign_threads(cpu, w.get_id(), workloads)
+        cpu = allocator.assign_threads(cpu, w.get_id(), workloads, {})
         violations = get_shared_core_violations(cpu)
         log.info("shared core violations: {}".format(violations))
         self.assertEqual(2, len(violations))

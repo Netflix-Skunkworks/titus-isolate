@@ -24,22 +24,22 @@ class TestFallbackCpuAllocator(unittest.TestCase):
         workloads = {}
 
         workloads[w_a.get_id()] = w_a
-        cpu = allocator.assign_threads(cpu, w_a.get_id(), workloads)
+        cpu = allocator.assign_threads(cpu, w_a.get_id(), workloads, {})
 
         workloads[w_b.get_id()] = w_b
-        cpu = allocator.assign_threads(cpu, w_b.get_id(), workloads)
+        cpu = allocator.assign_threads(cpu, w_b.get_id(), workloads, {})
 
-        cpu = allocator.free_threads(cpu, "a", workloads)
+        cpu = allocator.free_threads(cpu, "a", workloads, {})
         workloads.pop("a")
 
         workloads[w_c.get_id()] = w_c
-        cpu = allocator.assign_threads(cpu, w_c.get_id(), workloads)
+        cpu = allocator.assign_threads(cpu, w_c.get_id(), workloads, {})
 
-        cpu = allocator.free_threads(cpu, "b", workloads)
+        cpu = allocator.free_threads(cpu, "b", workloads, {})
         workloads.pop("b")
 
         workloads[w_d.get_id()] = w_d
-        cpu = allocator.assign_threads(cpu, w_d.get_id(), workloads)
+        cpu = allocator.assign_threads(cpu, w_d.get_id(), workloads, {})
 
         self.assertEqual(3, len(cpu.get_claimed_threads()))
         self.assertEqual(6, allocator.get_fallback_allocator_calls_count())

@@ -83,10 +83,10 @@ class TestStatus(unittest.TestCase):
         # Assign threads
         log.info("Assign threads")
         cpu_in_0 = copy.deepcopy(cpu)
-        cpu_out_0 = cpu_allocator.assign_threads(cpu_in_0, workload.get_id(), workloads)
+        cpu_out_0 = cpu_allocator.assign_threads(cpu_in_0, workload.get_id(), workloads, {})
 
         cpu_in_1 = copy.deepcopy(cpu)
-        body = get_threads_body(cpu_in_1, workload.get_id(), workloads)
+        body = get_threads_body(cpu_in_1, workload.get_id(), workloads, {})
         cpu_out_1 = self.client.put(
             "/assign_threads",
             data=json.dumps(body),
@@ -100,10 +100,10 @@ class TestStatus(unittest.TestCase):
         # Free threads
         log.info("Free threads")
         cpu_in_0 = copy.deepcopy(cpu_out_0)
-        cpu_out_0 = cpu_allocator.free_threads(cpu_in_0, workload.get_id(), workloads)
+        cpu_out_0 = cpu_allocator.free_threads(cpu_in_0, workload.get_id(), workloads, {})
 
         cpu_in_1 = copy.deepcopy(cpu_out_1)
-        body = get_threads_body(cpu_in_1, workload.get_id(), workloads)
+        body = get_threads_body(cpu_in_1, workload.get_id(), workloads, {})
         cpu_out_1 = self.client.put(
             "/free_threads",
             data=json.dumps(body),

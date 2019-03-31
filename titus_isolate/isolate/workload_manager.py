@@ -22,6 +22,7 @@ from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import visualize_cpu_comparison
 from titus_isolate.numa.utils import update_numa_balancing
+from titus_isolate.utils import get_workload_monitor_manager
 
 
 class WorkloadManager(MetricsReporter):
@@ -42,6 +43,7 @@ class WorkloadManager(MetricsReporter):
 
         self.__cpu = cpu
         self.__cgroup_manager = cgroup_manager
+        self.__wmm = get_workload_monitor_manager()
         self.__workloads = {}
 
         log.info("Created workload manager")
@@ -65,7 +67,8 @@ class WorkloadManager(MetricsReporter):
             log.debug("Rebalancing...")
             new_cpu = self.get_cpu_copy()
             workload_map = self.get_workload_map_copy()
-            new_cpu = self.__cpu_allocator.rebalance(new_cpu, workload_map)
+            cpu_usage = self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
+            new_cpu = self.__cpu_allocator.rebalance(new_cpu, workload_map, cpu_usage)
             self.__rebalanced_count += 1
             self.__update_state(new_cpu, workload_map)
             log.debug("Rebalanced")
@@ -93,7 +96,8 @@ class WorkloadManager(MetricsReporter):
         workload_map = self.get_workload_map_copy()
         workload_map[workload.get_id()] = workload
 
-        new_cpu = self.__cpu_allocator.assign_threads(new_cpu, workload.get_id(), workload_map)
+        cpu_usage = self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
+        new_cpu = self.__cpu_allocator.assign_threads(new_cpu, workload.get_id(), workload_map, cpu_usage)
         self.__update_state(new_cpu, workload_map)
 
     def __remove_workload(self, workload_id):
@@ -106,7 +110,8 @@ class WorkloadManager(MetricsReporter):
         workload_map = self.get_workload_map_copy()
         workload = workload_map[workload_id]
 
-        new_cpu = self.__cpu_allocator.free_threads(new_cpu, workload.get_id(), workload_map)
+        cpu_usage = self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
+        new_cpu = self.__cpu_allocator.free_threads(new_cpu, workload.get_id(), workload_map, cpu_usage)
         workload_map.pop(workload.get_id())
         self.__update_state(new_cpu, workload_map)
 

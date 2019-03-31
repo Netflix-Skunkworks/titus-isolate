@@ -1,3 +1,6 @@
+# Logs
+LOG_FMT_STRING = '%(asctime)s,%(msecs)d %(levelname)s [%(filename)s:%(lineno)d] %(message)s'
+
 # Metrics
 DEFAULT_SAMPLE_FREQUENCY_SEC = 6
 
@@ -61,7 +64,7 @@ DEFAULT_WEIGHT_CPU_USE_BURST = 1.0
 RELATIVE_MIP_GAP_STOP = 'TITUS_RELATIVE_MIP_GAP_STOP'
 DEFAULT_RELATIVE_MIP_GAP_STOP = 0.05
 
-MIP_SOLVER = 'TITUS_MIP_SOLVER'
+MIP_SOLVER = 'TITUS_ISOLATE_MIP_SOLVER'
 DEFAULT_MIP_SOLVER = 'GLPK_MI'
 
 # Free Thread Provider

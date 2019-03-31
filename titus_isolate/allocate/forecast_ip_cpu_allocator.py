@@ -19,7 +19,6 @@ from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT, FORECA
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads
 from titus_isolate.model.utils import get_sorted_workloads
-from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
 
@@ -46,8 +45,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
     def __init__(self,
                  cpu_usage_predictor_manager: CpuUsagePredictorManager,
-                 config_manager: ConfigManager,
-                 workload_monitor_manager: WorkloadMonitorManager):
+                 config_manager: ConfigManager):
         self.__reg = None
         self.__time_bound_call_count = 0
         self.__rebalance_failure_count = 0
@@ -67,23 +65,22 @@ class ForecastIPCpuAllocator(CpuAllocator):
         self.__solver_mip_gap = config_manager.get(RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP)
         self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
         self.__config_manager = config_manager
-        self.__workload_monitor_manager = workload_monitor_manager
         self.__cnt_rebalance_calls = 0
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
+    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
-        return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, True)
+        return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
+    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         if workload_id not in curr_ids_per_workload:
             raise Exception("workload_id=`%s` is not placed on the instance. Cannot free it." % (workload_id,))
 
-        return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, False)
+        return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, False)
 
-    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
         self.__cnt_rebalance_calls += 1
 
         if len(workloads) == 0:
@@ -94,7 +91,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         try:
-            return self.__place_threads(cpu, None, workloads, curr_ids_per_workload, None)
+            return self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None)
         except:
             log.exception("Failed to rebalance, doing nothing.")
             self.__rebalance_failure_count += 1
@@ -103,19 +100,16 @@ class ForecastIPCpuAllocator(CpuAllocator):
     def __get_cpu_usage_predictor(self):
         return self.__cpu_usage_predictor_manager.get_predictor()
 
-    def __predict_usage(self, workloads) -> dict:
+    def __predict_usage(self, workloads, cpu_usage):
         res_static = {}
         res_burst = {}
         cpu_usage_predictor = self.__get_cpu_usage_predictor()
 
-        wmm = self.__workload_monitor_manager
         cm = self.__config_manager
         pred_env = PredEnvironment(cm.get_region(), cm.get_environment(), dt.utcnow().hour)
 
-        cpu_usages = wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
-
         for w in workloads.values():  # TODO: batch the call
-            pred = cpu_usage_predictor.predict(w, cpu_usages.get(w.get_id(), None), pred_env)
+            pred = cpu_usage_predictor.predict(w, cpu_usage.get(w.get_id(), None), pred_env)
             if w.get_type() == STATIC:
                 res_static[w.get_id()] = pred
             elif w.get_type() == BURST:
@@ -124,9 +118,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
         log.info("Usage prediction per burst workload: " + str(res_burst))
         return res_static, res_burst
 
-    def __place_threads(self, cpu, workload_id, workloads, curr_ids_per_workload, is_add):
+    def __place_threads(self, cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, is_add):
         # this will predict against the new or deleted workload too if it's static
-        predicted_usage_static, predicted_usage_burst = self.__predict_usage(workloads)
+        predicted_usage_static, predicted_usage_burst = self.__predict_usage(workloads, cpu_usage)
         cu_vector = self.__get_requested_cu_vector(cpu, workload_id, workloads, curr_ids_per_workload, is_add)
 
         # TODO: (maybe?) add burst pool current placement to curr_placement_vectors_static
@@ -279,6 +273,8 @@ class ForecastIPCpuAllocator(CpuAllocator):
             ip_params = copy.deepcopy(ip_params)
             th_num_cores_static = ceil(num_req_static)
             ip_params.max_burst_pool_increase_ratio = floor((num_threads - th_num_cores_static) / burst_pool_size_req)
+
+        log.info("Using solver: {}".format(self.__solver_name))
 
         placement, status = optimize_ip(
             requested_units,

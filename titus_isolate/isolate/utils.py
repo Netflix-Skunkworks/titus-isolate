@@ -18,7 +18,7 @@ from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAUL
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
-from titus_isolate.utils import get_config_manager, get_cpu_usage_predictor_manager, get_workload_monitor_manager
+from titus_isolate.utils import get_cpu_usage_predictor_manager
 
 BUCKETS = ["A", "B"]
 
@@ -53,7 +53,7 @@ def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvide
     return free_thread_provider
 
 
-def get_allocator(config_manager, hour=None) -> FallbackCpuAllocator:
+def get_fallback_allocator(config_manager, hour=None) -> FallbackCpuAllocator:
     if hour is None:
         hour = datetime.datetime.utcnow().hour
 
@@ -63,14 +63,14 @@ def get_allocator(config_manager, hour=None) -> FallbackCpuAllocator:
     if primary_alloc_str == AB_TEST:
         primary_allocator = __get_ab_allocator(config_manager, hour)
     else:
-        primary_allocator = __get_allocator(primary_alloc_str, config_manager)
+        primary_allocator = get_allocator(primary_alloc_str, config_manager)
 
-    secondary_allocator = __get_allocator(secondary_alloc_str, config_manager)
+    secondary_allocator = get_allocator(secondary_alloc_str, config_manager)
 
     return FallbackCpuAllocator(primary_allocator, secondary_allocator)
 
 
-def __get_allocator(allocator_str, config_manager):
+def get_allocator(allocator_str, config_manager):
     if allocator_str not in CPU_ALLOCATORS:
         log.error("Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(allocator_str, DEFAULT_ALLOCATOR))
         allocator_str = DEFAULT_ALLOCATOR
@@ -81,23 +81,22 @@ def __get_allocator(allocator_str, config_manager):
 
     return ForecastIPCpuAllocator(
         cpu_usage_predictor_manager=get_cpu_usage_predictor_manager(),
-        config_manager=get_config_manager(),
-        workload_monitor_manager=get_workload_monitor_manager())
+        config_manager=config_manager)
 
 
 def __get_ab_allocator(config_manager, hour):
     a_allocator_str = config_manager.get(CPU_ALLOCATOR_A)
     b_allocator_str = config_manager.get(CPU_ALLOCATOR_B)
 
-    a_allocator = __get_allocator(a_allocator_str, config_manager)
-    b_allocator = __get_allocator(b_allocator_str, config_manager)
+    a_allocator = get_allocator(a_allocator_str, config_manager)
+    b_allocator = get_allocator(b_allocator_str, config_manager)
 
     bucket = get_ab_bucket(config_manager, hour)
 
     if bucket not in BUCKETS:
         log.error(
             "Unexpected A/B bucket specified: '{}', falling back to default: '{}'".format(bucket, DEFAULT_ALLOCATOR))
-        return __get_allocator("UNDEFINED_AB_BUCKET", config_manager)
+        return get_allocator("UNDEFINED_AB_BUCKET", config_manager)
 
     return {
         "A": a_allocator,

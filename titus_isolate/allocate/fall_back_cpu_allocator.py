@@ -28,43 +28,43 @@ class FallbackCpuAllocator(CpuAllocator):
                 self.__primary_allocator.__class__.__name__,
                 self.__secondary_allocator.__class__.__name__))
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
+    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         try:
-            return self.__primary_allocator.assign_threads(cpu, workload_id, workloads)
+            return self.__primary_allocator.assign_threads(cpu, workload_id, workloads, cpu_usage)
         except:
-            log.exception(
+            log.error(
                 "Failed to assign threads to workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
                     workload_id,
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_assign_threads_call_count += 1
-            cpu = self.__secondary_allocator.assign_threads(cpu, workload_id, workloads)
+            cpu = self.__secondary_allocator.assign_threads(cpu, workload_id, workloads, cpu_usage)
             return cpu
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
+    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         try:
-            return self.__primary_allocator.free_threads(cpu, workload_id, workloads)
+            return self.__primary_allocator.free_threads(cpu, workload_id, workloads, cpu_usage)
         except:
-            log.exception(
+            log.error(
                 "Failed to free threads for workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
                     workload_id,
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_free_threads_call_count += 1
-            cpu = self.__secondary_allocator.free_threads(cpu, workload_id, workloads)
+            cpu = self.__secondary_allocator.free_threads(cpu, workload_id, workloads, cpu_usage)
             return cpu
 
-    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
         try:
-            return self.__primary_allocator.rebalance(cpu, workloads)
+            return self.__primary_allocator.rebalance(cpu, workloads, cpu_usage)
         except:
-            log.exception(
+            log.error(
                 "Failed to rebalance workloads: '{}' with primary allocator: '{}', falling back to: '{}'".format(
                     workloads,
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_rebalance_call_count += 1
-            cpu = self.__secondary_allocator.rebalance(cpu, workloads)
+            cpu = self.__secondary_allocator.rebalance(cpu, workloads, cpu_usage)
             return cpu
 
     def get_primary_allocator(self) -> CpuAllocator:
