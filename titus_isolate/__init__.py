@@ -1,10 +1,10 @@
 import logging
 import os
 
+from titus_isolate.config.constants import LOG_FMT_STRING
+
 log = logging.getLogger()
 log.setLevel(logging.INFO)
-
-LOG_FMT_STRING = '%(asctime)s,%(msecs)d %(levelname)s [%(filename)s:%(lineno)d] %(message)s'
 
 
 if "DISTRIB_ID" in os.environ:

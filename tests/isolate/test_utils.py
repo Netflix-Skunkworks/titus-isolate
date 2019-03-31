@@ -11,7 +11,7 @@ from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, NOOP, AB_TEST, GREEDY, CPU_ALLOCATOR_B, CPU_ALLOCATOR_A, IP, \
     EC2_INSTANCE_ID
 from titus_isolate.event.constants import STATIC
-from titus_isolate.isolate.utils import get_allocator, get_ab_bucket, _get_ab_bucket_int
+from titus_isolate.isolate.utils import get_fallback_allocator, get_ab_bucket, _get_ab_bucket_int
 from titus_isolate.model.utils import get_sorted_workloads
 
 config_logs(logging.DEBUG)
@@ -25,7 +25,7 @@ class TestUtils(unittest.TestCase):
                CPU_ALLOCATOR: NOOP
             })
         config_manager = ConfigManager(property_provider)
-        allocator = get_allocator(config_manager)
+        allocator = get_fallback_allocator(config_manager)
         self.assertEqual(NoopCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_ab_allocator_selection(self):
@@ -39,7 +39,7 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator = get_allocator(config_manager, 12)
+        allocator = get_fallback_allocator(config_manager, 12)
         self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
         odd_instance_id = 'i-0cfefd19c9a8db977'
@@ -52,7 +52,7 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator = get_allocator(config_manager, 12)
+        allocator = get_fallback_allocator(config_manager, 12)
         self.assertEqual(GreedyCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_ab_allocator_fallback(self):
@@ -62,10 +62,10 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator = get_allocator(config_manager)
+        allocator = get_fallback_allocator(config_manager)
         self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
-        allocator = get_allocator(config_manager)
+        allocator = get_fallback_allocator(config_manager)
         self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_real_instance_ids(self):
@@ -79,7 +79,7 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator = get_allocator(config_manager, 12)
+        allocator = get_fallback_allocator(config_manager, 12)
         self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
         odd_instance_id = 'i-0cfefd19c9a8db977'
@@ -92,7 +92,7 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator = get_allocator(config_manager, 12)
+        allocator = get_fallback_allocator(config_manager, 12)
         self.assertEqual(GreedyCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_undefined_instance_id(self):
@@ -104,7 +104,7 @@ class TestUtils(unittest.TestCase):
             })
         config_manager = ConfigManager(property_provider)
 
-        allocator = get_allocator(config_manager)
+        allocator = get_fallback_allocator(config_manager)
         self.assertEqual(IntegerProgramCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_get_ab_bucket(self):

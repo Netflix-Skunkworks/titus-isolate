@@ -97,5 +97,5 @@ class TestWorkloadManager(unittest.TestCase):
 
     @staticmethod
     def __assign_workload(cpu, workload):
-        return IntegerProgramCpuAllocator().assign_threads(cpu, workload.get_id(), {workload.get_id(): workload})
+        return IntegerProgramCpuAllocator().assign_threads(cpu, workload.get_id(), {workload.get_id(): workload}, {})
 

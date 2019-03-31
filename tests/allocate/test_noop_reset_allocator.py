@@ -20,7 +20,7 @@ class TestCpu(unittest.TestCase):
         cpu_allocator = NoopResetCpuAllocator("", cgroup_manager)
 
         w = get_test_workload(uuid.uuid4(), 1, STATIC)
-        cpu_allocator.assign_threads(cpu, w)
+        cpu_allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {})
         self.assertEqual(1, cgroup_manager.container_update_counts[w.get_id()])
         self.assertEqual(len(cpu.get_threads()), len(cgroup_manager.container_update_map[w.get_id()]))
 

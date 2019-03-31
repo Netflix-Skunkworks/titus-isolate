@@ -18,7 +18,7 @@ from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.event.reconcile_event_handler import ReconcileEventHandler
 from titus_isolate.event.utils import get_current_workloads
 from titus_isolate.isolate.reconciler import Reconciler
-from titus_isolate.isolate.utils import get_allocator
+from titus_isolate.isolate.utils import get_fallback_allocator
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.model.processor.config import get_cpu_from_env
@@ -60,7 +60,7 @@ def main(admin_port):
     # Setup the workload manager
     log.info("Setting up the workload manager...")
     cgroup_manager = FileCgroupManager()
-    cpu_allocator = get_allocator(get_config_manager())
+    cpu_allocator = get_fallback_allocator(get_config_manager())
     log.info("Created Fallback CPU allocator with primary: '{}' and secondary: '{}".format(
         cpu_allocator.get_primary_allocator().__class__.__name__,
         cpu_allocator.get_secondary_allocator().__class__.__name__))

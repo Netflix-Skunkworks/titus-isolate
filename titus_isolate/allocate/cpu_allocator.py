@@ -7,31 +7,33 @@ from titus_isolate.model.processor.cpu import Cpu
 class CpuAllocator(abc.ABC, MetricsReporter):
 
     @abc.abstractmethod
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
+    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         """
         Implementations of this method should claim threads for a workload on a given CPU.
 
         :param cpu: An object indicating the state of the CPU before workload assignment
         :param workload_id: The id of the workload being assigned.
         :param workloads: A map of all relevant workloads including the workload to be assigned.
+        :param cpu_usage: A map of cpu usage per workload per thread
         The keys are workload ids, the objects are Workload objects.
         """
         pass
 
     @abc.abstractmethod
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict) -> Cpu:
+    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         """
         Implementations of this method should free threads claimed by a workload on a given CPU.
 
         :param cpu: An object indicating the state of the CPU before freeing threads
         :param workload_id: The id of the workload being removed.
         :param workloads: A map of all relevant workloads including the workload to be removed.
+        :param cpu_usage: A map of cpu usage per workload per thread
         The keys are workload ids, the values are Workload objects.
         """
         pass
 
     @abc.abstractmethod
-    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
         """
         This method will be called periodically to provide an opportunity to move already running
         workloads according to whatever policy the allocator deems appropriate.  Examples policies
@@ -39,6 +41,7 @@ class CpuAllocator(abc.ABC, MetricsReporter):
 
         :param cpu: An object indicating the state of the CPU before freeing threads
         :param workloads: A map of all relevant workloads including the workload to be removed.
+        :param cpu_usage: A map of cpu usage per workload per thread
         The keys are workload ids, the values are Workload objects.
         """
         pass

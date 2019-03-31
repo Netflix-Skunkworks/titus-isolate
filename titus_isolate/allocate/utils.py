@@ -14,21 +14,31 @@ from titus_isolate.model.workload import Workload
 from titus_isolate.utils import get_config_manager
 
 
-def get_threads_body(cpu: Cpu, workload_id: str, workloads: dict) -> dict:
+def get_threads_body(cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> dict:
     w_list = [w.to_dict() for w in workloads.values()]
     return {
         "cpu": cpu.to_dict(),
         "workload_id": workload_id,
-        "workloads": w_list
+        "workloads": w_list,
+        "cpu_usage": __get_serializable_cpu_usage(cpu_usage)
     }
 
 
-def get_rebalance_body(cpu: Cpu, workloads: dict) -> dict:
+def get_rebalance_body(cpu: Cpu, workloads: dict, cpu_usage: dict) -> dict:
     w_list = [w.to_dict() for w in workloads.values()]
     return {
         "cpu": cpu.to_dict(),
-        "workloads": w_list
+        "workloads": w_list,
+        "cpu_usage": __get_serializable_cpu_usage(cpu_usage)
     }
+
+
+def __get_serializable_cpu_usage(cpu_usage: dict) -> dict:
+    serializable_cpu_usage = {}
+    for k, v in cpu_usage.items():
+        serializable_cpu_usage[k] = [str(val) for val in v]
+
+    return serializable_cpu_usage
 
 
 def parse_cpu(cpu_dict: dict) -> Cpu:
@@ -68,6 +78,14 @@ def parse_workload(workload_dict: dict) -> Workload:
     creation_time = datetime.datetime.strptime(workload_dict["creation_time"], '%Y-%m-%d %H:%M:%S.%f')
     workload.set_creation_time(creation_time)
     return workload
+
+
+def parse_cpu_usage(cpu_usage: dict) -> dict:
+    parsed_cpu_usage = {}
+    for k, v in cpu_usage.items():
+        parsed_cpu_usage[k] = [float(val) for val in v]
+
+    return parsed_cpu_usage
 
 
 def get_cpu_model_bucket_name():

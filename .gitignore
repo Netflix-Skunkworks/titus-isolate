@@ -16,3 +16,4 @@ env/
 *.deb
 
 MANIFEST
+gurobi*

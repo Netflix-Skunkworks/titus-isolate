@@ -2,7 +2,7 @@ import schedule
 
 from titus_isolate import log
 from titus_isolate.constants import GENERIC_PROPERTY_CHANGE_EXIT, ALLOCATOR_CONFIG_CHANGE_EXIT
-from titus_isolate.isolate.utils import get_allocator
+from titus_isolate.isolate.utils import get_fallback_allocator
 
 PROPERTY_CHANGE_DETECTION_INTERVAL_SEC = 10
 
@@ -25,7 +25,7 @@ class RestartPropertyWatcher:
             self.__original_properties[p] = config_manager.get(p)
 
         self.__original_primary_allocator_name =\
-            get_allocator(config_manager).get_primary_allocator().__class__.__name__
+            get_fallback_allocator(config_manager).get_primary_allocator().__class__.__name__
 
         log.info("Starting watching for changes to properties: {}".format(properties))
         for k, v in self.__original_properties.items():
@@ -50,7 +50,7 @@ class RestartPropertyWatcher:
                 self.__exit_handler.exit(GENERIC_PROPERTY_CHANGE_EXIT)
 
     def __detect_ab_changes(self):
-        curr_primary_allocator_name = get_allocator(self.__config_manager).get_primary_allocator().__class__.__name__
+        curr_primary_allocator_name = get_fallback_allocator(self.__config_manager).get_primary_allocator().__class__.__name__
         if self.__original_primary_allocator_name != curr_primary_allocator_name:
             log.info("Restarting because primary CPU allocator changed from: '{}' to: '{}'".format(
                 self.__original_primary_allocator_name, curr_primary_allocator_name))

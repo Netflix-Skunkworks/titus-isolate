@@ -1,11 +1,13 @@
 import logging
+import sys
 from threading import Lock
 
 from flask import Flask, request, jsonify
 
 from titus_isolate import log
 from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
-from titus_isolate.allocate.utils import parse_workload, parse_cpu
+from titus_isolate.allocate.utils import parse_workload, parse_cpu, parse_cpu_usage
+from titus_isolate.config.constants import CPU_ALLOCATOR, MIP_SOLVER, LOG_FMT_STRING
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
@@ -15,6 +17,15 @@ lock = Lock()
 cpu_allocator = None
 
 app = Flask(__name__)
+
+log = logging.getLogger()
+log.setLevel(logging.INFO)
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter(LOG_FMT_STRING)
+handler.setFormatter(formatter)
+log.addHandler(handler)
 
 if __name__ != '__main__':
     gunicorn_logger = logging.getLogger('gunicorn.error')
@@ -37,7 +48,8 @@ def get_cpu_allocator():
             set_config_manager(config_manager)
 
             set_usage_predictor_manager()
-            cpu_allocator = get_allocator(config_manager)
+            alloc_str = config_manager.get(CPU_ALLOCATOR)
+            cpu_allocator = get_allocator(alloc_str, config_manager)
 
         return cpu_allocator
 
@@ -60,21 +72,26 @@ def __get_workloads(body):
     workloads = {}
     for w in [parse_workload(w_str) for w_str in body["workloads"]]:
         workloads[w.get_id()] = w
-
     return workloads
+
+
+def __get_cpu_usage(body):
+    return parse_cpu_usage(body["cpu_usage"])
 
 
 def get_threads_arguments(body):
     workload_id = __get_workload_id(body)
     cpu = __get_cpu(body)
     workloads = __get_workloads(body)
-    return cpu, workload_id, workloads
+    cpu_usage = __get_cpu_usage(body)
+    return cpu, workload_id, workloads, cpu_usage
 
 
 def get_rebalance_arguments(body):
     cpu = __get_cpu(body)
     workloads = __get_workloads(body)
-    return cpu, workloads
+    cpu_usage = __get_cpu_usage(body)
+    return cpu, workloads, cpu_usage
 
 
 @app.route('/cpu_allocator', methods=['GET'])
@@ -101,8 +118,8 @@ def assign_threads():
 
     try:
         body = request.get_json()
-        cpu_in, workload_id, workloads = get_threads_arguments(body)
-        cpu_out = allocator.assign_threads(cpu_in, workload_id, workloads)
+        cpu_in, workload_id, workloads, cpu_usage = get_threads_arguments(body)
+        cpu_out = allocator.assign_threads(cpu_in, workload_id, workloads, cpu_usage)
         return jsonify(cpu_out.to_dict())
     except:
         log.exception("Failed to assign threads")
@@ -119,8 +136,8 @@ def free_threads():
 
     try:
         body = request.get_json()
-        cpu_in, workload_id, workloads = get_threads_arguments(body)
-        cpu_out = allocator.free_threads(cpu_in, workload_id, workloads)
+        cpu_in, workload_id, workloads, cpu_usage = get_threads_arguments(body)
+        cpu_out = allocator.free_threads(cpu_in, workload_id, workloads, cpu_usage)
         return jsonify(cpu_out.to_dict())
     except:
         log.exception("Failed to free threads")
@@ -137,8 +154,8 @@ def rebalance():
 
     try:
         body = request.get_json()
-        cpu_in, workloads = get_rebalance_arguments(body)
-        cpu_out = allocator.rebalance(cpu_in, workloads)
+        cpu_in, workloads, cpu_usage = get_rebalance_arguments(body)
+        cpu_out = allocator.rebalance(cpu_in, workloads, cpu_usage)
         return jsonify(cpu_out.to_dict())
     except:
         log.exception("Failed to rebalance")
