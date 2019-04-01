@@ -71,6 +71,12 @@ class WorkloadPerformanceMonitor:
             if slice_ts_min == slice_ts_max:
                 continue
 
+            if slice_ts_min < 0 or slice_ts_min >= len(timestamps):
+                continue
+
+            if slice_ts_max < 0 or slice_ts_max >= len(timestamps):
+                continue
+
             if timestamps[slice_ts_max] < ts_min - bucket_size_secs:
                 continue
             # this should be matching Atlas:
