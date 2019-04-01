@@ -39,10 +39,12 @@ class EventManager(MetricsReporter):
         config_manager = get_config_manager()
 
         rebalance_frequency = int(config_manager.get(REBALANCE_FREQUENCY_KEY, DEFAULT_REBALANCE_FREQUENCY))
-        schedule.every(rebalance_frequency).seconds.do(self.__rebalance)
+        if rebalance_frequency > 0:
+            schedule.every(rebalance_frequency).seconds.do(self.__rebalance)
 
         reconcile_frequency = int(config_manager.get(RECONCILE_FREQUENCY_KEY, DEFAULT_RECONCILE_FREQUENCY))
-        schedule.every(reconcile_frequency).seconds.do(self.__reconcile)
+        if reconcile_frequency > 0:
+            schedule.every(reconcile_frequency).seconds.do(self.__reconcile)
 
     def join(self):
         self.__pulling_thread.join()
@@ -75,7 +77,8 @@ class EventManager(MetricsReporter):
         return self.__q.qsize()
 
     def __rebalance(self):
-        self.__q.put(REBALANCE_EVENT)
+        if self.__q.empty():
+            self.__q.put(REBALANCE_EVENT)
 
     def __reconcile(self):
         if self.__q.empty():
@@ -111,6 +114,7 @@ class EventManager(MetricsReporter):
         self.__reg = registry
 
     def report_metrics(self, tags):
+        log.info("Queue depth: '{}'".format(self.get_queue_depth()))
         self.__reg.gauge(QUEUE_DEPTH_KEY, tags).set(self.get_queue_depth())
         self.__reg.gauge(EVENT_SUCCEEDED_KEY, tags).set(self.get_success_count())
         self.__reg.gauge(EVENT_FAILED_KEY, tags).set(self.get_error_count())
