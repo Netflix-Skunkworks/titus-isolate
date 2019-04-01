@@ -4,11 +4,13 @@ import uuid
 
 from spectator import Registry
 
+from tests.allocate.test_allocate import TestWorkloadMonitorManager, TestCpuUsagePredictorManager
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, TestContext, gauge_value_equals, gauge_value_reached, get_threads_with_workload, \
     get_test_workload
 from titus_isolate import log
+from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
@@ -24,12 +26,17 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, UNALLOCATED_SIZE_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
-from titus_isolate.utils import set_config_manager
+from titus_isolate.utils import set_config_manager, set_workload_monitor_manager
 
 config_logs(logging.DEBUG)
 set_config_manager(ConfigManager(TestPropertyProvider({})))
+set_workload_monitor_manager(TestWorkloadMonitorManager())
 
-ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator()]
+forecast_ip_alloc_simple = ForecastIPCpuAllocator(
+    TestCpuUsagePredictorManager(),
+    ConfigManager(TestPropertyProvider({})))
+
+ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
 
 
 class TestWorkloadManager(unittest.TestCase):
@@ -53,8 +60,8 @@ class TestWorkloadManager(unittest.TestCase):
 
     def test_single_burst_workload_lifecycle(self):
         for allocator in ALLOCATORS:
-            thread_count = 2
-            workload = get_test_workload(uuid.uuid4(), thread_count, BURST)
+            requested_thread_count = 2
+            workload = get_test_workload(uuid.uuid4(), requested_thread_count, BURST)
 
             cgroup_manager = MockCgroupManager()
             workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
@@ -63,11 +70,8 @@ class TestWorkloadManager(unittest.TestCase):
             workload_manager.add_workload(workload)
             self.assertEqual(1, cgroup_manager.container_update_counts[workload.get_id()])
 
-            # All threads should have been assigned to the only burst workload.
-            self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cgroup_manager.container_update_map[workload.get_id()]))
-
-            # All threads should have been consumed from the cpu model perspective.
-            self.assertEqual(0, len(workload_manager.get_cpu().get_empty_threads()))
+            # More than the requested threads should have been assigned to the only burst workload.
+            self.assertTrue(len(cgroup_manager.container_update_map[workload.get_id()]) > requested_thread_count)
 
             # Remove workload
             workload_manager.remove_workload(workload.get_id())
@@ -97,43 +101,23 @@ class TestWorkloadManager(unittest.TestCase):
             workload_manager.remove_workload(workload.get_id())
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
 
-    def __assert_container_update_counts(self, cgroup_manager, workloads, counts):
-        self.assertEqual(len(workloads), len(counts))
-        for i in range(len(workloads)):
-            self.assertEqual(counts[i], cgroup_manager.container_update_counts[workloads[i].get_id()])
-
-    def __get_expected_burst_thread_count(self, cpu, workloads):
-        expected_burst_count = len(cpu.get_threads())
-        for w in workloads:
-            if w.get_type() == STATIC:
-                expected_burst_count -= w.get_thread_count()
-        return expected_burst_count
-
     def __assert_container_thread_count(self, cpu, cgroup_manager, workloads):
-        expected_burst_count = self.__get_expected_burst_thread_count(cpu, workloads)
-
         for w in workloads:
             if w.get_type() == STATIC:
                 self.assertEqual(
                     w.get_thread_count(),
                     len(cgroup_manager.container_update_map[w.get_id()]))
             else:
-                self.assertEqual(
-                    expected_burst_count,
-                    len(cgroup_manager.container_update_map[w.get_id()]))
+                self.assertTrue(len(cgroup_manager.container_update_map[w.get_id()]) > w.get_thread_count())
 
     def __assert_cpu_thread_count(self, cpu, workloads):
-        expected_burst_count = self.__get_expected_burst_thread_count(cpu, workloads)
-
         for w in workloads:
             if w.get_type() == STATIC:
                 self.assertEqual(
                     w.get_thread_count(),
                     len(get_threads_with_workload(cpu, w.get_id())))
             else:
-                self.assertEqual(
-                    expected_burst_count,
-                    len(get_threads_with_workload(cpu, w.get_id())))
+                self.assertTrue(len(get_threads_with_workload(cpu, w.get_id())) > w.get_thread_count())
 
     def test_alternating_static_burst_workloads(self):
         for allocator in ALLOCATORS:
@@ -150,37 +134,38 @@ class TestWorkloadManager(unittest.TestCase):
             # Add static workload
             log.info("ADDING STATIC0")
             workload_manager.add_workload(static0)
-            self.__assert_container_update_counts(cgroup_manager, [static0], [1])
             self.__assert_container_thread_count(workload_manager.get_cpu(), cgroup_manager, [static0])
             self.__assert_cpu_thread_count(workload_manager.get_cpu(), [static0])
 
             # Add burst workload
             log.info("ADDING BURST0")
             workload_manager.add_workload(burst0)
-            self.__assert_container_update_counts(cgroup_manager, [static0, burst0], [1, 1])
             self.__assert_container_thread_count(workload_manager.get_cpu(), cgroup_manager, [static0, burst0])
             self.__assert_cpu_thread_count(workload_manager.get_cpu(), [static0, burst0])
 
             # Add static workload
             log.info("ADDING STATIC1")
             workload_manager.add_workload(static1)
-            self.__assert_container_update_counts(cgroup_manager, [static0, burst0, static1], [1, 2, 1])
             self.__assert_container_thread_count(workload_manager.get_cpu(), cgroup_manager, [static0, burst0, static1])
             self.__assert_cpu_thread_count(workload_manager.get_cpu(), [static0, burst0, static1])
 
             # Add burst workload
             log.info("ADDING BURST1")
             workload_manager.add_workload(burst1)
-            self.__assert_container_update_counts(cgroup_manager, [static0, burst0, static1, burst1], [1, 2, 1, 1])
             self.__assert_container_thread_count(workload_manager.get_cpu(), cgroup_manager, [static0, burst0, static1, burst1])
             self.__assert_cpu_thread_count(workload_manager.get_cpu(), [static0, burst0, static1, burst1])
 
             # Remove static workload
             log.info("REMOVING STATIC0")
             workload_manager.remove_workload(static0.get_id())
-            self.__assert_container_update_counts(cgroup_manager, [burst0, static1, burst1], [3, 1, 2])
             self.__assert_container_thread_count(workload_manager.get_cpu(), cgroup_manager, [burst0, static1, burst1])
             self.__assert_cpu_thread_count(workload_manager.get_cpu(), [burst0, static1, burst1])
+
+            # Remove static workload
+            log.info("REMOVING BURST0")
+            workload_manager.remove_workload(burst0.get_id())
+            self.__assert_container_thread_count(workload_manager.get_cpu(), cgroup_manager, [static1, burst1])
+            self.__assert_cpu_thread_count(workload_manager.get_cpu(), [static1, burst1])
 
     def test_no_cross_packages_placement_no_bad_affinity_ip(self):
         w_a = get_test_workload("a", 3, STATIC)
@@ -308,7 +293,7 @@ class TestWorkloadManager(unittest.TestCase):
             self.assertTrue(wm.is_isolated(uuid.uuid4()))
 
     def test_thread_allocation_computation(self):
-        for allocator in ALLOCATORS:
+        for allocator in [IntegerProgramCpuAllocator(), GreedyCpuAllocator()]:
             static_thread_count = 2
             burst_thread_count = 4
             w_static = get_test_workload("s", static_thread_count, STATIC)
