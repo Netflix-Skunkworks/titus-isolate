@@ -46,7 +46,7 @@ def get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
             "instance": os.environ['EC2_INSTANCE_ID'],
             "cpu": cpu.to_dict(),
             "cpu_usage": usage,
-            "workloads:": workloads
+            "workloads": workloads
         }
     }
 
@@ -65,7 +65,7 @@ def report_cpu(cpu: Cpu, workloads):
 
     serializable_usage = {}
     for w_id, usage in usage.items():
-        serializable_usage[w_id] = [str(u) for u in usage]
+        serializable_usage[w_id] = [float(u) for u in usage]
 
     serializable_workloads = {}
     for w in workloads:

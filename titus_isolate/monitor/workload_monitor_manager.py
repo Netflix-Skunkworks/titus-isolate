@@ -25,9 +25,10 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
         schedule.every(sample_interval).seconds.do(self.__sample)
 
     def get_cpu_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
-        cpu_usage = {}
-        for workload_id, monitor in self.get_monitors().items():
-            cpu_usage[workload_id] = monitor.get_normalized_cpu_usage_last_seconds(seconds, agg_granularity_secs)
+        with self.__lock:
+            cpu_usage = {}
+            for workload_id, monitor in self.get_monitors().items():
+                cpu_usage[workload_id] = monitor.get_normalized_cpu_usage_last_seconds(seconds, agg_granularity_secs)
 
         return cpu_usage
 
