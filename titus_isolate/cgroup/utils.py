@@ -48,7 +48,6 @@ def wait_for_files(container_name, cgroup_timeout, json_timeout):
         if not os.path.exists(json_file_path):
             raise RuntimeError("JSON file: '{}' disappeared, meaning the task exited.".format(json_file_path))
 
-    _wait_for_file_to_exist(json_file_path, json_timeout)
     _wait_for_file_to_exist(info_file_path, cgroup_timeout, __raise_if_json_file_gone)
 
 

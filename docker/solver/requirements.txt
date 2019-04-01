@@ -4,5 +4,5 @@ boto3
 schedule
 requests
 /cvxpy-1.0.21.tar.gz
-/titus-isolate-20190108.0.tar.gz
+/titus-isolate-0.SNAPSHOT.tar.gz
 titus_optimize==0.3.2
