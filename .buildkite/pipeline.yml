@@ -1,5 +1,7 @@
 steps:
   - label: Run git fetch
+    command: git fetch --tags
+  - label: Run git describe
     command: git describe --tags
   - label: Build build docker container
     command: docker build -t deb release
