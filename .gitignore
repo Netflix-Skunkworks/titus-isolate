@@ -16,4 +16,4 @@ env/
 *.deb
 
 MANIFEST
-gurobi*
+*.tar.gz
