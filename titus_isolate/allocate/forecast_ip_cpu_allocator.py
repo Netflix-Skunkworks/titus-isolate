@@ -73,10 +73,8 @@ class ForecastIPCpuAllocator(CpuAllocator):
         return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
 
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
-        log.info("Fast remove!!!")
         for t in cpu.get_claimed_threads():
             t.free(workload_id)
-
         return cpu
 
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
@@ -165,29 +163,11 @@ class ForecastIPCpuAllocator(CpuAllocator):
             v = [1 if tid_2order[i] in cids else 0 for i in range(n_compute_units)]
             curr_placement_vectors_static.append(v)
 
-        is_static_remove = (not is_add) and workload_id in ordered_workload_ids_static
-        is_burst_remove = (not is_add) and workload_id in ordered_workload_ids_burst
+        requested_cus = [
+            workloads[wid].get_thread_count()
+            for wid in ordered_workload_ids_static]
 
-        if is_static_remove:
-            requested_cus = [
-                workloads[wid].get_thread_count()
-                if wid != changed_workload.get_id() else 0
-                for wid in ordered_workload_ids_static
-            ]
-        else:
-            requested_cus = [
-                workloads[wid].get_thread_count()
-                for wid in ordered_workload_ids_static
-            ]
-
-        if is_burst_remove:
-            burst_workloads = [
-                w for w in get_burst_workloads(workloads.values())
-                if w.get_id() != changed_workload.get_id()
-            ]
-        else:
-            burst_workloads = get_burst_workloads(workloads.values())
-
+        burst_workloads = get_burst_workloads(workloads.values())
         burst_pool_size_req = sum([w.get_thread_count() for w in burst_workloads]) if len(burst_workloads) > 0 else 0
 
         return CUVector(
