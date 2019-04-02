@@ -60,7 +60,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             burst_core_colloc_usage_thresh=config_manager.get(BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH),
             weight_cpu_use_burst=config_manager.get(WEIGHT_CPU_USE_BURST, DEFAULT_WEIGHT_CPU_USE_BURST))
 
-        self.__solver_max_runtime_secs = 2 * config_manager.get(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
+        self.__solver_max_runtime_secs = config_manager.get(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
         self.__solver_name = config_manager.get(MIP_SOLVER, DEFAULT_MIP_SOLVER)
         self.__solver_mip_gap = config_manager.get(RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP)
         self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
