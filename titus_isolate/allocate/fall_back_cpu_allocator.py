@@ -93,5 +93,5 @@ class FallbackCpuAllocator(CpuAllocator):
 
     def str(self):
         return "FallbackCpuAllocator(primary: {}, secondary: {})".format(
-            self.__primary_allocator.__class__.__name__,
-            self.__secondary_allocator.__class__.__name__)
+            self.__primary_allocator,
+            self.__secondary_allocator)
