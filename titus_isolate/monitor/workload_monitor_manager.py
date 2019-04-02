@@ -1,5 +1,5 @@
 import collections
-from threading import Lock
+from threading import Lock, Thread
 
 import schedule
 
@@ -124,6 +124,6 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
         with self.__lock:
             for workload_id, monitor in self.__monitors.items():
                 try:
-                    monitor.sample()
+                    Thread(target=monitor.sample).start()
                 except:
                     log.exception("Failed to sample performance of workload: '{}'".format(workload_id))

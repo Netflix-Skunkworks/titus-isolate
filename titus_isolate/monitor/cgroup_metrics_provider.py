@@ -1,4 +1,5 @@
 import datetime
+import os
 
 from titus_isolate import log
 from titus_isolate.cgroup.utils import parse_cpuacct_usage_all, get_usage_all_path
@@ -18,6 +19,10 @@ class CgroupMetricsProvider:
         usage_path = self.__get_usage_path()
         if usage_path is None:
             return None
+
+        if not os.path.isfile(usage_path):
+            log.warning("cpu usage path does not exist: {}".format(usage_path))
+            return
 
         with open(usage_path, 'r') as f:
             timestamp = datetime.datetime.utcnow()
