@@ -162,7 +162,7 @@ class WorkloadManager(MetricsReporter):
         return self.__removed_count
 
     def get_rebalanced_count(self):
-        return self.__removed_count
+        return self.__rebalanced_count
 
     def get_success_count(self):
         return self.get_added_count() + \
