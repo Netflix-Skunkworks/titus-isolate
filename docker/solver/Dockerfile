@@ -10,7 +10,7 @@ COPY prerequirements.txt .
 RUN pip3 install -r prerequirements.txt
 
 COPY requirements.txt .
-COPY titus-isolate-20190108.0.tar.gz .
+COPY titus-isolate-0.SNAPSHOT.tar.gz .
 COPY cvxpy-1.0.21.tar.gz .
 
 RUN pip3 install -r requirements.txt

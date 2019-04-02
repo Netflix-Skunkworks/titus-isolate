@@ -447,6 +447,7 @@ class TestCpu(unittest.TestCase):
                 self.assertLess(0, sum(t.is_claimed() for t in c.get_threads()))
 
         cpu = allocator.free_threads(cpu, "b", {"a": w, "b": w2}, {})
+        cpu = allocator.rebalance(cpu,  {"a": w}, {})
         self.assertEqual(original_burst_claim_sz, len(cpu.get_claimed_threads()))
 
     def test_forecast_ip_burst_pool_with_usage(self):
