@@ -7,7 +7,7 @@ from titus_isolate.cgroup.utils import set_cpuset, wait_for_files, get_cpuset, p
 from titus_isolate.config.constants import WAIT_CGROUP_FILE_KEY, WAIT_JSON_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC, \
     DEFAULT_WAIT_JSON_FILE_SEC
 from titus_isolate.metrics.constants import WRITE_CPUSET_FAILED_KEY, WRITE_CPUSET_SUCCEEDED_KEY, ISOLATED_WORKLOAD_COUNT
-from titus_isolate.utils import get_config_manager
+from titus_isolate.utils import get_config_manager, get_workload_manager
 
 
 class FileCgroupManager(CgroupManager):
@@ -17,7 +17,7 @@ class FileCgroupManager(CgroupManager):
         self.__lock = Lock()
         self.__write_count = 0
         self.__fail_count = 0
-        self.__isolated_workloads = []
+        self.__isolated_workload_ids = set([])
 
     def set_cpuset(self, container_name, thread_ids):
         Thread(target=self.__set_cpuset, args=[container_name, thread_ids]).start()
@@ -31,12 +31,18 @@ class FileCgroupManager(CgroupManager):
 
     def release_cpuset(self, container_name):
         with self.__lock:
-            if container_name in self.__isolated_workloads:
-                self.__isolated_workloads.remove(container_name)
+            self.__isolated_workload_ids.discard(container_name)
 
     def get_isolated_workload_ids(self):
         with self.__lock:
-            return copy.deepcopy(self.__isolated_workloads)
+            wm = get_workload_manager()
+            if wm is None:
+                return set([])
+
+            workloads = wm.get_workloads()
+            workload_ids = set([w.get_id() for w in workloads])
+            self.__isolated_workload_ids = self.__isolated_workload_ids.intersection(workload_ids)
+            return copy.deepcopy(self.__isolated_workload_ids)
 
     def __set_cpuset(self, container_name, thread_ids):
         thread_ids_str = self.__get_thread_ids_str(thread_ids)
@@ -62,7 +68,7 @@ class FileCgroupManager(CgroupManager):
 
     def __write_succeeded(self, container_name):
         with self.__lock:
-            self.__isolated_workloads.append(container_name)
+            self.__isolated_workload_ids.add(container_name)
             self.__write_count += 1
 
     def __write_failed(self):
