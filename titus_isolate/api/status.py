@@ -3,6 +3,7 @@ import time
 
 from flask import Flask
 
+from titus_isolate import log
 from titus_isolate.config.constants import TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.utils import get_config_manager, get_workload_manager, get_event_manager, \
@@ -22,6 +23,7 @@ def isolate_workload(workload_id, timeout=None):
             return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
         time.sleep(0.1)
 
+    log.error("Failed to isolate workload: '{}'".format(workload_id))
     return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
 
 
@@ -33,7 +35,7 @@ def get_workloads():
 
 @app.route('/isolated_workload_ids')
 def get_isolated_workload_ids():
-    return json.dumps(get_workload_manager().get_isolated_workload_ids())
+    return json.dumps(list(get_workload_manager().get_isolated_workload_ids()))
 
 
 @app.route('/cpu')
