@@ -1,8 +1,10 @@
-gunicorn
-flask
+--extra-index-url https://pypi.python.org/simple
 boto3
-schedule
+flask
+gunicorn
+netflix-spectator-py
 requests
+schedule
+titus-optimize==0.3.2
 /cvxpy-1.0.21.tar.gz
 /titus-isolate-0.SNAPSHOT.tar.gz
-titus_optimize==0.3.2

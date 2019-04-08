@@ -7,6 +7,10 @@ import unittest
 
 import pytest
 
+from titus_isolate.api.testing import set_testing
+
+set_testing()
+
 from tests.allocate.crashing_allocators import CrashingAllocator
 from tests.utils import get_test_workload, config_logs
 from titus_isolate import log

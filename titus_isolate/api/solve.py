@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 
 from titus_isolate import log
 from titus_isolate.allocate.utils import parse_workload, parse_cpu, parse_cpu_usage
+from titus_isolate.api.testing import get_testing
 from titus_isolate.config.constants import CPU_ALLOCATOR, LOG_FMT_STRING
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
@@ -26,30 +27,10 @@ formatter = logging.Formatter(LOG_FMT_STRING)
 handler.setFormatter(formatter)
 log.addHandler(handler)
 
-if __name__ != '__main__':
-    gunicorn_logger = logging.getLogger('gunicorn.error')
-    app.logger.handlers = gunicorn_logger.handlers
-    app.logger.setLevel(gunicorn_logger.level)
-
-
-def set_usage_predictor_manager():
-    # Start the cpu usage predictor manager
-    log.info("Setting up the cpu usage predictor manager...")
-    cpu_predictor_manager = CpuUsagePredictorManager()
-    set_cpu_usage_predictor_manager(cpu_predictor_manager)
-
 
 def get_cpu_allocator():
     with lock:
         global cpu_allocator
-        if cpu_allocator is None:
-            config_manager = get_config_manager(EnvPropertyProvider())
-            set_config_manager(config_manager)
-
-            set_usage_predictor_manager()
-            alloc_str = config_manager.get(CPU_ALLOCATOR)
-            cpu_allocator = get_allocator(alloc_str, config_manager)
-
         return cpu_allocator
 
 
@@ -156,3 +137,20 @@ def rebalance():
         return "Failed to rebalance", 500
 
 
+if __name__ != '__main__' and not get_testing():
+    log.info("Configuring logging...")
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+
+    log.info("Setting config manager...")
+    config_manager = get_config_manager(EnvPropertyProvider())
+    set_config_manager(config_manager)
+
+    log.info("Setting up the cpu usage predictor manager...")
+    cpu_predictor_manager = CpuUsagePredictorManager()
+    set_cpu_usage_predictor_manager(cpu_predictor_manager)
+
+    log.info("Setting cpu_allocator config manager...")
+    alloc_str = config_manager.get(CPU_ALLOCATOR)
+    set_cpu_allocator(get_allocator(alloc_str, config_manager))
