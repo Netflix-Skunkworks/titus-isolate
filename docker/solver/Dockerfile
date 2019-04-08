@@ -1,10 +1,15 @@
-FROM ubuntu:16.04
+FROM dockerregistry.test.netflix.net:7002/engtools/xenialbase
 
 RUN apt update && apt install -y \
+    build-essential \
     git \
     python3-all \
+    python3-dev \
     python3-pip \
+    python3-setuptools \
     ssh
+
+RUN pip3 install wheel
 
 COPY prerequirements.txt .
 RUN pip3 install -r prerequirements.txt
