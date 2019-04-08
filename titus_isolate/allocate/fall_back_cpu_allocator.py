@@ -1,7 +1,7 @@
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_isolate.metrics.constants import FALLBACK_ALLOCATOR_COUNT, FALLBACK_ASSIGN_COUNT, FALLBACK_FREE_COUNT, \
-    FALLBACK_REBALANCE_COUNT
+from titus_isolate.metrics.constants import FALLBACK_ASSIGN_COUNT, FALLBACK_FREE_COUNT, \
+    FALLBACK_REBALANCE_COUNT, PRIMARY_ASSIGN_COUNT, PRIMARY_FREE_COUNT, PRIMARY_REBALANCE_COUNT
 from titus_isolate.model.processor.cpu import Cpu
 
 
@@ -19,6 +19,10 @@ class FallbackCpuAllocator(CpuAllocator):
         self.__primary_allocator = primary_cpu_allocator
         self.__secondary_allocator = secondary_cpu_allocator
 
+        self.__primary_assign_threads_call_count = 0
+        self.__primary_free_threads_call_count = 0
+        self.__primary_rebalance_call_count = 0
+
         self.__secondary_assign_threads_call_count = 0
         self.__secondary_free_threads_call_count = 0
         self.__secondary_rebalance_call_count = 0
@@ -30,6 +34,7 @@ class FallbackCpuAllocator(CpuAllocator):
 
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         try:
+            self.__primary_assign_threads_call_count += 1
             return self.__primary_allocator.assign_threads(cpu, workload_id, workloads, cpu_usage)
         except:
             log.exception(
@@ -38,11 +43,11 @@ class FallbackCpuAllocator(CpuAllocator):
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_assign_threads_call_count += 1
-            cpu = self.__secondary_allocator.assign_threads(cpu, workload_id, workloads, cpu_usage)
-            return cpu
+            return self.__secondary_allocator.assign_threads(cpu, workload_id, workloads, cpu_usage)
 
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         try:
+            self.__primary_free_threads_call_count += 1
             return self.__primary_allocator.free_threads(cpu, workload_id, workloads, cpu_usage)
         except:
             log.exception(
@@ -51,11 +56,11 @@ class FallbackCpuAllocator(CpuAllocator):
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_free_threads_call_count += 1
-            cpu = self.__secondary_allocator.free_threads(cpu, workload_id, workloads, cpu_usage)
-            return cpu
+            return self.__secondary_allocator.free_threads(cpu, workload_id, workloads, cpu_usage)
 
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
         try:
+            self.__primary_rebalance_call_count += 1
             return self.__primary_allocator.rebalance(cpu, workloads, cpu_usage)
         except:
             log.exception(
@@ -64,8 +69,7 @@ class FallbackCpuAllocator(CpuAllocator):
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_rebalance_call_count += 1
-            cpu = self.__secondary_allocator.rebalance(cpu, workloads, cpu_usage)
-            return cpu
+            return self.__secondary_allocator.rebalance(cpu, workloads, cpu_usage)
 
     def get_primary_allocator(self) -> CpuAllocator:
         return self.__primary_allocator
@@ -84,7 +88,9 @@ class FallbackCpuAllocator(CpuAllocator):
         self.__secondary_allocator.set_registry(registry)
 
     def report_metrics(self, tags):
-        self.__reg.gauge(FALLBACK_ALLOCATOR_COUNT, tags).set(self.get_fallback_allocator_calls_count())
+        self.__reg.gauge(PRIMARY_ASSIGN_COUNT, tags).set(self.__primary_assign_threads_call_count)
+        self.__reg.gauge(PRIMARY_FREE_COUNT, tags).set(self.__primary_free_threads_call_count)
+        self.__reg.gauge(PRIMARY_REBALANCE_COUNT, tags).set(self.__primary_rebalance_call_count)
         self.__reg.gauge(FALLBACK_ASSIGN_COUNT, tags).set(self.__secondary_assign_threads_call_count)
         self.__reg.gauge(FALLBACK_FREE_COUNT, tags).set(self.__secondary_free_threads_call_count)
         self.__reg.gauge(FALLBACK_REBALANCE_COUNT, tags).set(self.__secondary_rebalance_call_count)
