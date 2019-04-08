@@ -7,18 +7,20 @@ import unittest
 
 import pytest
 
+from titus_isolate.api.testing import set_testing
+
+set_testing()
+
 from tests.allocate.crashing_allocators import CrashingAllocator
 from tests.utils import get_test_workload, config_logs
 from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.utils import get_threads_body
-from titus_isolate.api import solve
 from titus_isolate.api.solve import parse_workload, parse_cpu, app, set_cpu_allocator
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 
 config_logs(logging.DEBUG)
-solve.testing = True
 
 
 @pytest.fixture

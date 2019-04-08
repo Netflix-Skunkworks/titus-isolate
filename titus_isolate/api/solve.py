@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 
 from titus_isolate import log
 from titus_isolate.allocate.utils import parse_workload, parse_cpu, parse_cpu_usage
+from titus_isolate.api.testing import get_testing
 from titus_isolate.config.constants import CPU_ALLOCATOR, LOG_FMT_STRING
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
@@ -14,7 +15,6 @@ from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_mana
 
 lock = Lock()
 cpu_allocator = None
-testing = False
 
 app = Flask(__name__)
 
@@ -137,7 +137,7 @@ def rebalance():
         return "Failed to rebalance", 500
 
 
-if __name__ != '__main__' and not testing:
+if __name__ != '__main__' and not get_testing():
     log.info("Configuring logging...")
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers
