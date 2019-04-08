@@ -6,12 +6,18 @@ from flask import Flask, request, jsonify
 
 from titus_isolate import log
 from titus_isolate.allocate.utils import parse_workload, parse_cpu, parse_cpu_usage
-from titus_isolate.api.testing import get_testing
+from titus_isolate.api.testing import is_testing
 from titus_isolate.config.constants import CPU_ALLOCATOR, LOG_FMT_STRING
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
+from titus_isolate.metrics.constants import SOLVER_GET_CPU_ALLOCATOR_SUCCESS, SOLVER_GET_CPU_ALLOCATOR_FAILURE, \
+    SOLVER_ASSIGN_THREADS_SUCCESS, SOLVER_ASSIGN_THREADS_FAILURE, SOLVER_FREE_THREADS_SUCCESS, \
+    SOLVER_FREE_THREADS_FAILURE, SOLVER_REBALANCE_SUCCESS, SOLVER_REBALANCE_FAILURE
+from titus_isolate.metrics.metrics_manager import MetricsManager
+from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
-from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_manager, set_config_manager
+from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_manager, set_config_manager, \
+    start_periodic_scheduling
 
 lock = Lock()
 cpu_allocator = None
@@ -20,6 +26,7 @@ app = Flask(__name__)
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
+logging.getLogger('schedule').setLevel(logging.WARN)
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
@@ -74,12 +81,29 @@ def get_rebalance_arguments(body):
     return cpu, workloads, cpu_usage
 
 
+get_cpu_allocator_success_count = 0
+get_cpu_allocator_failure_count = 0
+
+assign_threads_success_count = 0
+assign_threads_failure_count = 0
+
+free_threads_success_count = 0
+free_threads_failure_count = 0
+
+rebalance_success_count = 0
+rebalance_failure_count = 0
+
+
 @app.route('/cpu_allocator', methods=['GET'])
 def remote_get_cpu_allocator():
     allocator = get_cpu_allocator()
     if cpu_allocator is None:
+        global get_cpu_allocator_failure_count
+        get_cpu_allocator_failure_count += 1
         return "CPU allocator not set", 404
 
+    global get_cpu_allocator_success_count
+    get_cpu_allocator_success_count += 1
     return allocator.__class__.__name__
 
 
@@ -87,17 +111,17 @@ def remote_get_cpu_allocator():
 def assign_threads():
     allocator = get_cpu_allocator()
 
-    if allocator is None:
-        log.error("Cannot assign threads, CPU allocator is not set.")
-        return "CPU allocator not set", 500
-
     try:
         body = request.get_json()
         cpu_in, workload_id, workloads, cpu_usage = get_threads_arguments(body)
         cpu_out = allocator.assign_threads(cpu_in, workload_id, workloads, cpu_usage)
+        global assign_threads_success_count
+        assign_threads_success_count += 1
         return jsonify(cpu_out.to_dict())
     except:
         log.exception("Failed to assign threads")
+        global assign_threads_failure_count
+        assign_threads_failure_count += 1
         return "Failed to assign threads", 500
 
 
@@ -105,17 +129,17 @@ def assign_threads():
 def free_threads():
     allocator = get_cpu_allocator()
 
-    if allocator is None:
-        log.error("Cannot free threads, CPU allocator is not set.")
-        return "CPU allocator not set", 500
-
     try:
         body = request.get_json()
         cpu_in, workload_id, workloads, cpu_usage = get_threads_arguments(body)
         cpu_out = allocator.free_threads(cpu_in, workload_id, workloads, cpu_usage)
+        global free_threads_success_count
+        free_threads_success_count += 1
         return jsonify(cpu_out.to_dict())
     except:
         log.exception("Failed to free threads")
+        global free_threads_failure_count
+        free_threads_failure_count += 1
         return "Failed to free threads", 500
 
 
@@ -123,21 +147,48 @@ def free_threads():
 def rebalance():
     allocator = get_cpu_allocator()
 
-    if allocator is None:
-        log.error("Cannot rebalance threads, CPU allocator is not set.")
-        return "CPU allocator not set", 500
-
     try:
         body = request.get_json()
         cpu_in, workloads, cpu_usage = get_rebalance_arguments(body)
         cpu_out = allocator.rebalance(cpu_in, workloads, cpu_usage)
+        global rebalance_success_count
+        rebalance_success_count += 1
         return jsonify(cpu_out.to_dict())
     except:
         log.exception("Failed to rebalance")
+        global rebalance_failure_count
+        rebalance_failure_count += 1
         return "Failed to rebalance", 500
 
 
-if __name__ != '__main__' and not get_testing():
+class SolverMetricsReporter(MetricsReporter):
+    def __init__(self):
+        self.__reg = None
+
+    def set_registry(self, registry):
+        self.__reg = registry
+
+    def report_metrics(self, tags):
+        global get_cpu_allocator_success_count
+        global get_cpu_allocator_failure_count
+        global assign_threads_success_count
+        global assign_threads_failure_count
+        global free_threads_success_count
+        global free_threads_failure_count
+        global rebalance_success_count
+        global rebalance_failure_count
+
+        self.__reg.gauge(SOLVER_GET_CPU_ALLOCATOR_SUCCESS, tags).set(get_cpu_allocator_success_count)
+        self.__reg.gauge(SOLVER_GET_CPU_ALLOCATOR_FAILURE, tags).set(get_cpu_allocator_failure_count)
+        self.__reg.gauge(SOLVER_ASSIGN_THREADS_SUCCESS, tags).set(assign_threads_success_count)
+        self.__reg.gauge(SOLVER_ASSIGN_THREADS_FAILURE, tags).set(assign_threads_failure_count)
+        self.__reg.gauge(SOLVER_FREE_THREADS_SUCCESS, tags).set(free_threads_success_count)
+        self.__reg.gauge(SOLVER_FREE_THREADS_FAILURE, tags).set(free_threads_failure_count)
+        self.__reg.gauge(SOLVER_REBALANCE_SUCCESS, tags).set(rebalance_success_count)
+        self.__reg.gauge(SOLVER_REBALANCE_FAILURE, tags).set(rebalance_failure_count)
+
+
+if __name__ != '__main__' and not is_testing():
     log.info("Configuring logging...")
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers
@@ -154,3 +205,7 @@ if __name__ != '__main__' and not get_testing():
     log.info("Setting cpu_allocator config manager...")
     alloc_str = config_manager.get(CPU_ALLOCATOR)
     set_cpu_allocator(get_allocator(alloc_str, config_manager))
+
+    log.info("Starting metrics reporting...")
+    MetricsManager([SolverMetricsReporter()])
+    start_periodic_scheduling()

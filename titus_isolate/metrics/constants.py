@@ -35,6 +35,15 @@ FALLBACK_ASSIGN_COUNT = 'titus-isolate.assignThreadsFallbackCount'
 FALLBACK_FREE_COUNT = 'titus-isolate.freeThreadsFallbackCount'
 FALLBACK_REBALANCE_COUNT = 'titus-isolate.rebalanceFallbackCount'
 
+SOLVER_GET_CPU_ALLOCATOR_SUCCESS = 'titus-isolate.getCpuAllocatorSuccessCount'
+SOLVER_GET_CPU_ALLOCATOR_FAILURE = 'titus-isolate.getCpuAllocatorFailureCount'
+SOLVER_ASSIGN_THREADS_SUCCESS = 'titus-isolate.assignThreadsSuccessCount'
+SOLVER_ASSIGN_THREADS_FAILURE = 'titus-isolate.assignThreadsFailureCount'
+SOLVER_FREE_THREADS_SUCCESS = 'titus-isolate.freeThreadsSuccessCount'
+SOLVER_FREE_THREADS_FAILURE = 'titus-isolate.freeThreadsFailureCount'
+SOLVER_REBALANCE_SUCCESS = 'titus-isolate.rebalanceSuccessCount'
+SOLVER_REBALANCE_FAILURE = 'titus-isolate.rebalanceFailureCount'
+
 STATIC_POOL_USAGE_KEY = 'titus-isolate.staticPoolUsage'
 BURST_POOL_USAGE_KEY = 'titus-isolate.burstPoolUsage'
 

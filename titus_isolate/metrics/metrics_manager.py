@@ -19,6 +19,7 @@ class MetricsManager:
         for reporter in self.__reporters:
             reporter.set_registry(self.__reg)
 
+        log.info("Scheduling metrics reporting every {} seconds".format(report_interval))
         schedule.every(report_interval).seconds.do(self.__report_metrics)
 
     def __report_metrics(self):
