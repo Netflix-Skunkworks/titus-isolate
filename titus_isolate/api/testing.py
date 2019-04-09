@@ -6,5 +6,5 @@ def set_testing():
     testing = True
 
 
-def get_testing():
+def is_testing():
     return testing

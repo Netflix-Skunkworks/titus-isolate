@@ -3,6 +3,7 @@ boto3
 flask
 gunicorn
 netflix-spectator-py
+netflix-spectator-pyconf
 requests
 schedule
 titus-optimize==0.3.2
