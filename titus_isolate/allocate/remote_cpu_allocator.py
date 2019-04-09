@@ -1,6 +1,7 @@
 import requests
 
 from titus_isolate import log
+from titus_isolate.allocate.constants import UNKNOWN_CPU_ALLOCATOR
 from titus_isolate.allocate.cpu_allocate_exception import CpuAllocationException
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.utils import get_threads_body, parse_cpu, get_rebalance_body
@@ -53,6 +54,15 @@ class RemoteCpuAllocator(CpuAllocator):
             return parse_cpu(response.json())
 
         raise CpuAllocationException("Failed to rebalance threads: {}".format(response.text))
+
+    def get_name(self) -> str:
+        url = "{}/cpu_allocator".format(self.__url)
+        try:
+            response = requests.get(url, timeout=1)
+            return "Remote:{}".format(response.text)
+        except:
+            log.exception("Failed to GET cpu allocator name.")
+            return UNKNOWN_CPU_ALLOCATOR
 
     def set_registry(self, registry):
         pass

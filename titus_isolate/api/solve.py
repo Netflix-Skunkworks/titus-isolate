@@ -1,13 +1,15 @@
 import logging
+import os
 import sys
 from threading import Lock
 
 from flask import Flask, request, jsonify
 
 from titus_isolate import log
+from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.utils import parse_workload, parse_cpu, parse_cpu_usage
 from titus_isolate.api.testing import is_testing
-from titus_isolate.config.constants import CPU_ALLOCATOR, LOG_FMT_STRING
+from titus_isolate.config.constants import CPU_ALLOCATOR
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
 from titus_isolate.metrics.constants import SOLVER_GET_CPU_ALLOCATOR_SUCCESS, SOLVER_GET_CPU_ALLOCATOR_FAILURE, \
@@ -30,12 +32,13 @@ logging.getLogger('schedule').setLevel(logging.WARN)
 
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
+LOG_FMT_STRING = '%(asctime)s,%(msecs)d %(levelname)s %(process)d [%(filename)s:%(lineno)d] %(message)s'
 formatter = logging.Formatter(LOG_FMT_STRING)
 handler.setFormatter(formatter)
 log.addHandler(handler)
 
 
-def get_cpu_allocator():
+def get_cpu_allocator() -> CpuAllocator:
     with lock:
         global cpu_allocator
         return cpu_allocator
@@ -104,7 +107,7 @@ def remote_get_cpu_allocator():
 
     global get_cpu_allocator_success_count
     get_cpu_allocator_success_count += 1
-    return allocator.__class__.__name__
+    return allocator.get_name()
 
 
 @app.route('/assign_threads', methods=['PUT'])
@@ -114,6 +117,7 @@ def assign_threads():
     try:
         body = request.get_json()
         cpu_in, workload_id, workloads, cpu_usage = get_threads_arguments(body)
+        log.info("Assigning threads for workload: {}".format(workload_id))
         cpu_out = allocator.assign_threads(cpu_in, workload_id, workloads, cpu_usage)
         global assign_threads_success_count
         assign_threads_success_count += 1
@@ -132,6 +136,7 @@ def free_threads():
     try:
         body = request.get_json()
         cpu_in, workload_id, workloads, cpu_usage = get_threads_arguments(body)
+        log.info("Freeing threads for workload: {}".format(workload_id))
         cpu_out = allocator.free_threads(cpu_in, workload_id, workloads, cpu_usage)
         global free_threads_success_count
         free_threads_success_count += 1
@@ -150,6 +155,7 @@ def rebalance():
     try:
         body = request.get_json()
         cpu_in, workloads, cpu_usage = get_rebalance_arguments(body)
+        log.info("Rebalancing workloads: {}".format(workloads.keys()))
         cpu_out = allocator.rebalance(cpu_in, workloads, cpu_usage)
         global rebalance_success_count
         rebalance_success_count += 1
@@ -177,6 +183,14 @@ class SolverMetricsReporter(MetricsReporter):
         global free_threads_failure_count
         global rebalance_success_count
         global rebalance_failure_count
+
+        ec2_instance_id = 'EC2_INSTANCE_ID'
+
+        tags = {}
+        if ec2_instance_id in os.environ:
+            tags["nf.node"] = os.environ[ec2_instance_id]
+
+        tags["pid"] = str(os.getpid())
 
         self.__reg.gauge(SOLVER_GET_CPU_ALLOCATOR_SUCCESS, tags).set(get_cpu_allocator_success_count)
         self.__reg.gauge(SOLVER_GET_CPU_ALLOCATOR_FAILURE, tags).set(get_cpu_allocator_failure_count)

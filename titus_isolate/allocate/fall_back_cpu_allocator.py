@@ -7,7 +7,7 @@ from titus_isolate.model.processor.cpu import Cpu
 
 class FallbackCpuAllocator(CpuAllocator):
 
-    def __init__(self, primary_cpu_allocator, secondary_cpu_allocator):
+    def __init__(self, primary_cpu_allocator: CpuAllocator, secondary_cpu_allocator: CpuAllocator):
         if primary_cpu_allocator is None:
             raise ValueError("Must be provided a primary cpu allocator.")
 
@@ -70,6 +70,9 @@ class FallbackCpuAllocator(CpuAllocator):
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_rebalance_call_count += 1
             return self.__secondary_allocator.rebalance(cpu, workloads, cpu_usage)
+
+    def get_name(self) -> str:
+        return self.get_primary_allocator().get_name()
 
     def get_primary_allocator(self) -> CpuAllocator:
         return self.__primary_allocator

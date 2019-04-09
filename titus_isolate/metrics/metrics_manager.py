@@ -4,8 +4,8 @@ import schedule
 from spectator import GlobalRegistry
 
 from titus_isolate import log
-from titus_isolate.isolate.utils import get_fallback_allocator
-from titus_isolate.utils import get_config_manager
+from titus_isolate.allocate.constants import UNKNOWN_CPU_ALLOCATOR
+from titus_isolate.utils import get_workload_manager
 
 registry = GlobalRegistry
 
@@ -40,7 +40,12 @@ class MetricsManager:
             tags["node"] = os.environ[ec2_instance_id]
             tags["nf.node"] = os.environ[ec2_instance_id]
 
-        allocator_name = get_fallback_allocator(get_config_manager()).get_primary_allocator().__class__.__name__
+        wm = get_workload_manager()
+        if wm is None:
+            allocator_name = UNKNOWN_CPU_ALLOCATOR
+        else:
+            allocator_name = wm.get_allocator_name()
+
         tags["cpu_allocator"] = allocator_name
 
         return tags

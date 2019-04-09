@@ -13,6 +13,9 @@ class CrashingAllocator(CpuAllocator):
     def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
         raise Exception("")
 
+    def get_name(self) -> str:
+        return self.__class__.__name__
+
     def set_registry(self, registry):
         pass
 
@@ -30,6 +33,9 @@ class CrashingAssignAllocator(CpuAllocator):
 
     def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
         pass
+
+    def get_name(self) -> str:
+        return self.__class__.__name__
 
     def set_registry(self, registry):
         pass
