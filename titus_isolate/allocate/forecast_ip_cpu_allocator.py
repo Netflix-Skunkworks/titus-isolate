@@ -94,6 +94,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
             self.__rebalance_failure_count += 1
             return cpu
 
+    def get_name(self) -> str:
+        return self.__class__.__name__
+
     def __get_cpu_usage_predictor(self):
         return self.__cpu_usage_predictor_manager.get_predictor()
 

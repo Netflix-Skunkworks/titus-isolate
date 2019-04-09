@@ -27,6 +27,9 @@ class NoopResetCpuAllocator(CpuAllocator):
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
         return cpu
 
+    def get_name(self) -> str:
+        return self.__class__.__name__
+
     def set_registry(self, registry):
         pass
 

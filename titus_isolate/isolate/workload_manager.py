@@ -176,10 +176,7 @@ class WorkloadManager(MetricsReporter):
         return self.__allocator_call_duration_sum_secs
 
     def get_allocator_name(self):
-        if isinstance(self.__cpu_allocator, FallbackCpuAllocator):
-            return self.__cpu_allocator.get_primary_allocator().__class__.__name__
-
-        return self.__cpu_allocator.__class__.__name__
+        return self.__cpu_allocator.get_name()
 
     def set_registry(self, registry):
         self.__reg = registry

@@ -37,6 +37,9 @@ class GreedyCpuAllocator(CpuAllocator):
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage) -> Cpu:
         return rebalance(cpu, workloads, self.__free_thread_provider)
 
+    def get_name(self) -> str:
+        return self.__class__.__name__
+
     def __assign_threads(self, cpu, workload):
         thread_count = workload.get_thread_count()
         claimed_threads = []

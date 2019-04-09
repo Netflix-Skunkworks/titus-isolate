@@ -46,5 +46,12 @@ class CpuAllocator(abc.ABC, MetricsReporter):
         """
         pass
 
+    @abc.abstractmethod
+    def get_name(self) -> str:
+        """
+        This method returns the name of the allocator.  It is notably used to tag metrics.
+        :return:
+        """
+
     def str(self):
         return self.__class__.__name__
