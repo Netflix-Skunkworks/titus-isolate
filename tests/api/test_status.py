@@ -1,11 +1,13 @@
 import json
+import logging
 import unittest
 import uuid
 
+from tests.allocate.test_allocate import TestWorkloadMonitorManager
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import MockEventProvider
-from tests.utils import get_test_workload
+from tests.utils import get_test_workload, config_logs
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.api import status
 from titus_isolate.api.status import get_workloads, get_violations, get_wm_status, get_isolated_workload_ids, \
@@ -16,7 +18,11 @@ from titus_isolate.event.event_manager import EventManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT
-from titus_isolate.utils import set_config_manager, set_workload_manager, set_event_manager
+from titus_isolate.utils import set_config_manager, set_workload_manager, set_event_manager, \
+    set_workload_monitor_manager
+
+config_logs(logging.DEBUG)
+set_workload_monitor_manager(TestWorkloadMonitorManager())
 
 
 class TestStatus(unittest.TestCase):
