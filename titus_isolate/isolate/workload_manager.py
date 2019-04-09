@@ -127,7 +127,7 @@ class WorkloadManager(MetricsReporter):
     def __apply_cpuset_updates(self, old_cpu, new_cpu):
         updates = get_updates(old_cpu, new_cpu)
         for workload_id, thread_ids in updates.items():
-            log.info("updating workload: '{}' to '{}'".format(workload_id, thread_ids))
+            log.info("updating workload: '{}' to {} threads: {}".format(workload_id, len(thread_ids), thread_ids))
             self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
 
         return len(updates) > 0

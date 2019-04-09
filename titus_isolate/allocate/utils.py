@@ -6,12 +6,27 @@ from titus_isolate import log
 from titus_isolate.config.constants import MODEL_BUCKET_FORMAT_STR, MODEL_BUCKET_PREFIX, \
     DEFAULT_MODEL_BUCKET_PREFIX, MODEL_BUCKET_LEAF, DEFAULT_MODEL_BUCKET_LEAF, MODEL_PREFIX_FORMAT_STR
 from titus_isolate.config.utils import get_required_property
+from titus_isolate.event.constants import BURST
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.package import Package
 from titus_isolate.model.processor.thread import Thread
+from titus_isolate.model.utils import is_thread_occupied
 from titus_isolate.model.workload import Workload
 from titus_isolate.utils import get_config_manager
+
+
+def get_burst_cores(cpu: Cpu, workload_map) -> list:
+    return [c for c in cpu.get_cores() if is_burst_core(c, workload_map)]
+
+
+def is_burst_core(core: Core, workload_map) -> bool:
+    is_burst = True
+    for t in core.get_threads():
+        if t.is_claimed() and not is_thread_occupied(t, workload_map, BURST):
+            is_burst = False
+
+    return is_burst
 
 
 def get_threads_body(cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> dict:

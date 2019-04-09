@@ -7,6 +7,7 @@ from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSol
 
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
+from titus_isolate.allocate.utils import get_burst_cores
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC, DEFAULT_ALPHA_LLC, ALPHA_L12, \
     DEFAULT_ALPHA_L12, ALPHA_ORDER, DEFAULT_ALPHA_ORDER, ALPHA_PREV, DEFAULT_ALPHA_PREV, BURST_MULTIPLIER, \
@@ -70,7 +71,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
-        return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
+        cpu = self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
+        self.__assign_burst_threads(cpu, workloads)
+        return cpu
 
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         for t in cpu.get_claimed_threads():
@@ -88,11 +91,13 @@ class ForecastIPCpuAllocator(CpuAllocator):
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         try:
-            return self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None)
+            cpu = self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None)
+            self.__assign_burst_threads(cpu, workloads)
         except:
             log.exception("Failed to rebalance, doing nothing.")
             self.__rebalance_failure_count += 1
-            return cpu
+
+        return cpu
 
     def __get_cpu_usage_predictor(self):
         return self.__cpu_usage_predictor_manager.get_predictor()
@@ -279,6 +284,16 @@ class ForecastIPCpuAllocator(CpuAllocator):
             self.__time_bound_call_count += 1
 
         return placement
+
+    @staticmethod
+    def __assign_burst_threads(cpu: Cpu, workloads: dict):
+        burst_cores = get_burst_cores(cpu, workloads)
+        burst_workload_ids = [w.get_id() for w in get_burst_workloads(workloads.values())]
+        for c in burst_cores:
+            for t in c.get_threads():
+                t.clear()
+                for w_id in burst_workload_ids:
+                    t.claim(w_id)
 
     def set_solver_max_runtime_secs(self, val):
         self.__solver_max_runtime_secs = val

@@ -38,6 +38,15 @@ def get_workload_from_event(event):
         workload_type=workload_type)
 
 
+def is_thread_occupied(thread: Thread, workload_map: dict, w_type: str) -> bool:
+    for w_id in thread.get_workload_ids():
+        if w_id in workload_map:
+            if workload_map[w_id].get_type() == w_type:
+                return True
+
+    return False
+
+
 def get_burst_workloads(workloads):
     return get_workloads_by_type(workloads, BURST)
 
