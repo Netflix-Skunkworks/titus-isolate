@@ -61,11 +61,11 @@ def report_cpu(cpu: Cpu, workloads):
         log.debug("Failed to retrieve workload monitor manager to report cpu.")
         return
 
-    usage = workload_monitor_manager.get_cpu_usage(600, 60)
+    usage = workload_monitor_manager.get_cpu_usage(3600, 60)
 
     serializable_usage = {}
     for w_id, usage in usage.items():
-        serializable_usage[w_id] = [float(u) for u in usage]
+        serializable_usage[w_id] = [str(u) for u in usage]
 
     serializable_workloads = {}
     for w in workloads:
