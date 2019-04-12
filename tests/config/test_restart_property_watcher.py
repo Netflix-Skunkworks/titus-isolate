@@ -19,7 +19,7 @@ class TestCpuAllocatorWatcher(unittest.TestCase):
         property_provider = TestPropertyProvider({})
         exit_handler = TestExitHandler()
         config_manager = ConfigManager(property_provider)
-        self.assertEqual(None, config_manager.get(CPU_ALLOCATOR))
+        self.assertEqual(None, config_manager.get_str(CPU_ALLOCATOR))
         watcher = RestartPropertyWatcher(config_manager, exit_handler, [CPU_ALLOCATOR])
 
         property_provider.map[CPU_ALLOCATOR] = GREEDY
@@ -30,7 +30,7 @@ class TestCpuAllocatorWatcher(unittest.TestCase):
         property_provider = TestPropertyProvider({})
         exit_handler = TestExitHandler()
         config_manager = ConfigManager(property_provider)
-        self.assertEqual(None, config_manager.get(CPU_ALLOCATOR))
+        self.assertEqual(None, config_manager.get_str(CPU_ALLOCATOR))
         watcher = RestartPropertyWatcher(config_manager, exit_handler, [CPU_ALLOCATOR])
 
         watcher.detect_changes()

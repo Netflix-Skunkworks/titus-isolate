@@ -35,7 +35,7 @@ def get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
         "uuid": str(uuid.uuid4()),
         "payload": {
             "ts": str(datetime.datetime.utcnow()),
-            "instance": get_config_manager().get('EC2_INSTANCE_ID'),
+            "instance": get_config_manager().get_str('EC2_INSTANCE_ID'),
             "cpu": cpu.to_dict(),
             "cpu_usage": usage,
             "workloads": workloads

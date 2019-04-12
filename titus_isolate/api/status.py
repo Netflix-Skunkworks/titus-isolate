@@ -15,7 +15,7 @@ app = Flask(__name__)
 @app.route('/isolate/<workload_id>')
 def isolate_workload(workload_id, timeout=None):
     if timeout is None:
-        timeout = int(get_config_manager().get(TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC))
+        timeout = get_config_manager().get_float(TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC)
 
     deadline = time.time() + timeout
     while time.time() < deadline:

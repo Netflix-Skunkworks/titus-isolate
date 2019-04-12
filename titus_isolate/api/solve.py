@@ -217,7 +217,7 @@ if __name__ != '__main__' and not is_testing():
     set_cpu_usage_predictor_manager(cpu_predictor_manager)
 
     log.info("Setting cpu_allocator config manager...")
-    alloc_str = config_manager.get(CPU_ALLOCATOR)
+    alloc_str = config_manager.get_str(CPU_ALLOCATOR)
     set_cpu_allocator(get_allocator(alloc_str, config_manager))
 
     log.info("Starting metrics reporting...")

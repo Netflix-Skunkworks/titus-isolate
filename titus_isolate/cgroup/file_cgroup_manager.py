@@ -81,8 +81,8 @@ class FileCgroupManager(CgroupManager):
 
     @staticmethod
     def __wait_for_files(container_name):
-        cgroup_file_wait_timeout = int(get_config_manager().get(WAIT_CGROUP_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC))
-        json_file_wait_timeout = int(get_config_manager().get(WAIT_JSON_FILE_KEY, DEFAULT_WAIT_JSON_FILE_SEC))
+        cgroup_file_wait_timeout = get_config_manager().get_float(WAIT_CGROUP_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC)
+        json_file_wait_timeout = get_config_manager().get_float(WAIT_JSON_FILE_KEY, DEFAULT_WAIT_JSON_FILE_SEC)
         wait_for_files(container_name, cgroup_file_wait_timeout, json_file_wait_timeout)
 
     def set_registry(self, registry):

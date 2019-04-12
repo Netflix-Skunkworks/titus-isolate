@@ -32,16 +32,16 @@ CPU_ALLOCATOR_NAME_TO_CLASS_MAP = {
 
 
 def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvider:
-    free_thread_provider_str = config_manager.get(FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER)
+    free_thread_provider_str = config_manager.get_str(FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER)
     free_thread_provider = None
 
     if free_thread_provider_str == EMPTY:
         free_thread_provider = EmptyFreeThreadProvider()
     elif free_thread_provider_str == THRESHOLD:
-        total_threshold = config_manager.get(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
-        total_duration_sec = config_manager.get(THRESHOLD_TOTAL_DURATION_SEC, DEFAULT_THRESHOLD_TOTAL_DURATION_SEC)
-        per_workload_threshold = config_manager.get(PER_WORKLOAD_THRESHOLD, DEFAULT_PER_WORKLOAD_THRESHOLD)
-        per_workload_duration_sec = config_manager.get(PER_WORKLOAD_DURATION_SEC, DEFAULT_PER_WORKLOAD_DURATION_SEC)
+        total_threshold = config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
+        total_duration_sec = config_manager.get_float(THRESHOLD_TOTAL_DURATION_SEC, DEFAULT_THRESHOLD_TOTAL_DURATION_SEC)
+        per_workload_threshold = config_manager.get_float(PER_WORKLOAD_THRESHOLD, DEFAULT_PER_WORKLOAD_THRESHOLD)
+        per_workload_duration_sec = config_manager.get_float(PER_WORKLOAD_DURATION_SEC, DEFAULT_PER_WORKLOAD_DURATION_SEC)
 
         free_thread_provider = ThresholdFreeThreadProvider(
             total_threshold=total_threshold,
@@ -57,8 +57,8 @@ def get_fallback_allocator(config_manager, hour=None) -> FallbackCpuAllocator:
     if hour is None:
         hour = datetime.datetime.utcnow().hour
 
-    primary_alloc_str = config_manager.get(CPU_ALLOCATOR)
-    secondary_alloc_str = config_manager.get(FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR)
+    primary_alloc_str = config_manager.get_str(CPU_ALLOCATOR)
+    secondary_alloc_str = config_manager.get_str(FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR)
 
     if primary_alloc_str == AB_TEST:
         primary_allocator = __get_ab_allocator(config_manager, hour)
@@ -85,8 +85,8 @@ def get_allocator(allocator_str, config_manager):
 
 
 def __get_ab_allocator(config_manager, hour):
-    a_allocator_str = config_manager.get(CPU_ALLOCATOR_A)
-    b_allocator_str = config_manager.get(CPU_ALLOCATOR_B)
+    a_allocator_str = config_manager.get_str(CPU_ALLOCATOR_A)
+    b_allocator_str = config_manager.get_str(CPU_ALLOCATOR_B)
 
     a_allocator = get_allocator(a_allocator_str, config_manager)
     b_allocator = get_allocator(b_allocator_str, config_manager)
@@ -105,7 +105,7 @@ def __get_ab_allocator(config_manager, hour):
 
 
 def get_ab_bucket(config_manager, hour):
-    instance_id = config_manager.get(EC2_INSTANCE_ID)
+    instance_id = config_manager.get_str(EC2_INSTANCE_ID)
     if instance_id is None:
         log.error("Failed to find: '{}' in config manager, is the environment variable set?".format(EC2_INSTANCE_ID))
         return "UNDEFINED"

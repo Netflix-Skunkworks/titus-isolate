@@ -38,11 +38,11 @@ class EventManager(MetricsReporter):
 
         config_manager = get_config_manager()
 
-        rebalance_frequency = int(config_manager.get(REBALANCE_FREQUENCY_KEY, DEFAULT_REBALANCE_FREQUENCY))
+        rebalance_frequency = config_manager.get_float(REBALANCE_FREQUENCY_KEY, DEFAULT_REBALANCE_FREQUENCY)
         if rebalance_frequency > 0:
             schedule.every(rebalance_frequency).seconds.do(self.__rebalance)
 
-        reconcile_frequency = int(config_manager.get(RECONCILE_FREQUENCY_KEY, DEFAULT_RECONCILE_FREQUENCY))
+        reconcile_frequency = config_manager.get_float(RECONCILE_FREQUENCY_KEY, DEFAULT_RECONCILE_FREQUENCY)
         if reconcile_frequency > 0:
             schedule.every(reconcile_frequency).seconds.do(self.__reconcile)
 

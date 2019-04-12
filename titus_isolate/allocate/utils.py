@@ -102,10 +102,10 @@ def get_cpu_model_bucket_name():
 
 def get_cpu_model_prefix_name():
     config_manager = get_config_manager()
-    prefix = config_manager.get(MODEL_BUCKET_PREFIX, DEFAULT_MODEL_BUCKET_PREFIX)
-    leaf = config_manager.get(MODEL_BUCKET_LEAF, DEFAULT_MODEL_BUCKET_LEAF)
+    prefix = config_manager.get_str(MODEL_BUCKET_PREFIX, DEFAULT_MODEL_BUCKET_PREFIX)
+    leaf = config_manager.get_str(MODEL_BUCKET_LEAF, DEFAULT_MODEL_BUCKET_LEAF)
 
-    format_str = get_config_manager().get(MODEL_PREFIX_FORMAT_STR)
+    format_str = get_config_manager().get_str(MODEL_PREFIX_FORMAT_STR)
     if format_str is None:
         return None
 

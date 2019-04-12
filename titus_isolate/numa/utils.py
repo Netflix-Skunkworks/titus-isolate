@@ -11,9 +11,9 @@ NUMA_BALANCING_PATH = '/proc/sys/kernel/numa_balancing'
 def update_numa_balancing(workload: Workload, cpu: Cpu):
     try:
         config_manager = get_config_manager()
-        dynamic_numa_balancing_enabled = bool(config_manager.get(
+        dynamic_numa_balancing_enabled = config_manager.get_bool(
             TITUS_ISOLATE_DYNAMIC_NUMA_BALANCING,
-            DEFAULT_TITUS_ISOLATE_DYNAMIC_NUMA_BALANCING))
+            DEFAULT_TITUS_ISOLATE_DYNAMIC_NUMA_BALANCING)
 
         if not dynamic_numa_balancing_enabled:
             enable_numa_balancing()

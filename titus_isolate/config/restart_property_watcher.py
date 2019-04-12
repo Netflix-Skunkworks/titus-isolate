@@ -22,7 +22,7 @@ class RestartPropertyWatcher:
 
         self.__original_properties = {}
         for p in properties:
-            self.__original_properties[p] = config_manager.get(p)
+            self.__original_properties[p] = config_manager.get_str(p)
 
         self.__original_primary_allocator_name =\
             get_fallback_allocator(config_manager).get_primary_allocator().__class__.__name__
@@ -40,7 +40,7 @@ class RestartPropertyWatcher:
     def __detect_property_changes(self):
         for p in self.__properties:
             original_value = self.__original_properties[p]
-            curr_value = self.__config_manager.get(p)
+            curr_value = self.__config_manager.get_str(p)
             log.debug("property: '{}' original: '{}' current: '{}'".format(p, original_value, curr_value))
 
             if original_value != curr_value:
