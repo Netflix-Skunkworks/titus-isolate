@@ -59,7 +59,7 @@ class KeystoneEventLogManager(MetricsReporter):
         config_manager = get_config_manager()
         region = config_manager.get_region()
         env = config_manager.get_environment()
-        format_str = config_manager.get(EVENT_LOG_FORMAT_STR)
+        format_str = config_manager.get_str(EVENT_LOG_FORMAT_STR)
         stream = 'titus_isolate'
 
         self.__address = format_str.format(region, env, stream)

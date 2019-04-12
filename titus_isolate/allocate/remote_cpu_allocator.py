@@ -14,8 +14,8 @@ class RemoteCpuAllocator(CpuAllocator):
     def __init__(self, free_thread_provider):
         config_manager = get_config_manager()
 
-        self.__url = config_manager.get(REMOTE_ALLOCATOR_URL, "http://localhost:7501")
-        self.__solver_max_runtime_secs = 2 * config_manager.get(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
+        self.__url = config_manager.get_str(REMOTE_ALLOCATOR_URL, "http://localhost:7501")
+        self.__solver_max_runtime_secs = config_manager.get_float(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
         self.__headers = {'Content-Type': "application/json"}
         self.__reg = None
 

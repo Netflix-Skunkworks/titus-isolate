@@ -50,19 +50,19 @@ class ForecastIPCpuAllocator(CpuAllocator):
         self.__time_bound_call_count = 0
         self.__rebalance_failure_count = 0
         self.__ip_solver_params = IPSolverParameters(
-            alpha_nu=config_manager.get(ALPHA_NU, DEFAULT_ALPHA_NU),
-            alpha_llc=config_manager.get(ALPHA_LLC, DEFAULT_ALPHA_LLC),
-            alpha_l12=config_manager.get(ALPHA_L12, DEFAULT_ALPHA_L12),
-            alpha_order=config_manager.get(ALPHA_ORDER, DEFAULT_ALPHA_ORDER),
-            alpha_prev=config_manager.get(ALPHA_PREV, DEFAULT_ALPHA_PREV),
-            burst_multiplier=config_manager.get(BURST_MULTIPLIER, DEFAULT_BURST_MULTIPLIER),
-            max_burst_pool_increase_ratio=config_manager.get(MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO),
-            burst_core_colloc_usage_thresh=config_manager.get(BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH),
-            weight_cpu_use_burst=config_manager.get(WEIGHT_CPU_USE_BURST, DEFAULT_WEIGHT_CPU_USE_BURST))
+            alpha_nu=config_manager.get_float(ALPHA_NU, DEFAULT_ALPHA_NU),
+            alpha_llc=config_manager.get_float(ALPHA_LLC, DEFAULT_ALPHA_LLC),
+            alpha_l12=config_manager.get_float(ALPHA_L12, DEFAULT_ALPHA_L12),
+            alpha_order=config_manager.get_float(ALPHA_ORDER, DEFAULT_ALPHA_ORDER),
+            alpha_prev=config_manager.get_float(ALPHA_PREV, DEFAULT_ALPHA_PREV),
+            burst_multiplier=config_manager.get_float(BURST_MULTIPLIER, DEFAULT_BURST_MULTIPLIER),
+            max_burst_pool_increase_ratio=config_manager.get_float(MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO),
+            burst_core_colloc_usage_thresh=config_manager.get_float(BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH),
+            weight_cpu_use_burst=config_manager.get_float(WEIGHT_CPU_USE_BURST, DEFAULT_WEIGHT_CPU_USE_BURST))
 
-        self.__solver_max_runtime_secs = float(config_manager.get(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME))
-        self.__solver_name = config_manager.get(MIP_SOLVER, DEFAULT_MIP_SOLVER)
-        self.__solver_mip_gap = config_manager.get(RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP)
+        self.__solver_max_runtime_secs = config_manager.get_float(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
+        self.__solver_name = config_manager.get_str(MIP_SOLVER, DEFAULT_MIP_SOLVER)
+        self.__solver_mip_gap = config_manager.get_float(RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP)
         self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
         self.__config_manager = config_manager
         self.__cnt_rebalance_calls = 0
@@ -122,13 +122,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
         # this will predict against the new or deleted workload too if it's static
         predicted_usage_static, predicted_usage_burst = self.__predict_usage(workloads, cpu_usage)
         cu_vector = self.__get_requested_cu_vector(cpu, workload_id, workloads, curr_ids_per_workload, is_add)
-
-        # TODO: (maybe?) add burst pool current placement to curr_placement_vectors_static
-
-        log.debug("workloads: {}".format(list(workloads.keys())))
-        log.debug("cu_vector: {}".format(cu_vector))
-        log.debug("predicted_usage_static: {}".format(predicted_usage_static))
-        log.debug("predicted_usage_burst: {}".format(predicted_usage_burst))
 
         cpu = self.__compute_apply_placement(
             cpu,

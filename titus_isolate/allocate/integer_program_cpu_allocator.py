@@ -20,7 +20,7 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         self.__cache = {}
         self.__time_bound_call_count = 0
 
-        self.__solver_max_runtime_secs = get_config_manager().get(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
+        self.__solver_max_runtime_secs = get_config_manager().get_float(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
         self.__free_thread_provider = free_thread_provider
 
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
