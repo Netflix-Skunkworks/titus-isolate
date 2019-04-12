@@ -3,6 +3,7 @@ import time
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
+from tests.test_event_log_manager import TestEventLogManager
 from titus_isolate import LOG_FMT_STRING, log
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
@@ -82,7 +83,7 @@ class TestContext:
     def __init__(self, cpu=None, allocator=IntegerProgramCpuAllocator()):
         if cpu is None:
             cpu = get_cpu()
-        self.__workload_manager = WorkloadManager(cpu, MockCgroupManager(), allocator)
+        self.__workload_manager = WorkloadManager(cpu, MockCgroupManager(), allocator, TestEventLogManager())
         self.__create_event_handler = CreateEventHandler(self.__workload_manager)
         self.__free_event_handler = FreeEventHandler(self.__workload_manager)
         self.__rebalance_event_handler = RebalanceEventHandler(self.__workload_manager)

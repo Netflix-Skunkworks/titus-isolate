@@ -1,10 +1,9 @@
 import copy
-from threading import Lock, Thread
+from threading import Lock
 import time
 
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
@@ -17,7 +16,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
     UNALLOCATED_SIZE_KEY, REBALANCED_KEY
-from titus_isolate.metrics.event_log import report_cpu
+from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import visualize_cpu_comparison
@@ -27,7 +26,12 @@ from titus_isolate.utils import get_workload_monitor_manager
 
 class WorkloadManager(MetricsReporter):
 
-    def __init__(self, cpu: Cpu, cgroup_manager: CgroupManager, cpu_allocator: CpuAllocator):
+    def __init__(
+            self,
+            cpu: Cpu,
+            cgroup_manager: CgroupManager,
+            cpu_allocator: CpuAllocator,
+            event_log_manager: EventLogManager):
 
         self.__reg = None
         self.__lock = Lock()
@@ -44,6 +48,7 @@ class WorkloadManager(MetricsReporter):
         self.__cpu = cpu
         self.__cgroup_manager = cgroup_manager
         self.__wmm = get_workload_monitor_manager()
+        self.__event_log_manager = event_log_manager
         self.__workloads = {}
 
         log.info("Created workload manager")
@@ -182,15 +187,16 @@ class WorkloadManager(MetricsReporter):
         self.__reg = registry
         self.__cpu_allocator.set_registry(registry)
         self.__cgroup_manager.set_registry(registry)
+        self.__event_log_manager.set_registry(registry)
 
     def __report_cpu_state(self, old_cpu, new_cpu):
         log.info(visualize_cpu_comparison(old_cpu, new_cpu))
-        Thread(target=report_cpu, args=[new_cpu, self.get_workload_map_copy().values()]).start()
+        self.__event_log_manager.report_cpu(new_cpu, list(self.get_workload_map_copy().values()))
 
     def report_metrics(self, tags):
         cpu = self.get_cpu_copy()
         workload_map = self.get_workload_map_copy()
-        Thread(target=report_cpu, args=[cpu, workload_map.values()]).start()
+        self.__event_log_manager.report_cpu(cpu, list(workload_map.values()))
 
         self.__reg.gauge(RUNNING, tags).set(1)
 
@@ -220,3 +226,4 @@ class WorkloadManager(MetricsReporter):
         # Have the sub-components report metrics
         self.__cpu_allocator.report_metrics(tags)
         self.__cgroup_manager.report_metrics(tags)
+        self.__event_log_manager.report_metrics(tags)
