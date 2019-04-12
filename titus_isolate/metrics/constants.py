@@ -21,6 +21,10 @@ ISOLATED_WORKLOAD_COUNT = 'titus-isolate.isolatedWorkloadCount'
 PACKAGE_VIOLATIONS_KEY = 'titus-isolate.crossPackageViolations'
 CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
 
+EVENT_LOG_SUCCESS = 'titus-isolate.eventLogSuccessCount'
+EVENT_LOG_RETRY = 'titus-isolate.eventLogRetryCount'
+EVENT_LOG_FAILURE = 'titus-isolate.eventLogFailureCount'
+
 ALLOCATED_SIZE_KEY = 'titus-isolate.allocatedSize'
 UNALLOCATED_SIZE_KEY = 'titus-isolate.unallocatedSize'
 STATIC_ALLOCATED_SIZE_KEY = 'titus-isolate.staticAllocatedSize'

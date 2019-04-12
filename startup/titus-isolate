@@ -20,6 +20,7 @@ from titus_isolate.event.utils import get_current_workloads
 from titus_isolate.isolate.reconciler import Reconciler
 from titus_isolate.isolate.utils import get_fallback_allocator
 from titus_isolate.isolate.workload_manager import WorkloadManager
+from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
@@ -67,7 +68,8 @@ def main(admin_port):
     workload_manager = WorkloadManager(
         cpu=cpu,
         cgroup_manager=cgroup_manager,
-        cpu_allocator=cpu_allocator)
+        cpu_allocator=cpu_allocator,
+        event_log_manager=KeystoneEventLogManager())
     set_workload_manager(workload_manager)
 
     # Setup the event handlers
