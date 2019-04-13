@@ -37,6 +37,7 @@ class WorkloadManager(MetricsReporter):
         self.__lock = Lock()
 
         self.__cpu_allocator = cpu_allocator
+        self.__cpu_allocator.set_event_log_manager(event_log_manager)
 
         self.__error_count = 0
         self.__added_count = 0
@@ -191,12 +192,10 @@ class WorkloadManager(MetricsReporter):
 
     def __report_cpu_state(self, old_cpu, new_cpu):
         log.info(visualize_cpu_comparison(old_cpu, new_cpu))
-        self.__event_log_manager.report_cpu(new_cpu, list(self.get_workload_map_copy().values()))
 
     def report_metrics(self, tags):
         cpu = self.get_cpu_copy()
         workload_map = self.get_workload_map_copy()
-        self.__event_log_manager.report_cpu(cpu, list(workload_map.values()))
 
         self.__reg.gauge(RUNNING, tags).set(1)
 

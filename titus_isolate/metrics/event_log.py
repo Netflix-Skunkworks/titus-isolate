@@ -30,11 +30,10 @@ def get_event_msg(event):
     }
 
 
-def get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
+def __get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
     return {
         "uuid": str(uuid.uuid4()),
         "payload": {
-            "ts": str(datetime.datetime.utcnow()),
             "instance": get_config_manager().get_str('EC2_INSTANCE_ID'),
             "cpu": cpu.to_dict(),
             "cpu_usage": usage,
@@ -43,7 +42,7 @@ def get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
     }
 
 
-def get_cpu_msg(cpu: Cpu, workloads: list) -> dict:
+def get_cpu_event(cpu: Cpu, workloads: list) -> dict:
     workload_monitor_manager = get_workload_monitor_manager()
     if workload_monitor_manager is None:
         raise EventException("Failed to retrieve workload monitor manager to report cpu.")
@@ -58,7 +57,7 @@ def get_cpu_msg(cpu: Cpu, workloads: list) -> dict:
     for w in workloads:
         serializable_workloads[w.get_id()] = w.to_dict()
 
-    return get_event_msg(get_cpu_event(cpu, serializable_usage, serializable_workloads))
+    return __get_cpu_event(cpu, serializable_usage, serializable_workloads)
 
 
 class EventException(Exception):
