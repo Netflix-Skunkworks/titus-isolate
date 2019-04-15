@@ -2,6 +2,7 @@ from datetime import datetime as dt
 from collections import defaultdict
 import copy
 from math import ceil, floor
+import time
 
 from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSolverParameters
 
@@ -268,21 +269,49 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         log.info("Using solver: {}".format(self.__solver_name))
 
-        placement, status = optimize_ip(
-            requested_units,
-            burst_pool_size_req,
-            num_threads,
-            len(cpu.get_packages()),
-            previous_allocation=current_placement,
-            use_per_workload=predicted_usage_static,
-            solver_params=ip_params,
-            verbose=False,
-            max_runtime_secs=self.__solver_max_runtime_secs,
-            mip_gap=self.__solver_mip_gap,
-            solver=self.__solver_name)
+        num_packages = len(cpu.get_packages())
 
-        if status == IP_SOLUTION_TIME_BOUND:
-            self.__time_bound_call_count += 1
+        logged_dict = {
+            'ip_solver_call_args': {
+                "requested_units": [int(e) for e in requested_units],
+                "burst_pool_size_req": burst_pool_size_req,
+                "num_threads": num_threads,
+                "num_packages": num_packages,
+                "previous_allocation": [[i for i, e in enumerate(v) if e == 1] for v in current_placement],
+                "use_per_workload": predicted_usage_static,
+                "weight_cpu_use_burst": ip_params.weight_cpu_use_burst,
+                "max_burst_pool_incr_ratio": ip_params.max_burst_pool_increase_ratio
+            }
+        }
+
+        try:
+            start_time = time.time()
+            placement, status = optimize_ip(
+                requested_units,
+                burst_pool_size_req,
+                num_threads,
+                num_packages,
+                previous_allocation=current_placement,
+                use_per_workload=predicted_usage_static,
+                solver_params=ip_params,
+                verbose=False,
+                max_runtime_secs=self.__solver_max_runtime_secs,
+                mip_gap=self.__solver_mip_gap,
+                solver=self.__solver_name)
+            stop_time = time.time()
+            logged_dict['ip_solver_call_duration_secs'] = stop_time - start_time
+            logged_dict['ip_success'] = 1
+
+            if status == IP_SOLUTION_TIME_BOUND:
+                self.__time_bound_call_count += 1
+        except:
+            logged_dict['ip_success'] = 0
+
+        from titus_isolate.metrics.event_log import get_msg_ctx
+        msg = get_msg_ctx()
+        for k,v in logged_dict.items():
+            msg['payload'][k] = v
+        self.__event_log_manager.report_event(msg)
 
         return placement
 
