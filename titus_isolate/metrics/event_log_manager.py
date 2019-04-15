@@ -6,5 +6,5 @@ from titus_isolate.metrics.metrics_reporter import MetricsReporter
 class EventLogManager(MetricsReporter):
 
     @abstractmethod
-    def report_event(self, event: dict):
+    def report_event(self, payload: dict):
         pass

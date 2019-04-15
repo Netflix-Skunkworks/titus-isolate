@@ -31,7 +31,7 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         if workloads[workload_id].get_type() == STATIC:
             self.__assign_threads(cpu, workload_id, workloads)
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage)
         return cpu
 
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
@@ -41,12 +41,12 @@ class IntegerProgramCpuAllocator(CpuAllocator):
             self.__free_threads(cpu, workload_id, workloads)
         burst_workloads = [w for w in burst_workloads if w.get_id() != workload_id]
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage)
         return cpu
 
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
         cpu = rebalance(cpu, workloads, self.__free_thread_provider)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage)
         return cpu
 
     def get_name(self) -> str:

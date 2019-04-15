@@ -1,5 +1,3 @@
-import datetime
-import os
 import socket
 import uuid
 
@@ -44,6 +42,18 @@ def __get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
     }
 
 
+def get_cpu_event(cpu: Cpu, workloads: list, cpu_usage: dict) -> dict:
+    serializable_usage = {}
+    for w_id, usage in cpu_usage.items():
+        serializable_usage[w_id] = [str(u) for u in usage]
+
+    serializable_workloads = {}
+    for w in workloads:
+        serializable_workloads[w.get_id()] = w.to_dict()
+
+    return __get_cpu_event(cpu, serializable_usage, serializable_workloads)
+
+
 def get_msg_ctx():
     cm = get_config_manager()
     return {
@@ -53,24 +63,6 @@ def get_msg_ctx():
             "region": cm.get_str('EC2_REGION')
         }
     }
-
-
-def get_cpu_event(cpu: Cpu, workloads: list) -> dict:
-    workload_monitor_manager = get_workload_monitor_manager()
-    if workload_monitor_manager is None:
-        raise EventException("Failed to retrieve workload monitor manager to report cpu.")
-
-    usage = workload_monitor_manager.get_cpu_usage(3600, 60)
-
-    serializable_usage = {}
-    for w_id, usage in usage.items():
-        serializable_usage[w_id] = [str(u) for u in usage]
-
-    serializable_workloads = {}
-    for w in workloads:
-        serializable_workloads[w.get_id()] = w.to_dict()
-
-    return __get_cpu_event(cpu, serializable_usage, serializable_workloads)
 
 
 class EventException(Exception):

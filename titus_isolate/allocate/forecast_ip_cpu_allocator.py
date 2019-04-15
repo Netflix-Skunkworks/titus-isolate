@@ -74,24 +74,24 @@ class ForecastIPCpuAllocator(CpuAllocator):
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         cpu = self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage)
         return cpu
 
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         for t in cpu.get_claimed_threads():
             t.free(workload_id)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage)
         return cpu
 
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
-        def __complete_rebalance(cpu: Cpu, workloads: dict):
-            self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+        def __complete_rebalance():
+            self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage)
             return cpu
 
         self.__cnt_rebalance_calls += 1
 
         if len(workloads) == 0:
-            return __complete_rebalance(cpu, workloads)
+            return __complete_rebalance()
 
         log.info("Rebalancing with predictions...")
         # slow path, predict and adjust
@@ -99,11 +99,11 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         try:
             cpu = self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None)
-            return __complete_rebalance(cpu, workloads)
+            return __complete_rebalance()
         except:
             log.exception("Failed to rebalance, doing nothing.")
             self.__rebalance_failure_count += 1
-            return __complete_rebalance(cpu, workloads)
+            return __complete_rebalance()
 
     def get_name(self) -> str:
         return self.__class__.__name__
