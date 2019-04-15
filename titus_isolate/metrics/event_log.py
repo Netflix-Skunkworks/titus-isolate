@@ -42,6 +42,17 @@ def __get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
     }
 
 
+def get_msg_ctx():
+    cm = get_config_manager()
+    return {
+        "uuid": str(uuid.uuid4()),
+        "payload": {
+            "instance": cm.get_str('EC2_INSTANCE_ID'),
+            "region": cm.get_str('EC2_REGION')
+        }
+    }
+
+
 def get_cpu_event(cpu: Cpu, workloads: list, cpu_usage: dict) -> dict:
     serializable_usage = {}
     for w_id, usage in cpu_usage.items():
