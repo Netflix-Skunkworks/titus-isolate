@@ -1,5 +1,3 @@
-import datetime
-import os
 import socket
 import uuid
 
@@ -42,15 +40,9 @@ def __get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
     }
 
 
-def get_cpu_event(cpu: Cpu, workloads: list) -> dict:
-    workload_monitor_manager = get_workload_monitor_manager()
-    if workload_monitor_manager is None:
-        raise EventException("Failed to retrieve workload monitor manager to report cpu.")
-
-    usage = workload_monitor_manager.get_cpu_usage(3600, 60)
-
+def get_cpu_event(cpu: Cpu, workloads: list, cpu_usage: dict) -> dict:
     serializable_usage = {}
-    for w_id, usage in usage.items():
+    for w_id, usage in cpu_usage.items():
         serializable_usage[w_id] = [str(u) for u in usage]
 
     serializable_workloads = {}

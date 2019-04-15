@@ -15,6 +15,8 @@ from titus_isolate.isolate.utils import get_allocator
 from titus_isolate.metrics.constants import SOLVER_GET_CPU_ALLOCATOR_SUCCESS, SOLVER_GET_CPU_ALLOCATOR_FAILURE, \
     SOLVER_ASSIGN_THREADS_SUCCESS, SOLVER_ASSIGN_THREADS_FAILURE, SOLVER_FREE_THREADS_SUCCESS, \
     SOLVER_FREE_THREADS_FAILURE, SOLVER_REBALANCE_SUCCESS, SOLVER_REBALANCE_FAILURE
+from titus_isolate.metrics.event_log_manager import EventLogManager
+from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
@@ -218,8 +220,10 @@ if __name__ != '__main__' and not is_testing():
 
     log.info("Setting cpu_allocator config manager...")
     alloc_str = config_manager.get_str(CPU_ALLOCATOR)
-    set_cpu_allocator(get_allocator(alloc_str, config_manager))
+    cpu_allocator = get_allocator(alloc_str, config_manager)
+    cpu_allocator.set_event_log_manager(KeystoneEventLogManager())
+    set_cpu_allocator(cpu_allocator)
 
     log.info("Starting metrics reporting...")
-    MetricsManager([SolverMetricsReporter()])
+    MetricsManager([SolverMetricsReporter(), cpu_allocator])
     start_periodic_scheduling()

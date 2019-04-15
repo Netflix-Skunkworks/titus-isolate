@@ -59,12 +59,12 @@ class CpuAllocator(abc.ABC, MetricsReporter, EventReporter):
         pass
 
     @staticmethod
-    def report_cpu_event(event_log_manager: EventLogManager, cpu: Cpu, workloads: list):
+    def report_cpu_event(event_log_manager: EventLogManager, cpu: Cpu, workloads: list, cpu_usage: dict):
         if event_log_manager is None:
             log.warning("Event log manager is not set.")
             return
 
-        event_log_manager.report_event(get_cpu_event(cpu, workloads))
+        event_log_manager.report_event(get_cpu_event(cpu, workloads, cpu_usage))
 
     def str(self):
         return self.__class__.__name__
