@@ -31,13 +31,26 @@ def get_event_msg(event):
 
 
 def __get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
+    cm = get_config_manager()
     return {
         "uuid": str(uuid.uuid4()),
         "payload": {
-            "instance": get_config_manager().get_str('EC2_INSTANCE_ID'),
+            "instance": cm.get_str('EC2_INSTANCE_ID'),
+            "region": cm.get_str('EC2_REGION'),
             "cpu": cpu.to_dict(),
             "cpu_usage": usage,
             "workloads": workloads
+        }
+    }
+
+
+def get_msg_ctx():
+    cm = get_config_manager()
+    return {
+        "uuid": str(uuid.uuid4()),
+        "payload": {
+            "instance": cm.get_str('EC2_INSTANCE_ID'),
+            "region": cm.get_str('EC2_REGION')
         }
     }
 
