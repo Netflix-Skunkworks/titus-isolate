@@ -1,16 +1,17 @@
+import datetime
+import uuid
 from queue import Queue
 from threading import Thread
 
 from titus_isolate import log
 from titus_isolate.config.constants import EVENT_LOG_FORMAT_STR
 from titus_isolate.metrics.constants import EVENT_LOG_SUCCESS, EVENT_LOG_RETRY, EVENT_LOG_FAILURE
-from titus_isolate.metrics.event_log import get_cpu_msg, EventException, send_event_msg
-from titus_isolate.metrics.metrics_reporter import MetricsReporter
-from titus_isolate.model.processor.cpu import Cpu
+from titus_isolate.metrics.event_log import send_event_msg, get_event_msg
+from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.utils import get_config_manager
 
 
-class KeystoneEventLogManager(MetricsReporter):
+class KeystoneEventLogManager(EventLogManager):
 
     def __init__(self):
         self.__set_address()
@@ -24,10 +25,16 @@ class KeystoneEventLogManager(MetricsReporter):
         self.__processing_thread = Thread(target=self.__process_events)
         self.__processing_thread.start()
 
-    def report_cpu(self, cpu: Cpu, workloads: list):
+    def report_event(self, payload: dict):
         try:
-            self.__q.put_nowait(get_cpu_msg(cpu, workloads))
-        except EventException:
+            payload['ts'] = str(datetime.datetime.utcnow())
+            event = {
+                "uuid": str(uuid.uuid4()),
+                "payload": payload
+            }
+            msg = get_event_msg(event)
+            self.__q.put_nowait(msg)
+        except:
             self.__failed_msg_count += 1
             log.exception("Failed to report cpu change event for cpu: {} and workloads: {}".format(cpu, workloads))
 

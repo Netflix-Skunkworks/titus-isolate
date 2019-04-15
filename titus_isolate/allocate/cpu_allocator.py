@@ -1,10 +1,14 @@
 import abc
 
+from titus_isolate import log
+from titus_isolate.metrics.event_log import get_cpu_event
+from titus_isolate.metrics.event_log_manager import EventLogManager
+from titus_isolate.metrics.event_reporter import EventReporter
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 
 
-class CpuAllocator(abc.ABC, MetricsReporter):
+class CpuAllocator(abc.ABC, MetricsReporter, EventReporter):
 
     @abc.abstractmethod
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
@@ -52,6 +56,15 @@ class CpuAllocator(abc.ABC, MetricsReporter):
         This method returns the name of the allocator.  It is notably used to tag metrics.
         :return:
         """
+        pass
+
+    @staticmethod
+    def report_cpu_event(event_log_manager: EventLogManager, cpu: Cpu, workloads: list):
+        if event_log_manager is None:
+            log.warning("Event log manager is not set.")
+            return
+
+        event_log_manager.report_event(get_cpu_event(cpu, workloads))
 
     def str(self):
         return self.__class__.__name__

@@ -16,6 +16,7 @@ from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC
     RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP, MIP_SOLVER, DEFAULT_MIP_SOLVER
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT, FORECAST_REBALANCE_FAILURE_COUNT
+from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads
 from titus_isolate.model.utils import get_sorted_workloads
@@ -66,33 +67,42 @@ class ForecastIPCpuAllocator(CpuAllocator):
         self.__cpu_usage_predictor_manager = cpu_usage_predictor_manager
         self.__config_manager = config_manager
         self.__cnt_rebalance_calls = 0
+        self.__event_log_manager = None
 
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
-        return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
+        cpu = self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+        return cpu
 
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         for t in cpu.get_claimed_threads():
             t.free(workload_id)
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
         return cpu
 
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
+        def __complete_rebalance(cpu: Cpu, workloads: dict):
+            self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+            return cpu
+
         self.__cnt_rebalance_calls += 1
 
         if len(workloads) == 0:
-            return cpu
+            return __complete_rebalance(cpu, workloads)
 
         log.info("Rebalancing with predictions...")
         # slow path, predict and adjust
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         try:
-            return self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None)
+            cpu = self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None)
+            return __complete_rebalance(cpu, workloads)
         except:
             log.exception("Failed to rebalance, doing nothing.")
             self.__rebalance_failure_count += 1
-            return cpu
+            return __complete_rebalance(cpu, workloads)
 
     def get_name(self) -> str:
         return self.__class__.__name__
@@ -278,6 +288,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
     def set_solver_max_runtime_secs(self, val):
         self.__solver_max_runtime_secs = val
+
+    def set_event_log_manager(self, event_log_manager: EventLogManager):
+        self.__event_log_manager = event_log_manager
 
     def set_registry(self, registry):
         self.__reg = registry

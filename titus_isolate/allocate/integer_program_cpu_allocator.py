@@ -1,5 +1,6 @@
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.constants import DEFAULT_MAX_SOLVER_RUNTIME, MAX_SOLVER_RUNTIME
+from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.utils import get_config_manager
 from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
@@ -22,6 +23,7 @@ class IntegerProgramCpuAllocator(CpuAllocator):
 
         self.__solver_max_runtime_secs = get_config_manager().get_float(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
         self.__free_thread_provider = free_thread_provider
+        self.__event_log_manager = None
 
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         burst_workloads = get_burst_workloads(workloads.values())
@@ -29,6 +31,7 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         if workloads[workload_id].get_type() == STATIC:
             self.__assign_threads(cpu, workload_id, workloads)
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
         return cpu
 
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
@@ -38,10 +41,13 @@ class IntegerProgramCpuAllocator(CpuAllocator):
             self.__free_threads(cpu, workload_id, workloads)
         burst_workloads = [w for w in burst_workloads if w.get_id() != workload_id]
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
         return cpu
 
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
-        return rebalance(cpu, workloads, self.__free_thread_provider)
+        cpu = rebalance(cpu, workloads, self.__free_thread_provider)
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+        return cpu
 
     def get_name(self) -> str:
         return self.__class__.__name__
@@ -167,6 +173,9 @@ class IntegerProgramCpuAllocator(CpuAllocator):
 
     def set_solver_max_runtime_secs(self, val):
         self.__solver_max_runtime_secs = val
+
+    def set_event_log_manager(self, event_log_manager: EventLogManager):
+        self.__event_log_manager = event_log_manager
 
     def set_registry(self, registry):
         self.__reg = registry

@@ -1,6 +1,7 @@
 from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.event.constants import STATIC
+from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads, update_burst_workloads, rebalance
@@ -13,6 +14,7 @@ class GreedyCpuAllocator(CpuAllocator):
 
     def __init__(self, free_thread_provider: FreeThreadProvider = EmptyFreeThreadProvider()):
         self.__free_thread_provider = free_thread_provider
+        self.__event_log_manager = None
 
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
         burst_workloads = get_burst_workloads(workloads.values())
@@ -20,6 +22,8 @@ class GreedyCpuAllocator(CpuAllocator):
         if workloads[workload_id].get_type() == STATIC:
             self.__assign_threads(cpu, workloads[workload_id])
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
+
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
         return cpu
 
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
@@ -32,10 +36,13 @@ class GreedyCpuAllocator(CpuAllocator):
         burst_workloads = [w for w in burst_workloads if w.get_id() != workload_id]
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
 
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
         return cpu
 
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage) -> Cpu:
-        return rebalance(cpu, workloads, self.__free_thread_provider)
+        cpu = rebalance(cpu, workloads, self.__free_thread_provider)
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()))
+        return cpu
 
     def get_name(self) -> str:
         return self.__class__.__name__
@@ -78,6 +85,9 @@ class GreedyCpuAllocator(CpuAllocator):
                 entrypoint=workload.get_entrypoint(),
                 job_type=workload.get_job_type(),
                 workload_type=workload.get_type()))
+
+    def set_event_log_manager(self, event_log_manager: EventLogManager):
+        self.__event_log_manager = event_log_manager
 
     def set_registry(self, registry):
         pass
