@@ -284,6 +284,13 @@ class ForecastIPCpuAllocator(CpuAllocator):
             }
         }
 
+        def report_ip_call(d):
+            from titus_isolate.metrics.event_log import get_msg_ctx
+            msg = get_msg_ctx()
+            for k,v in d.items():
+                msg['payload'][k] = v
+            self.__event_log_manager.report_event(msg)
+
         try:
             start_time = time.time()
             placement, status = optimize_ip(
@@ -304,14 +311,12 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
             if status == IP_SOLUTION_TIME_BOUND:
                 self.__time_bound_call_count += 1
-        except:
-            logged_dict['ip_success'] = 0
+            report_ip_call(logged_dict)
 
-        from titus_isolate.metrics.event_log import get_msg_ctx
-        msg = get_msg_ctx()
-        for k,v in logged_dict.items():
-            msg['payload'][k] = v
-        self.__event_log_manager.report_event(msg)
+        except Exception as e:
+            logged_dict['ip_success'] = 0
+            report_ip_call(logged_dict)
+            raise e
 
         return placement
 
