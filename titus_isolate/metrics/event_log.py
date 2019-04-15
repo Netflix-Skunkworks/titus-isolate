@@ -5,7 +5,6 @@ import requests
 
 from titus_isolate import log
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.utils import get_workload_monitor_manager, get_config_manager
 
 
 def send_event_msg(msg, address):
@@ -28,11 +27,11 @@ def get_event_msg(event):
     }
 
 
-def __get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
+def __get_cpu_event(cpu: Cpu, usage: dict, workloads: dict, instance_id: str):
     return {
         "uuid": str(uuid.uuid4()),
         "payload": {
-            "instance": get_config_manager().get_str('EC2_INSTANCE_ID'),
+            "instance_id": instance_id,
             "cpu": cpu.to_dict(),
             "cpu_usage": usage,
             "workloads": workloads
@@ -40,7 +39,7 @@ def __get_cpu_event(cpu: Cpu, usage: dict, workloads: dict):
     }
 
 
-def get_cpu_event(cpu: Cpu, workloads: list, cpu_usage: dict) -> dict:
+def get_cpu_event(cpu: Cpu, workloads: list, cpu_usage: dict, instance_id: str) -> dict:
     serializable_usage = {}
     for w_id, usage in cpu_usage.items():
         serializable_usage[w_id] = [str(u) for u in usage]
@@ -49,12 +48,10 @@ def get_cpu_event(cpu: Cpu, workloads: list, cpu_usage: dict) -> dict:
     for w in workloads:
         serializable_workloads[w.get_id()] = w.to_dict()
 
-    return __get_cpu_event(cpu, serializable_usage, serializable_workloads)
+    return __get_cpu_event(cpu, serializable_usage, serializable_workloads, instance_id)
 
 
 class EventException(Exception):
 
     def __init__(self, msg):
         super().__init__(msg)
-
-

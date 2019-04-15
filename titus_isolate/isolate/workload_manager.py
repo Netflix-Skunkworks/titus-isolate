@@ -7,6 +7,7 @@ from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
+from titus_isolate.config.constants import EC2_INSTANCE_ID
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.metrics_utils import get_static_allocated_size, get_burst_allocated_size, \
     get_burst_request_size, get_oversubscribed_thread_count, get_allocated_size, get_unallocated_size
@@ -21,7 +22,7 @@ from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import visualize_cpu_comparison
 from titus_isolate.numa.utils import update_numa_balancing
-from titus_isolate.utils import get_workload_monitor_manager
+from titus_isolate.utils import get_workload_monitor_manager, get_config_manager
 
 
 class WorkloadManager(MetricsReporter):
@@ -35,6 +36,7 @@ class WorkloadManager(MetricsReporter):
 
         self.__reg = None
         self.__lock = Lock()
+        self.__instance_id = get_config_manager().get_str(EC2_INSTANCE_ID)
 
         self.__cpu_allocator = cpu_allocator
         self.__cpu_allocator.set_event_log_manager(event_log_manager)
@@ -74,7 +76,7 @@ class WorkloadManager(MetricsReporter):
             new_cpu = self.get_cpu_copy()
             workload_map = self.get_workload_map_copy()
             cpu_usage = self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
-            new_cpu = self.__cpu_allocator.rebalance(new_cpu, workload_map, cpu_usage)
+            new_cpu = self.__cpu_allocator.rebalance(new_cpu, workload_map, cpu_usage, self.__instance_id)
             self.__rebalanced_count += 1
             self.__update_state(new_cpu, workload_map)
             log.debug("Rebalanced")
@@ -103,7 +105,12 @@ class WorkloadManager(MetricsReporter):
         workload_map[workload.get_id()] = workload
 
         cpu_usage = self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
-        new_cpu = self.__cpu_allocator.assign_threads(new_cpu, workload.get_id(), workload_map, cpu_usage)
+        new_cpu = self.__cpu_allocator.assign_threads(
+            new_cpu,
+            workload.get_id(),
+            workload_map,
+            cpu_usage,
+            self.__instance_id)
         self.__update_state(new_cpu, workload_map)
 
     def __remove_workload(self, workload_id):
@@ -117,7 +124,12 @@ class WorkloadManager(MetricsReporter):
         workload = workload_map[workload_id]
 
         cpu_usage = self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
-        new_cpu = self.__cpu_allocator.free_threads(new_cpu, workload.get_id(), workload_map, cpu_usage)
+        new_cpu = self.__cpu_allocator.free_threads(
+            new_cpu,
+            workload.get_id(),
+            workload_map,
+            cpu_usage,
+            self.__instance_id)
         workload_map.pop(workload.get_id())
         self.__update_state(new_cpu, workload_map)
 

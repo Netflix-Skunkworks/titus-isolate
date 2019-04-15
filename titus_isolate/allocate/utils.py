@@ -14,9 +14,10 @@ from titus_isolate.model.workload import Workload
 from titus_isolate.utils import get_config_manager
 
 
-def get_threads_body(cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> dict:
+def get_threads_body(cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> dict:
     w_list = [w.to_dict() for w in workloads.values()]
     return {
+        "instance_id": instance_id,
         "cpu": cpu.to_dict(),
         "workload_id": workload_id,
         "workloads": w_list,
@@ -24,9 +25,10 @@ def get_threads_body(cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dic
     }
 
 
-def get_rebalance_body(cpu: Cpu, workloads: dict, cpu_usage: dict) -> dict:
+def get_rebalance_body(cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> dict:
     w_list = [w.to_dict() for w in workloads.values()]
     return {
+        "instance_id": instance_id,
         "cpu": cpu.to_dict(),
         "workloads": w_list,
         "cpu_usage": __get_serializable_cpu_usage(cpu_usage)
