@@ -65,17 +65,6 @@ def get_cpu_event(cpu: Cpu, workloads: list, cpu_usage: dict) -> dict:
     return __get_cpu_event(cpu, serializable_usage, serializable_workloads)
 
 
-def get_msg_ctx():
-    cm = get_config_manager()
-    return {
-        "uuid": str(uuid.uuid4()),
-        "payload": {
-            "instance": cm.get_str('EC2_INSTANCE_ID'),
-            "region": cm.get_str('EC2_REGION')
-        }
-    }
-
-
 class EventException(Exception):
 
     def __init__(self, msg):
