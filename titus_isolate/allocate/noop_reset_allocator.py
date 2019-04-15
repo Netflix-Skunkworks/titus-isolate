@@ -12,7 +12,7 @@ class NoopResetCpuAllocator(CpuAllocator):
     def get_cgroup_manager(self):
         return self.__cgroup_manager
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
+    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         thread_count = len(cpu.get_threads())
         thread_ids = list(range(thread_count))
 
@@ -21,10 +21,10 @@ class NoopResetCpuAllocator(CpuAllocator):
 
         return cpu
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
+    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         log.info("Ignoring attempt to free threads for workload: '{}'".format(workload_id))
 
-    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
+    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         return cpu
 
     def get_name(self) -> str:

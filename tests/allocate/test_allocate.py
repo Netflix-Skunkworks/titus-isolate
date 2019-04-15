@@ -4,7 +4,7 @@ import unittest
 import uuid
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.utils import config_logs, get_test_workload, get_threads_with_workload
+from tests.utils import config_logs, get_test_workload, get_threads_with_workload, DEFAULT_TEST_INSTANCE_ID
 from titus_isolate import log
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
@@ -74,7 +74,7 @@ class TestCpu(unittest.TestCase):
 
             w = get_test_workload(uuid.uuid4(), 1, STATIC)
 
-            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {})
+            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_INSTANCE_ID)
             log.info(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 1, len(cpu.get_empty_threads()))
             self.assertEqual(1, len(cpu.get_claimed_threads()))
@@ -88,7 +88,7 @@ class TestCpu(unittest.TestCase):
             cpu = get_cpu()
             w = get_test_workload(uuid.uuid4(), 2, STATIC)
 
-            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {})
+            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_INSTANCE_ID)
             log.info(cpu)
             self.assertEqual(2, len(cpu.get_claimed_threads()))
 
@@ -110,7 +110,7 @@ class TestCpu(unittest.TestCase):
         allocator = GreedyCpuAllocator()
         w = get_test_workload(uuid.uuid4(), 2, STATIC)
 
-        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {})
+        cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_INSTANCE_ID)
         self.assertEqual(2, len(cpu.get_claimed_threads()))
 
         # Expected core and threads
@@ -132,13 +132,14 @@ class TestCpu(unittest.TestCase):
             w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
             w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
 
-            cpu = allocator.assign_threads(cpu, w0.get_id(), {w0.get_id(): w0}, {})
+            cpu = allocator.assign_threads(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_INSTANCE_ID)
             cpu = allocator.assign_threads(cpu, w1.get_id(),
                                            {
                                                w0.get_id(): w0,
                                                w1.get_id(): w1
                                            },
-                                           {})
+                                           {},
+                                           DEFAULT_TEST_INSTANCE_ID)
             self.assertEqual(3, len(cpu.get_claimed_threads()))
 
             ids_per_socket = []
@@ -169,13 +170,14 @@ class TestCpu(unittest.TestCase):
         w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
         w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
 
-        cpu = allocator.assign_threads(cpu, w0.get_id(), {w0.get_id(): w0}, {})
+        cpu = allocator.assign_threads(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_INSTANCE_ID)
         cpu = allocator.assign_threads(cpu, w1.get_id(),
                                        {
                                            w0.get_id(): w0,
                                            w1.get_id(): w1
                                        },
-                                       {})
+                                       {},
+                                       DEFAULT_TEST_INSTANCE_ID)
         self.assertEqual(3, len(cpu.get_claimed_threads()))
 
         packages = cpu.get_packages()
@@ -208,7 +210,7 @@ class TestCpu(unittest.TestCase):
             cpu = get_cpu()
             w = get_test_workload(uuid.uuid4(), 10, STATIC)
 
-            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {})
+            cpu = allocator.assign_threads(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_INSTANCE_ID)
             self.assertEqual(10, len(cpu.get_claimed_threads()))
 
             threads_per_socket = []
@@ -246,7 +248,7 @@ class TestCpu(unittest.TestCase):
             workload_map = {}
             for w in workloads:
                 workload_map[w.get_id()] = w
-                cpu = allocator.assign_threads(cpu, w.get_id(), workload_map, {})
+                cpu = allocator.assign_threads(cpu, w.get_id(), workload_map, {}, DEFAULT_TEST_INSTANCE_ID)
                 log.debug("{}".format(cpu))
                 tot_req += w.get_thread_count()
                 self.assertEqual(tot_req, len(cpu.get_claimed_threads()))
@@ -293,7 +295,7 @@ class TestCpu(unittest.TestCase):
         workloads = [w0, w1, w2, w3]
         for w in workloads:
             workload_map[w.get_id()] = w
-            cpu = allocator.assign_threads(cpu, w.get_id(), workload_map, {})
+            cpu = allocator.assign_threads(cpu, w.get_id(), workload_map, {}, DEFAULT_TEST_INSTANCE_ID)
 
         self.assertEqual(0, len(cpu.get_empty_threads()))
 
@@ -313,12 +315,12 @@ class TestCpu(unittest.TestCase):
             workloads = {
                 w.get_id(): w
             }
-            cpu = allocator.assign_threads(cpu, w.get_id(), workloads, {})
+            cpu = allocator.assign_threads(cpu, w.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
             self.assertEqual(
                 DEFAULT_TOTAL_THREAD_COUNT - w.get_thread_count(),
                 len(cpu.get_empty_threads()))
 
-            cpu = allocator.free_threads(cpu, w.get_id(), workloads, {})
+            cpu = allocator.free_threads(cpu, w.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
     def test_free_cpu_3_workloads(self):
@@ -332,16 +334,16 @@ class TestCpu(unittest.TestCase):
             w2 = get_test_workload(789, 4, STATIC)
 
             workloads[w0.get_id()] = w0
-            cpu = allocator.assign_threads(cpu, w0.get_id(), workloads, {})
+            cpu = allocator.assign_threads(cpu, w0.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
 
             workloads[w1.get_id()] = w1
-            cpu = allocator.assign_threads(cpu, w1.get_id(), workloads, {})
+            cpu = allocator.assign_threads(cpu, w1.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
 
             workloads[w2.get_id()] = w2
-            cpu = allocator.assign_threads(cpu, w2.get_id(), workloads, {})
+            cpu = allocator.assign_threads(cpu, w2.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
             self.assertEqual(3 + 4 + 2, len(cpu.get_claimed_threads()))
 
-            allocator.free_threads(cpu, w1.get_id(), workloads, {})
+            allocator.free_threads(cpu, w1.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
             self.assertEqual(3 + 4, len(cpu.get_claimed_threads()))
 
             workload_ids_left = set()
@@ -368,30 +370,30 @@ class TestCpu(unittest.TestCase):
 
         workload = get_test_workload("a", 2, STATIC)
         workloads[workload.get_id()] = workload
-        cpu = allocator.assign_threads(cpu, workload.get_id(), workloads, {})
+        cpu = allocator.assign_threads(cpu, workload.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
         self.assertEqual(1, len(allocator._IntegerProgramCpuAllocator__cache))
 
         workload = get_test_workload("b", 2, STATIC)
         workloads[workload.get_id()] = workload
-        cpu = allocator.assign_threads(cpu, workload.get_id(), workloads, {})
+        cpu = allocator.assign_threads(cpu, workload.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
         self.assertEqual(2, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        cpu = allocator.free_threads(cpu, "b", workloads, {})
+        cpu = allocator.free_threads(cpu, "b", workloads, {}, DEFAULT_TEST_INSTANCE_ID)
         self.assertEqual(3, len(allocator._IntegerProgramCpuAllocator__cache))
         workloads.pop("b")
 
         workload = get_test_workload("c", 2, STATIC)
         workloads[workload.get_id()] = workload
-        cpu = allocator.assign_threads(cpu, workload.get_id(), workloads, {})
+        cpu = allocator.assign_threads(cpu, workload.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
         self.assertEqual(3, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        cpu = allocator.free_threads(cpu, "a", workloads, {})
+        cpu = allocator.free_threads(cpu, "a", workloads, {}, DEFAULT_TEST_INSTANCE_ID)
         self.assertEqual(4, len(allocator._IntegerProgramCpuAllocator__cache))
         workloads.pop("a")
 
         workload = get_test_workload("d", 2, STATIC)
         workloads[workload.get_id()] = workload
-        allocator.assign_threads(cpu, workload.get_id(), workloads, {})
+        allocator.assign_threads(cpu, workload.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
         self.assertEqual(5, len(allocator._IntegerProgramCpuAllocator__cache))
 
     def test_balance_forecast_ip(self):
@@ -402,9 +404,9 @@ class TestCpu(unittest.TestCase):
 
         allocator = forecast_ip_alloc_simple
 
-        cpu = allocator.assign_threads(cpu, "a", {"a": w1}, {})
-        cpu = allocator.assign_threads(cpu, "b", {"a": w1, "b": w2}, {})
-        cpu = allocator.rebalance(cpu, {"a": w1, "b": w2}, {})
+        cpu = allocator.assign_threads(cpu, "a", {"a": w1}, {}, DEFAULT_TEST_INSTANCE_ID)
+        cpu = allocator.assign_threads(cpu, "b", {"a": w1, "b": w2}, {}, DEFAULT_TEST_INSTANCE_ID)
+        cpu = allocator.rebalance(cpu, {"a": w1, "b": w2}, {}, DEFAULT_TEST_INSTANCE_ID)
 
         self.assertLessEqual(2 + 4, len(cpu.get_claimed_threads()))
 
@@ -413,7 +415,7 @@ class TestCpu(unittest.TestCase):
         self.assertLessEqual(4, len(w2t["b"]))  # burst got at least 4
 
         for _ in range(20):
-            cpu = allocator.rebalance(cpu, {"a": w1, "b": w2}, {})
+            cpu = allocator.rebalance(cpu, {"a": w1, "b": w2}, {}, DEFAULT_TEST_INSTANCE_ID)
 
         w2t = cpu.get_workload_ids_to_thread_ids()
         self.assertEqual(2, len(w2t["a"]))
@@ -425,14 +427,14 @@ class TestCpu(unittest.TestCase):
 
         w = get_test_workload("a", 1, BURST)
 
-        cpu = allocator.assign_threads(cpu, "a", {"a": w}, {})
+        cpu = allocator.assign_threads(cpu, "a", {"a": w}, {}, DEFAULT_TEST_INSTANCE_ID)
 
         original_burst_claim_sz = len(cpu.get_claimed_threads())
         # should at least consume all the cores:
         self.assertLessEqual(len(cpu.get_threads()) / 2, original_burst_claim_sz)
 
         w2 = get_test_workload("b", 3, STATIC)
-        cpu = allocator.assign_threads(cpu, "b", {"a": w, "b": w2}, {})
+        cpu = allocator.assign_threads(cpu, "b", {"a": w, "b": w2}, {}, DEFAULT_TEST_INSTANCE_ID)
 
         new_burst_claim_sz = len(get_threads_with_workload(cpu, w2.get_id()))
         self.assertLess(new_burst_claim_sz, original_burst_claim_sz)
@@ -446,8 +448,8 @@ class TestCpu(unittest.TestCase):
             for c in p.get_cores():
                 self.assertLess(0, sum(t.is_claimed() for t in c.get_threads()))
 
-        cpu = allocator.free_threads(cpu, "b", {"a": w, "b": w2}, {})
-        cpu = allocator.rebalance(cpu,  {"a": w}, {})
+        cpu = allocator.free_threads(cpu, "b", {"a": w, "b": w2}, {}, DEFAULT_TEST_INSTANCE_ID)
+        cpu = allocator.rebalance(cpu,  {"a": w}, {}, DEFAULT_TEST_INSTANCE_ID)
         self.assertEqual(original_burst_claim_sz, len(cpu.get_claimed_threads()))
 
     def test_forecast_ip_burst_pool_with_usage(self):
@@ -469,14 +471,14 @@ class TestCpu(unittest.TestCase):
         w_b = get_test_workload("static_b", 14, STATIC)
         w_c = get_test_workload("burst_c", 2, BURST)
 
-        cpu = allocator.assign_threads(cpu, "static_a", {"static_a": w_a}, {})
+        cpu = allocator.assign_threads(cpu, "static_a", {"static_a": w_a}, {}, DEFAULT_TEST_INSTANCE_ID)
 
-        cpu = allocator.assign_threads(cpu, "burst_c", {"static_a": w_a, "burst_c": w_c}, {})
+        cpu = allocator.assign_threads(cpu, "burst_c", {"static_a": w_a, "burst_c": w_c}, {}, DEFAULT_TEST_INSTANCE_ID)
         # with an aggressive burst pool expansion, burst should be collocated with static on cores:
         self.assertLess(40, len(cpu.get_claimed_threads()))
         num_burst_1 = len(cpu.get_workload_ids_to_thread_ids()["burst_c"])
 
-        cpu = allocator.assign_threads(cpu, "static_b", {"static_a": w_a, "static_b": w_b, "burst_c": w_c}, {})
+        cpu = allocator.assign_threads(cpu, "static_b", {"static_a": w_a, "static_b": w_b, "burst_c": w_c}, {}, DEFAULT_TEST_INSTANCE_ID)
         # burst should retract, and prefer collocation with b over a:
         num_burst_2 = len(cpu.get_workload_ids_to_thread_ids()["burst_c"])
         self.assertLessEqual(num_burst_2, num_burst_1)
