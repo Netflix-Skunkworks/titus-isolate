@@ -219,7 +219,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
             burst_pool_size_req,
             sum_burst_pred,
             curr_placement_vectors_static,
-            predicted_usage_static_vector)
+            predicted_usage_static_vector,
+            ordered_workload_ids_static,
+            ordered_workload_ids_burst)
 
         new_placement_vectors_static = new_placement_vectors[:-1] if burst_pool_size_req != 0 else new_placement_vectors
         new_placement_vector_burst = new_placement_vectors[-1] if burst_pool_size_req != 0 else None
@@ -251,7 +253,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
             burst_pool_size_req,
             sum_burst_pred,
             current_placement,
-            predicted_usage_static):
+            predicted_usage_static,
+            ordered_workload_ids_static,
+            ordered_workload_ids_burst):
 
         num_threads = len(cpu.get_threads())
 
@@ -271,25 +275,43 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         num_packages = len(cpu.get_packages())
 
+        sparse_prev_alloc = None
+        if current_placement is not None:
+            sparse_prev_alloc = [[i for i, e in enumerate(v) if e == 1] for v in current_placement]
+
+        use_per_workload = None
+        if predicted_usage_static is not None:
+            use_per_workload = predicted_usage_static
+
         logged_dict = {
             'ip_solver_call_args': {
                 "requested_units": [int(e) for e in requested_units],
                 "burst_pool_size_req": burst_pool_size_req,
                 "num_threads": num_threads,
                 "num_packages": num_packages,
-                "previous_allocation": [[i for i, e in enumerate(v) if e == 1] for v in current_placement],
-                "use_per_workload": predicted_usage_static,
                 "weight_cpu_use_burst": ip_params.weight_cpu_use_burst,
                 "max_burst_pool_incr_ratio": ip_params.max_burst_pool_increase_ratio
             }
         }
+        if ordered_workload_ids_static is not None:
+            logged_dict['ip_solver_workload_ids_static'] = ordered_workload_ids_static
+        if ordered_workload_ids_burst is not None:
+            logged_dict['ip_solver_workload_ids_burst'] = ordered_workload_ids_burst
+
+        if sparse_prev_alloc is not None:
+            logged_dict['ip_solver_call_args']['previous_allocation'] = sparse_prev_alloc
+        if use_per_workload is not None:
+            logged_dict['ip_solver_call_args']['pred_use_per_workload'] = use_per_workload
 
         def report_ip_call(d):
             from titus_isolate.metrics.event_log import get_msg_ctx
             msg = get_msg_ctx()
             for k,v in d.items():
                 msg['payload'][k] = v
-            self.__event_log_manager.report_event(msg)
+            if self.__event_log_manager is not None:
+                self.__event_log_manager.report_event(msg)
+            else:
+                log.info("Skip reporting of IP args.")
 
         try:
             start_time = time.time()
