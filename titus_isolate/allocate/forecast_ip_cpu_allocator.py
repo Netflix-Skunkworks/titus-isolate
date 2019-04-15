@@ -70,22 +70,22 @@ class ForecastIPCpuAllocator(CpuAllocator):
         self.__cnt_rebalance_calls = 0
         self.__event_log_manager = None
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
+    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         cpu = self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage)
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
         return cpu
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
+    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         for t in cpu.get_claimed_threads():
             t.free(workload_id)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage)
+        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
         return cpu
 
-    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
+    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         def __complete_rebalance():
-            self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage)
+            self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
             return cpu
 
         self.__cnt_rebalance_calls += 1

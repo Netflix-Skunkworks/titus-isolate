@@ -2,7 +2,7 @@ import logging
 import unittest
 from unittest.mock import MagicMock
 
-from tests.utils import config_logs, get_test_workload
+from tests.utils import config_logs, get_test_workload, DEFAULT_TEST_INSTANCE_ID
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.config.constants import DEFAULT_PER_WORKLOAD_THRESHOLD
 from titus_isolate.event.constants import STATIC
@@ -97,5 +97,10 @@ class TestWorkloadManager(unittest.TestCase):
 
     @staticmethod
     def __assign_workload(cpu, workload):
-        return IntegerProgramCpuAllocator().assign_threads(cpu, workload.get_id(), {workload.get_id(): workload}, {})
+        return IntegerProgramCpuAllocator().assign_threads(
+            cpu,
+            workload.get_id(),
+            {workload.get_id(): workload},
+            {},
+            DEFAULT_TEST_INSTANCE_ID)
 

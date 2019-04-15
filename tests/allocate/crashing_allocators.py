@@ -4,13 +4,13 @@ from titus_isolate.model.processor.cpu import Cpu
 
 class CrashingAllocator(CpuAllocator):
 
-    def assign_threads(self, cpu, workload_id, workloads):
+    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         raise Exception("")
 
-    def free_threads(self, cpu, workload_id, workloads):
+    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         raise Exception("")
 
-    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         raise Exception("")
 
     def get_name(self) -> str:
@@ -25,13 +25,13 @@ class CrashingAllocator(CpuAllocator):
 
 class CrashingAssignAllocator(CpuAllocator):
 
-    def assign_threads(self, cpu, workload_id, workloads):
+    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         raise Exception("")
 
-    def free_threads(self, cpu, workload_id, workloads):
+    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         pass
 
-    def rebalance(self, cpu: Cpu, workloads: dict) -> Cpu:
+    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         pass
 
     def get_name(self) -> str:

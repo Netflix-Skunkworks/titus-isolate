@@ -25,6 +25,7 @@ DEFAULT_TEST_IMAGE = 'test_image'
 DEFAULT_TEST_CMD = 'test_cmd'
 DEFAULT_TEST_ENTRYPOINT = 'test_entrypoint'
 DEFAULT_TEST_JOB_TYPE = 'SERVICE'
+DEFAULT_TEST_INSTANCE_ID = 'test_instance_id'
 
 set_config_manager(ConfigManager(TestPropertyProvider({})))
 

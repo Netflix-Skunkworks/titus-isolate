@@ -21,9 +21,9 @@ class RemoteCpuAllocator(CpuAllocator):
         self.__headers = {'Content-Type': "application/json"}
         self.__reg = None
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
+    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         url = "{}/assign_threads".format(self.__url)
-        body = get_threads_body(cpu, workload_id, workloads, cpu_usage)
+        body = get_threads_body(cpu, workload_id, workloads, cpu_usage, instance_id)
         log.debug("url: {}, body: {}".format(url, body))
         response = requests.put(url, json=body, headers=self.__headers, timeout=self.__solver_max_runtime_secs)
         log.debug("assign_threads response code: {}".format(response.status_code))
@@ -33,9 +33,9 @@ class RemoteCpuAllocator(CpuAllocator):
 
         raise CpuAllocationException("Failed to assign threads: {}".format(response.text))
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict) -> Cpu:
+    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         url = "{}/free_threads".format(self.__url)
-        body = get_threads_body(cpu, workload_id, workloads, cpu_usage)
+        body = get_threads_body(cpu, workload_id, workloads, cpu_usage, instance_id)
         log.debug("url: {}, body: {}".format(url, body))
         response = requests.put(url, json=body, headers=self.__headers, timeout=self.__solver_max_runtime_secs)
         log.debug("free_threads response code: {}".format(response.status_code))
@@ -45,9 +45,9 @@ class RemoteCpuAllocator(CpuAllocator):
 
         raise CpuAllocationException("Failed to free threads: {}".format(response.text))
 
-    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict) -> Cpu:
+    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
         url = "{}/rebalance".format(self.__url)
-        body = get_rebalance_body(cpu, workloads, cpu_usage)
+        body = get_rebalance_body(cpu, workloads, cpu_usage, instance_id)
         log.debug("url: {}, body: {}".format(url, body))
         response = requests.put(url, json=body, headers=self.__headers, timeout=self.__solver_max_runtime_secs)
         log.debug("rebalance response code: {}".format(response.status_code))

@@ -12,7 +12,7 @@ from titus_isolate.api.testing import set_testing
 set_testing()
 
 from tests.allocate.crashing_allocators import CrashingAllocator
-from tests.utils import get_test_workload, config_logs
+from tests.utils import get_test_workload, config_logs, DEFAULT_TEST_INSTANCE_ID
 from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.utils import get_threads_body
@@ -87,10 +87,10 @@ class TestStatus(unittest.TestCase):
         # Assign threads
         log.info("Assign threads")
         cpu_in_0 = copy.deepcopy(cpu)
-        cpu_out_0 = cpu_allocator.assign_threads(cpu_in_0, workload.get_id(), workloads, {})
+        cpu_out_0 = cpu_allocator.assign_threads(cpu_in_0, workload.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
 
         cpu_in_1 = copy.deepcopy(cpu)
-        body = get_threads_body(cpu_in_1, workload.get_id(), workloads, {})
+        body = get_threads_body(cpu_in_1, workload.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
         cpu_out_1 = self.client.put(
             "/assign_threads",
             data=json.dumps(body),
@@ -104,10 +104,10 @@ class TestStatus(unittest.TestCase):
         # Free threads
         log.info("Free threads")
         cpu_in_0 = copy.deepcopy(cpu_out_0)
-        cpu_out_0 = cpu_allocator.free_threads(cpu_in_0, workload.get_id(), workloads, {})
+        cpu_out_0 = cpu_allocator.free_threads(cpu_in_0, workload.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
 
         cpu_in_1 = copy.deepcopy(cpu_out_1)
-        body = get_threads_body(cpu_in_1, workload.get_id(), workloads, {})
+        body = get_threads_body(cpu_in_1, workload.get_id(), workloads, {}, DEFAULT_TEST_INSTANCE_ID)
         cpu_out_1 = self.client.put(
             "/free_threads",
             data=json.dumps(body),

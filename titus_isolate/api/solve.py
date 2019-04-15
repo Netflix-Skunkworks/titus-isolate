@@ -15,7 +15,6 @@ from titus_isolate.isolate.utils import get_allocator
 from titus_isolate.metrics.constants import SOLVER_GET_CPU_ALLOCATOR_SUCCESS, SOLVER_GET_CPU_ALLOCATOR_FAILURE, \
     SOLVER_ASSIGN_THREADS_SUCCESS, SOLVER_ASSIGN_THREADS_FAILURE, SOLVER_FREE_THREADS_SUCCESS, \
     SOLVER_FREE_THREADS_FAILURE, SOLVER_REBALANCE_SUCCESS, SOLVER_REBALANCE_FAILURE
-from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
@@ -71,19 +70,25 @@ def __get_cpu_usage(body):
     return parse_cpu_usage(body["cpu_usage"])
 
 
+def __get_instance_id(body):
+    return body.get("instance_id", "unknown_instance_id")
+
+
 def get_threads_arguments(body):
     workload_id = __get_workload_id(body)
     cpu = __get_cpu(body)
     workloads = __get_workloads(body)
     cpu_usage = __get_cpu_usage(body)
-    return cpu, workload_id, workloads, cpu_usage
+    instance_id = __get_instance_id(body)
+    return cpu, workload_id, workloads, cpu_usage, instance_id
 
 
 def get_rebalance_arguments(body):
     cpu = __get_cpu(body)
     workloads = __get_workloads(body)
     cpu_usage = __get_cpu_usage(body)
-    return cpu, workloads, cpu_usage
+    instance_id = __get_instance_id(body)
+    return cpu, workloads, cpu_usage, instance_id
 
 
 get_cpu_allocator_success_count = 0
@@ -118,9 +123,9 @@ def assign_threads():
 
     try:
         body = request.get_json()
-        cpu_in, workload_id, workloads, cpu_usage = get_threads_arguments(body)
-        log.info("Assigning threads for workload: {}".format(workload_id))
-        cpu_out = allocator.assign_threads(cpu_in, workload_id, workloads, cpu_usage)
+        cpu_in, workload_id, workloads, cpu_usage, instance_id = get_threads_arguments(body)
+        log.info("Assigning threads for workload: '{}' from: '{}'".format(workload_id, instance_id))
+        cpu_out = allocator.assign_threads(cpu_in, workload_id, workloads, cpu_usage, instance_id)
         global assign_threads_success_count
         assign_threads_success_count += 1
         return jsonify(cpu_out.to_dict())
@@ -137,9 +142,9 @@ def free_threads():
 
     try:
         body = request.get_json()
-        cpu_in, workload_id, workloads, cpu_usage = get_threads_arguments(body)
-        log.info("Freeing threads for workload: {}".format(workload_id))
-        cpu_out = allocator.free_threads(cpu_in, workload_id, workloads, cpu_usage)
+        cpu_in, workload_id, workloads, cpu_usage, instance_id = get_threads_arguments(body)
+        log.info("Freeing threads for workload: '{}' from: '{}'".format(workload_id, instance_id))
+        cpu_out = allocator.free_threads(cpu_in, workload_id, workloads, cpu_usage, instance_id)
         global free_threads_success_count
         free_threads_success_count += 1
         return jsonify(cpu_out.to_dict())
@@ -156,9 +161,9 @@ def rebalance():
 
     try:
         body = request.get_json()
-        cpu_in, workloads, cpu_usage = get_rebalance_arguments(body)
-        log.info("Rebalancing workloads: {}".format(workloads.keys()))
-        cpu_out = allocator.rebalance(cpu_in, workloads, cpu_usage)
+        cpu_in, workloads, cpu_usage, instance_id = get_rebalance_arguments(body)
+        log.info("Rebalancing workloads: {}, from: '{}'".format(workloads.keys(), instance_id))
+        cpu_out = allocator.rebalance(cpu_in, workloads, cpu_usage, instance_id)
         global rebalance_success_count
         rebalance_success_count += 1
         return jsonify(cpu_out.to_dict())
