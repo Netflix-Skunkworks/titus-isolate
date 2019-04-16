@@ -104,6 +104,11 @@ rebalance_success_count = 0
 rebalance_failure_count = 0
 
 
+@app.route('/', methods=['GET'])
+def health_check():
+    return remote_get_cpu_allocator()
+
+
 @app.route('/cpu_allocator', methods=['GET'])
 def remote_get_cpu_allocator():
     allocator = get_cpu_allocator()
