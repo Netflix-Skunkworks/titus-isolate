@@ -50,6 +50,7 @@ class KeystoneEventLogManager(EventLogManager):
         while True:
             try:
                 msg = self.__q.get()
+                log.debug("Sending event log message: {}".format(msg))
                 response = send_event_msg(msg, self.__address)
 
                 if response.status_code != 200:
