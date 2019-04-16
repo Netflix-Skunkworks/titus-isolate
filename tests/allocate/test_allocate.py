@@ -23,13 +23,22 @@ from titus_isolate.utils import set_workload_monitor_manager
 config_logs(logging.DEBUG)
 
 
+class TestPredictor(object):
+    
+    def __init__(self):
+        self.meta_data = {'model_training_titus_task_id': '123'}
+
 class TestCpuUsagePredictor:
 
     def __init__(self, constant_percent_busy: float = 100):
         self.__constant_percent_busy = constant_percent_busy
+        self.__model = TestPredictor()
 
     def predict(self, workload: Workload, cpu_usage_last_hour: np.array, pred_env: PredEnvironment) -> float:
         return workload.get_thread_count() * self.__constant_percent_busy / 100
+
+    def get_model(self):
+        return self.__model
 
 
 class TestCpuUsagePredictorManager:
@@ -454,6 +463,9 @@ class TestCpu(unittest.TestCase):
 
     def test_forecast_ip_burst_pool_with_usage(self):
         class UsagePredictorWithBurst:
+            def __init__(self):
+                self.__model = TestPredictor()
+
             def predict(self, workload: Workload, cpu_usage_last_hour: np.array, pred_env: PredEnvironment) -> float:
                 if workload.get_id() == 'static_a':
                     return workload.get_thread_count() * 0.8
@@ -461,6 +473,9 @@ class TestCpu(unittest.TestCase):
                     return workload.get_thread_count() * 0.01
                 elif workload.get_id() == 'burst_c':
                     return workload.get_thread_count() * 0.9
+
+            def get_model(self):
+                return self.__model
 
         upm = TestCpuUsagePredictorManager(UsagePredictorWithBurst())
         cm = ConfigManager(TestPropertyProvider({BURST_CORE_COLLOC_USAGE_THRESH: 0.9}))

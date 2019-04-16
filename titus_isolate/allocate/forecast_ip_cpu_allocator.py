@@ -85,7 +85,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
                 instance_id,
                 inst.__call_meta) 
             try:
-                cpu = func(cpu, workload_id, workloads, cpu_usage, instance_id)
+                cpu = func(inst, cpu, workload_id, workloads, cpu_usage, instance_id)
                 report(cpu)
                 return cpu
             except Exception as e:
@@ -138,11 +138,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
             return cpu
 
 
-    def __complete_action(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
-        # do something with __call_meta
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
-        return cpu        
-
     def get_name(self) -> str:
         return self.__class__.__name__
 
@@ -166,7 +161,10 @@ class ForecastIPCpuAllocator(CpuAllocator):
                 res_burst[w.get_id()] = pred
         stop_time = time.time()
         self.__call_meta['pred_cpu_usage_dur_secs'] = stop_time - start_time
-        self.__call_meta['pred_cpu_usage_model_task_id'] = cpu_usage_predictor.get_model().meta_data['model_training_titus_task_id']
+        try:
+            self.__call_meta['pred_cpu_usage_model_id'] = cpu_usage_predictor.get_model().meta_data['model_training_titus_task_id']
+        except:
+            self.__call_meta['pred_cpu_usage_model_id'] = 'unknown'
 
         log.info("Usage prediction per static workload: " + str(res_static))
         log.info("Usage prediction per burst workload: " + str(res_burst))
