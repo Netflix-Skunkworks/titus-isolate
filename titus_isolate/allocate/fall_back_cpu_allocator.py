@@ -2,6 +2,7 @@ from titus_isolate import log
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.metrics.constants import FALLBACK_ASSIGN_COUNT, FALLBACK_FREE_COUNT, \
     FALLBACK_REBALANCE_COUNT, PRIMARY_ASSIGN_COUNT, PRIMARY_FREE_COUNT, PRIMARY_REBALANCE_COUNT
+from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.model.processor.cpu import Cpu
 
 
@@ -99,6 +100,10 @@ class FallbackCpuAllocator(CpuAllocator):
         self.__reg.gauge(FALLBACK_REBALANCE_COUNT, tags).set(self.__secondary_rebalance_call_count)
         self.__primary_allocator.report_metrics(tags)
         self.__secondary_allocator.report_metrics(tags)
+
+    def set_event_log_manager(self, event_log_manager: EventLogManager):
+        self.__primary_allocator.set_event_log_manager(event_log_manager)
+        self.__secondary_allocator.set_event_log_manager(event_log_manager)
 
     def str(self):
         return "FallbackCpuAllocator(primary: {}, secondary: {})".format(
