@@ -67,13 +67,17 @@ class CpuAllocator(abc.ABC, MetricsReporter, EventReporter):
             cpu: Cpu,
             workloads: list,
             cpu_usage: dict,
-            instance_id: str):
+            instance_id: str,
+            extra_meta: dict = None):
 
         if event_log_manager is None:
             log.warning("Event log manager is not set.")
             return
 
-        event_log_manager.report_event(get_cpu_event(cpu, workloads, cpu_usage, instance_id))
+        evt = get_cpu_event(cpu, workloads, cpu_usage, instance_id)
+        if extra_meta is not None:
+            evt['payload']['alloc_extra_meta'] = extra_meta
+        event_log_manager.report_event(evt)
 
     def str(self):
         return self.__class__.__name__
