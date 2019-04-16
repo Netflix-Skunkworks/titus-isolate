@@ -1,7 +1,9 @@
 from datetime import datetime as dt
 from collections import defaultdict
 import copy
+from functools import wraps
 from math import ceil, floor
+import time
 
 from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSolverParameters
 
@@ -68,29 +70,58 @@ class ForecastIPCpuAllocator(CpuAllocator):
         self.__config_manager = config_manager
         self.__cnt_rebalance_calls = 0
         self.__event_log_manager = None
+        self.__call_meta = None # track things __place_threads call
 
+
+    def __with_report(func):
+        @wraps(func)
+        def wrapped(inst, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str):
+            inst.__call_meta = {}
+            report = lambda cpu_ : inst.report_cpu_event(
+                inst.__event_log_manager,
+                cpu_,
+                list(workloads.values()),
+                cpu_usage,
+                instance_id,
+                inst.__call_meta) 
+            try:
+                cpu = func(inst, cpu, workload_id, workloads, cpu_usage, instance_id)
+                report(cpu)
+                return cpu
+            except Exception as e:
+                report(cpu)
+                raise e
+        return wrapped
+
+    @__with_report
     def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+        self.__call_meta['type'] = 'add'
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
+        return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
 
-        cpu = self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
-        return cpu
-
+    @__with_report
     def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+        self.__call_meta['type'] = 'free'
         for t in cpu.get_claimed_threads():
             t.free(workload_id)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
         return cpu
 
     def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
-        def __complete_rebalance():
-            self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
-            return cpu
-
+        self.__call_meta = {'type': 'rebalance'}
         self.__cnt_rebalance_calls += 1
 
+        report = lambda cpu_ : self.report_cpu_event(
+                self.__event_log_manager,
+                cpu_,
+                list(workloads.values()),
+                cpu_usage,
+                instance_id,
+                self.__call_meta)
+
         if len(workloads) == 0:
-            return __complete_rebalance()
+            self.__call_meta['rebalance_empty'] = 1
+            report(cpu)
+            return cpu
 
         log.info("Rebalancing with predictions...")
         # slow path, predict and adjust
@@ -98,11 +129,14 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         try:
             cpu = self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None)
-            return __complete_rebalance()
+            report(cpu)
+            return cpu
         except:
             log.exception("Failed to rebalance, doing nothing.")
             self.__rebalance_failure_count += 1
-            return __complete_rebalance()
+            report(cpu)
+            return cpu
+
 
     def get_name(self) -> str:
         return self.__class__.__name__
@@ -118,14 +152,26 @@ class ForecastIPCpuAllocator(CpuAllocator):
         cm = self.__config_manager
         pred_env = PredEnvironment(cm.get_region(), cm.get_environment(), dt.utcnow().hour)
 
+        start_time = time.time()
         for w in workloads.values():  # TODO: batch the call
             pred = cpu_usage_predictor.predict(w, cpu_usage.get(w.get_id(), None), pred_env)
             if w.get_type() == STATIC:
                 res_static[w.get_id()] = pred
             elif w.get_type() == BURST:
                 res_burst[w.get_id()] = pred
+        stop_time = time.time()
+        self.__call_meta['pred_cpu_usage_dur_secs'] = stop_time - start_time
+        try:
+            self.__call_meta['pred_cpu_usage_model_id'] = cpu_usage_predictor.get_model().meta_data['model_training_titus_task_id']
+        except:
+            self.__call_meta['pred_cpu_usage_model_id'] = 'unknown'
+
         log.info("Usage prediction per static workload: " + str(res_static))
         log.info("Usage prediction per burst workload: " + str(res_burst))
+        if len(res_static) > 0:
+            self.__call_meta['pred_cpu_usage_static'] = dict(res_static)
+        if len(res_burst) > 0:
+            self.__call_meta['pred_cpu_usage_burst'] = dict(res_burst)
         return res_static, res_burst
 
     def __place_threads(self, cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, is_add):
@@ -268,21 +314,54 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         log.info("Using solver: {}".format(self.__solver_name))
 
-        placement, status = optimize_ip(
-            requested_units,
-            burst_pool_size_req,
-            num_threads,
-            len(cpu.get_packages()),
-            previous_allocation=current_placement,
-            use_per_workload=predicted_usage_static,
-            solver_params=ip_params,
-            verbose=False,
-            max_runtime_secs=self.__solver_max_runtime_secs,
-            mip_gap=self.__solver_mip_gap,
-            solver=self.__solver_name)
+        num_packages = len(cpu.get_packages())
 
-        if status == IP_SOLUTION_TIME_BOUND:
-            self.__time_bound_call_count += 1
+        sparse_prev_alloc = None
+        if current_placement is not None:
+            sparse_prev_alloc = [[i for i, e in enumerate(v) if e == 1] for v in current_placement]
+
+        use_per_workload = None
+        if predicted_usage_static is not None:
+            use_per_workload = predicted_usage_static
+
+        self.__call_meta['ip_solver_call_args'] = {
+            "req_units": [int(e) for e in requested_units],
+            "burst_pool_sz_req": burst_pool_size_req,
+            "num_threads": num_threads,
+            "num_packages": num_packages,
+            "weight_cpu_use_burst": ip_params.weight_cpu_use_burst,
+            "max_burst_pool_incr_ratio": ip_params.max_burst_pool_increase_ratio
+        }
+
+        if sparse_prev_alloc is not None:
+            self.__call_meta['ip_solver_call_args']['previous_allocation'] = sparse_prev_alloc
+        if use_per_workload is not None:
+            self.__call_meta['ip_solver_call_args']['use_per_workload'] = use_per_workload
+
+        try:
+            start_time = time.time()
+            placement, status = optimize_ip(
+                requested_units,
+                burst_pool_size_req,
+                num_threads,
+                num_packages,
+                previous_allocation=current_placement,
+                use_per_workload=predicted_usage_static,
+                solver_params=ip_params,
+                verbose=False,
+                max_runtime_secs=self.__solver_max_runtime_secs,
+                mip_gap=self.__solver_mip_gap,
+                solver=self.__solver_name)
+            stop_time = time.time()
+            self.__call_meta['ip_solver_call_dur_secs'] = stop_time - start_time
+            self.__call_meta['ip_success'] = 1
+
+            if status == IP_SOLUTION_TIME_BOUND:
+                self.__time_bound_call_count += 1
+
+        except Exception as e:
+            self.__call_meta['ip_success'] = 0
+            raise e
 
         return placement
 
