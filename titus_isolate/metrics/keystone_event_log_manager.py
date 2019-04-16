@@ -36,7 +36,7 @@ class KeystoneEventLogManager(EventLogManager):
             self.__q.put_nowait(msg)
         except:
             self.__failed_msg_count += 1
-            log.exception("Failed to report cpu change event for cpu: {} and workloads: {}".format(cpu, workloads))
+            log.exception("Failed to report event for payload: {}".format(payload))
 
     def set_registry(self, registry):
         self.__reg = registry
