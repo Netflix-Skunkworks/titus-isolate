@@ -84,6 +84,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         return AllocateResponse(
             self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True),
+            self.get_name(),
             self.__call_meta)
 
     def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
@@ -99,6 +100,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         return AllocateResponse(
             self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, False),
+            self.get_name(),
             self.__call_meta)
 
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
@@ -117,6 +119,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
         return AllocateResponse(
             self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None),
+            self.get_name(),
             self.__call_meta)
 
     def get_name(self) -> str:

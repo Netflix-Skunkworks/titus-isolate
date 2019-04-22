@@ -6,7 +6,6 @@ from threading import Lock
 from flask import Flask, request, jsonify
 
 from titus_isolate import log
-from titus_isolate.allocate import constants
 from titus_isolate.allocate.allocate_request import AllocateRequest, deserialize_allocate_request
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest, deserialize_allocate_threads_request
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
@@ -125,7 +124,6 @@ def assign_threads():
         log.info("Processing assign threads request: {}".format(body))
         threads_request = get_threads_request(body)
         response = allocator.assign_threads(threads_request)
-        response.get_metadata()[constants.CPU_ALLOCATOR] = allocator.get_name()
 
         global assign_threads_success_count
         assign_threads_success_count += 1
@@ -147,7 +145,6 @@ def free_threads():
         log.info("Processing assign threads request: {}".format(body))
         threads_request = get_threads_request(body)
         response = allocator.free_threads(threads_request)
-        response.get_metadata()[constants.CPU_ALLOCATOR] = allocator.get_name()
 
         global free_threads_success_count
         free_threads_success_count += 1
@@ -169,7 +166,6 @@ def rebalance():
         log.info("Processing rebalance threads request: {}".format(body))
         rebalance_request = get_rebalance_request(body)
         response = allocator.rebalance(rebalance_request)
-        response.get_metadata()[constants.CPU_ALLOCATOR] = allocator.get_name()
 
         global rebalance_success_count
         rebalance_success_count += 1

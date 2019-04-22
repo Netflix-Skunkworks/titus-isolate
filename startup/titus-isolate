@@ -39,7 +39,7 @@ def main(admin_port):
     exit_handler = RealExitHandler()
 
     log.info("Setting event log manager...")
-    event_log_manager = KeystoneEventLogManager
+    event_log_manager = KeystoneEventLogManager()
     set_event_log_manager(event_log_manager)
 
     log.info("Watching property changes for restart...")

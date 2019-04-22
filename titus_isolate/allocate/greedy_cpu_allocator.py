@@ -29,7 +29,7 @@ class GreedyCpuAllocator(CpuAllocator):
             self.__assign_threads(cpu, workloads[workload_id])
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
 
-        return AllocateResponse(cpu)
+        return AllocateResponse(cpu, self.get_name())
 
     def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         cpu = request.get_cpu()
@@ -45,14 +45,14 @@ class GreedyCpuAllocator(CpuAllocator):
         burst_workloads = [w for w in burst_workloads if w.get_id() != workload_id]
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
 
-        return AllocateResponse(cpu)
+        return AllocateResponse(cpu, self.get_name())
 
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         cpu = request.get_cpu()
         workloads = request.get_workloads()
 
         cpu = rebalance(cpu, workloads, self.__free_thread_provider)
-        return AllocateResponse(cpu)
+        return AllocateResponse(cpu, self.get_name())
 
     def get_name(self) -> str:
         return self.__class__.__name__

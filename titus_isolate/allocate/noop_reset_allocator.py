@@ -21,15 +21,15 @@ class NoopResetCpuAllocator(CpuAllocator):
         log.info("Setting cpuset.cpus to ALL cpus: '{}' for workload: '{}'".format(thread_ids, request.get_workload_id()))
         self.__cgroup_manager.set_cpuset(request.get_workload_id(), thread_ids)
 
-        return AllocateResponse(request.get_cpu())
+        return AllocateResponse(request.get_cpu(), self.get_name())
 
     def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         log.info("Ignoring attempt to free threads for workload: '{}'".format(request.get_workload_id()))
-        return AllocateResponse(request.get_cpu())
+        return AllocateResponse(request.get_cpu(), self.get_name())
 
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         log.info("Ignoring attempt to rebalance workloads: '{}'".format(request.get_workloads()))
-        return AllocateResponse(request.get_cpu())
+        return AllocateResponse(request.get_cpu(), self.get_name())
 
     def get_name(self) -> str:
         return self.__class__.__name__

@@ -5,7 +5,7 @@ from spectator import GlobalRegistry
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import UNKNOWN_CPU_ALLOCATOR, CELL, CPU_ALLOCATOR
-from titus_isolate.utils import get_workload_manager, get_config_manager, get_cell_name
+from titus_isolate.utils import get_workload_manager, get_cell_name
 
 registry = GlobalRegistry
 
