@@ -219,12 +219,12 @@ if __name__ != '__main__' and not is_testing():
     app.logger.handlers = gunicorn_logger.handlers
     app.logger.setLevel(gunicorn_logger.level)
 
-    log.info("Setting event log manager...")
-    set_event_log_manager(KeystoneEventLogManager())
-
     log.info("Setting config manager...")
     config_manager = get_config_manager(EnvPropertyProvider())
     set_config_manager(config_manager)
+
+    log.info("Setting event log manager...")
+    set_event_log_manager(KeystoneEventLogManager())
 
     log.info("Setting up the cpu usage predictor manager...")
     cpu_predictor_manager = CpuUsagePredictorManager()
