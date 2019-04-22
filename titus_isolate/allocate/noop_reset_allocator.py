@@ -1,7 +1,9 @@
 from titus_isolate import log
+from titus_isolate.allocate.allocate_request import AllocateRequest
+from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.model.processor.cpu import Cpu
 
 
 class NoopResetCpuAllocator(CpuAllocator):
@@ -12,20 +14,22 @@ class NoopResetCpuAllocator(CpuAllocator):
     def get_cgroup_manager(self):
         return self.__cgroup_manager
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
-        thread_count = len(cpu.get_threads())
+    def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
+        thread_count = len(request.get_cpu().get_threads())
         thread_ids = list(range(thread_count))
 
-        log.info("Setting cpuset.cpus to ALL cpus: '{}' for workload: '{}'".format(thread_ids, workload_id))
-        self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
+        log.info("Setting cpuset.cpus to ALL cpus: '{}' for workload: '{}'".format(thread_ids, request.get_workload_id()))
+        self.__cgroup_manager.set_cpuset(request.get_workload_id(), thread_ids)
 
-        return cpu
+        return AllocateResponse(request.get_cpu())
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
-        log.info("Ignoring attempt to free threads for workload: '{}'".format(workload_id))
+    def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
+        log.info("Ignoring attempt to free threads for workload: '{}'".format(request.get_workload_id()))
+        return AllocateResponse(request.get_cpu())
 
-    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
-        return cpu
+    def rebalance(self, request: AllocateRequest) -> AllocateResponse:
+        log.info("Ignoring attempt to rebalance workloads: '{}'".format(request.get_workloads()))
+        return AllocateResponse(request.get_cpu())
 
     def get_name(self) -> str:
         return self.__class__.__name__

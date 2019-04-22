@@ -1,10 +1,11 @@
 import socket
-import uuid
 
 import requests
 
 from titus_isolate import log
-from titus_isolate.model.processor.cpu import Cpu
+from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.allocate_request import AllocateRequest
+from titus_isolate.utils import get_event_log_manager
 
 
 def send_event_msg(msg, address):
@@ -27,28 +28,20 @@ def get_event_msg(event):
     }
 
 
-def __get_cpu_event(cpu: Cpu, usage: dict, workloads: dict, instance_id: str):
+def get_cpu_event(request: AllocateRequest, response: AllocateResponse):
     return {
-        "uuid": str(uuid.uuid4()),
-        "payload": {
-            "instance_id": instance_id,
-            "cpu": cpu.to_dict(),
-            "cpu_usage": usage,
-            "workloads": workloads
-        }
+        "request": request.to_dict(),
+        "response": response.to_dict(),
     }
 
 
-def get_cpu_event(cpu: Cpu, workloads: list, cpu_usage: dict, instance_id: str) -> dict:
-    serializable_usage = {}
-    for w_id, usage in cpu_usage.items():
-        serializable_usage[w_id] = [str(u) for u in usage]
+def report_cpu_event(request: AllocateRequest, response: AllocateResponse):
+    event_log_manager = get_event_log_manager()
+    if event_log_manager is None:
+        log.warning("Event log manager is not set.")
+        return
 
-    serializable_workloads = {}
-    for w in workloads:
-        serializable_workloads[w.get_id()] = w.to_dict()
-
-    return __get_cpu_event(cpu, serializable_usage, serializable_workloads, instance_id)
+    event_log_manager.report_event(get_cpu_event(request, response))
 
 
 class EventException(Exception):

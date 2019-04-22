@@ -1,8 +1,10 @@
 from titus_isolate import log
+from titus_isolate.allocate.allocate_request import AllocateRequest
+from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.event.constants import STATIC
 from titus_isolate.metrics.event_log_manager import EventLogManager
-from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads, update_burst_workloads, rebalance
 from titus_isolate.model.workload import Workload
@@ -16,17 +18,24 @@ class GreedyCpuAllocator(CpuAllocator):
         self.__free_thread_provider = free_thread_provider
         self.__event_log_manager = None
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+    def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
+        cpu = request.get_cpu()
+        workloads = request.get_workloads()
+        workload_id = request.get_workload_id()
+
         burst_workloads = get_burst_workloads(workloads.values())
         release_all_threads(cpu, burst_workloads)
         if workloads[workload_id].get_type() == STATIC:
             self.__assign_threads(cpu, workloads[workload_id])
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
 
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
-        return cpu
+        return AllocateResponse(cpu)
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+    def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
+        cpu = request.get_cpu()
+        workloads = request.get_workloads()
+        workload_id = request.get_workload_id()
+
         burst_workloads = get_burst_workloads(workloads.values())
         release_all_threads(cpu, burst_workloads)
         for t in cpu.get_threads():
@@ -36,13 +45,14 @@ class GreedyCpuAllocator(CpuAllocator):
         burst_workloads = [w for w in burst_workloads if w.get_id() != workload_id]
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
 
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
-        return cpu
+        return AllocateResponse(cpu)
 
-    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage, instance_id: str) -> Cpu:
+    def rebalance(self, request: AllocateRequest) -> AllocateResponse:
+        cpu = request.get_cpu()
+        workloads = request.get_workloads()
+
         cpu = rebalance(cpu, workloads, self.__free_thread_provider)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
-        return cpu
+        return AllocateResponse(cpu)
 
     def get_name(self) -> str:
         return self.__class__.__name__

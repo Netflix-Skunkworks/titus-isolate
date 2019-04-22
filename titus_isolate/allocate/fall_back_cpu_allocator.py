@@ -1,9 +1,11 @@
 from titus_isolate import log
+from titus_isolate.allocate.allocate_request import AllocateRequest
+from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.metrics.constants import FALLBACK_ASSIGN_COUNT, FALLBACK_FREE_COUNT, \
     FALLBACK_REBALANCE_COUNT, PRIMARY_ASSIGN_COUNT, PRIMARY_FREE_COUNT, PRIMARY_REBALANCE_COUNT
 from titus_isolate.metrics.event_log_manager import EventLogManager
-from titus_isolate.model.processor.cpu import Cpu
 
 
 class FallbackCpuAllocator(CpuAllocator):
@@ -33,47 +35,50 @@ class FallbackCpuAllocator(CpuAllocator):
                 self.__primary_allocator.__class__.__name__,
                 self.__secondary_allocator.__class__.__name__))
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+    def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         try:
             self.__primary_assign_threads_call_count += 1
-            return self.__primary_allocator.assign_threads(cpu, workload_id, workloads, cpu_usage, instance_id)
+            return self.__primary_allocator.assign_threads(request)
         except:
             log.exception(
                 "Failed to assign threads to workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
-                    workload_id,
+                    request.get_workload_id(),
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_assign_threads_call_count += 1
-            return self.__secondary_allocator.assign_threads(cpu, workload_id, workloads, cpu_usage, instance_id)
+            return self.__secondary_allocator.assign_threads(request)
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+    def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         try:
             self.__primary_free_threads_call_count += 1
-            return self.__primary_allocator.free_threads(cpu, workload_id, workloads, cpu_usage, instance_id)
+            return self.__primary_allocator.free_threads(request)
         except:
             log.exception(
                 "Failed to free threads for workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
-                    workload_id,
+                    request.get_workload_id(),
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_free_threads_call_count += 1
-            return self.__secondary_allocator.free_threads(cpu, workload_id, workloads, cpu_usage, instance_id)
+            return self.__secondary_allocator.free_threads(request)
 
-    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+    def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         try:
             self.__primary_rebalance_call_count += 1
-            return self.__primary_allocator.rebalance(cpu, workloads, cpu_usage, instance_id)
+            return self.__primary_allocator.rebalance(request)
         except:
             log.exception(
                 "Failed to rebalance workloads: '{}' with primary allocator: '{}', falling back to: '{}'".format(
-                    workloads,
+                    request.get_workloads(),
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_rebalance_call_count += 1
-            return self.__secondary_allocator.rebalance(cpu, workloads, cpu_usage, instance_id)
+            return self.__secondary_allocator.rebalance(request)
 
     def get_name(self) -> str:
-        return self.get_primary_allocator().get_name()
+        return "{}({}:{})".format(
+            self.__class__.__name__,
+            self.get_primary_allocator().get_name(),
+            self.get_secondary_allocator().get_name())
 
     def get_primary_allocator(self) -> CpuAllocator:
         return self.__primary_allocator

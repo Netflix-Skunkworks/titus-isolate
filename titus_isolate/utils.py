@@ -1,11 +1,14 @@
 import time
 from threading import Thread, Lock
 
+import requests
 import schedule
 
 from titus_isolate import log
+from titus_isolate.allocate.constants import TITUS_ISOLATE_CELL_HEADER, UNKNOWN_CELL
 from titus_isolate.config.agent_property_provider import AgentPropertyProvider
 from titus_isolate.config.config_manager import ConfigManager
+from titus_isolate.config.constants import REMOTE_ALLOCATOR_URL
 
 SCHEDULING_SLEEP_INTERVAL = 1.0
 
@@ -20,6 +23,9 @@ __workload_manager = None
 
 event_manager_lock = Lock()
 __event_manager = None
+
+event_log_manager_lock = Lock()
+__event_log_manager = None
 
 workload_monitor_manager_lock = Lock()
 __workload_monitor_manager = None
@@ -73,6 +79,20 @@ def set_event_manager(event_manager):
         __event_manager = event_manager
 
 
+def get_event_log_manager():
+    global __event_log_manager
+
+    with event_log_manager_lock:
+        return __event_log_manager
+
+
+def set_event_log_manager(event_log_manager):
+    global __event_log_manager
+
+    with event_log_manager_lock:
+        __event_log_manager = event_log_manager
+
+
 def set_workload_monitor_manager(workoad_monitor_manager):
     global __workload_monitor_manager
 
@@ -99,6 +119,30 @@ def get_cpu_usage_predictor_manager():
 
     with cpu_usage_predictor_manager_lock:
         return __cpu_usage_predictor_manager
+
+
+def get_cell_name():
+    config_manager = get_config_manager()
+    if config_manager is None:
+        log.warning("Config manager is not yet set.")
+        return UNKNOWN_CELL
+
+    url = config_manager.get_str(REMOTE_ALLOCATOR_URL)
+    if url is None:
+        log.warning("No remote solver URL specified.")
+        return UNKNOWN_CELL
+
+    try:
+        response = requests.get(url, timeout=1)
+        cell_name = response.headers.get(TITUS_ISOLATE_CELL_HEADER, None)
+        if cell_name is None:
+            log.warning("Titus isolation cell header is not set.")
+            return UNKNOWN_CELL
+        else:
+            return UNKNOWN_CELL
+    except:
+        log.exception("Failed to determine isolation cell.")
+        return UNKNOWN_CELL
 
 
 def start_periodic_scheduling():

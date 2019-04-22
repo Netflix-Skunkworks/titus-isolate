@@ -1,0 +1,31 @@
+from titus_isolate.allocate.constants import CPU, METADATA, TITUS_ISOLATE_CELL_HEADER, UNKNOWN_CELL, CELL
+from titus_isolate.allocate.utils import parse_cpu
+from titus_isolate.model.processor.cpu import Cpu
+
+
+class AllocateResponse:
+
+    def __init__(self, cpu: Cpu, metadata: dict = {}):
+        self.__cpu = cpu
+        self.__metadata = metadata
+
+    def get_cpu(self):
+        return self.__cpu
+
+    def get_metadata(self):
+        return self.__metadata
+
+    def to_dict(self):
+        return {
+            CPU: self.get_cpu().to_dict(),
+            METADATA: self.get_metadata()
+        }
+
+
+def deserialize_response(serialized_response) -> AllocateResponse:
+    body = serialized_response.json
+    cell = serialized_response.headers.get(TITUS_ISOLATE_CELL_HEADER, UNKNOWN_CELL)
+    cpu = parse_cpu(body[CPU])
+    metadata = body[METADATA]
+    metadata[CELL] = cell
+    return AllocateResponse(cpu, metadata)

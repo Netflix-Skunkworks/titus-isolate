@@ -3,8 +3,8 @@ import time
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.test_event_log_manager import TestEventLogManager
 from titus_isolate import LOG_FMT_STRING, log
+from titus_isolate.allocate.constants import INSTANCE_ID
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.create_event_handler import CreateEventHandler
@@ -26,6 +26,7 @@ DEFAULT_TEST_CMD = 'test_cmd'
 DEFAULT_TEST_ENTRYPOINT = 'test_entrypoint'
 DEFAULT_TEST_JOB_TYPE = 'SERVICE'
 DEFAULT_TEST_INSTANCE_ID = 'test_instance_id'
+DEFAULT_TEST_REQUEST_METADATA = {INSTANCE_ID: DEFAULT_TEST_INSTANCE_ID}
 
 set_config_manager(ConfigManager(TestPropertyProvider({})))
 
@@ -63,7 +64,7 @@ def get_test_workload(identifier, thread_count, workload_type):
         thread_count=thread_count,
         mem=DEFAULT_TEST_MEM,
         disk=DEFAULT_TEST_DISK,
-        network=-DEFAULT_TEST_NETWORK,
+        network=DEFAULT_TEST_NETWORK,
         app_name=DEFAULT_TEST_APP_NAME,
         owner_email=DEFAULT_TEST_OWNER_EMAIL,
         image=DEFAULT_TEST_IMAGE,
@@ -84,7 +85,7 @@ class TestContext:
     def __init__(self, cpu=None, allocator=IntegerProgramCpuAllocator()):
         if cpu is None:
             cpu = get_cpu()
-        self.__workload_manager = WorkloadManager(cpu, MockCgroupManager(), allocator, TestEventLogManager())
+        self.__workload_manager = WorkloadManager(cpu, MockCgroupManager(), allocator)
         self.__create_event_handler = CreateEventHandler(self.__workload_manager)
         self.__free_event_handler = FreeEventHandler(self.__workload_manager)
         self.__rebalance_event_handler = RebalanceEventHandler(self.__workload_manager)
