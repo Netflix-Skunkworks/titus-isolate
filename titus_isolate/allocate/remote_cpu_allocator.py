@@ -62,7 +62,7 @@ class RemoteCpuAllocator(CpuAllocator):
         url = "{}/cpu_allocator".format(self.__url)
         try:
             response = requests.get(url, timeout=1)
-            return "Remote:{}".format(response.text)
+            return "Remote({})".format(response.text)
         except:
             log.exception("Failed to GET cpu allocator name.")
             return UNKNOWN_CPU_ALLOCATOR

@@ -75,7 +75,7 @@ class FallbackCpuAllocator(CpuAllocator):
             return self.__secondary_allocator.rebalance(request)
 
     def get_name(self) -> str:
-        return "{}({}:{})".format(
+        return "{}({},{})".format(
             self.__class__.__name__,
             self.get_primary_allocator().get_name(),
             self.get_secondary_allocator().get_name())

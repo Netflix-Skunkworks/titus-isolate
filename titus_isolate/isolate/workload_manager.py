@@ -124,11 +124,11 @@ class WorkloadManager(MetricsReporter):
 
     def __update_state(self, new_cpu, new_workloads):
         old_cpu = self.get_cpu_copy()
-        updated = self.__apply_cpuset_updates(old_cpu, new_cpu)
+        self.__apply_cpuset_updates(old_cpu, new_cpu)
         self.__cpu = new_cpu
         self.__workloads = new_workloads
 
-        if updated:
+        if old_cpu != new_cpu:
             self.__report_cpu_state(old_cpu, new_cpu)
 
     def __apply_cpuset_updates(self, old_cpu, new_cpu):
@@ -136,8 +136,6 @@ class WorkloadManager(MetricsReporter):
         for workload_id, thread_ids in updates.items():
             log.info("updating workload: '{}' to '{}'".format(workload_id, thread_ids))
             self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
-
-        return len(updates) > 0
 
     def __get_request_metadata(self, request_type) -> dict:
         config_manager = get_config_manager()
