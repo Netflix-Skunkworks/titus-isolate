@@ -22,3 +22,12 @@ class Package:
 
     def get_empty_threads(self):
         return utils.get_empty_threads(self.get_threads())
+
+    def __eq__(self, other):
+        if isinstance(other, Package):
+            return self.get_id() == other.get_id() and \
+                   set(self.get_cores()) == set(other.get_cores())
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(tuple([self.get_id(), frozenset(self.get_cores())]))

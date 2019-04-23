@@ -27,7 +27,7 @@ from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManage
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
 from titus_isolate.real_exit_handler import RealExitHandler
 from titus_isolate.utils import start_periodic_scheduling, get_config_manager, set_workload_manager, \
-    set_workload_monitor_manager, set_event_manager, set_cpu_usage_predictor_manager
+    set_workload_monitor_manager, set_event_manager, set_cpu_usage_predictor_manager, set_event_log_manager
 
 
 @click.command()
@@ -37,6 +37,10 @@ def main(admin_port):
     logging.getLogger('schedule').setLevel(logging.WARN)
 
     exit_handler = RealExitHandler()
+
+    log.info("Setting event log manager...")
+    event_log_manager = KeystoneEventLogManager()
+    set_event_log_manager(event_log_manager)
 
     log.info("Watching property changes for restart...")
     RestartPropertyWatcher(get_config_manager(), exit_handler, RESTART_PROPERTIES)
@@ -65,11 +69,7 @@ def main(admin_port):
         cpu_allocator.get_primary_allocator().__class__.__name__,
         cpu_allocator.get_secondary_allocator().__class__.__name__))
     cgroup_manager = FileCgroupManager()
-    workload_manager = WorkloadManager(
-        cpu=cpu,
-        cgroup_manager=cgroup_manager,
-        cpu_allocator=cpu_allocator,
-        event_log_manager=KeystoneEventLogManager())
+    workload_manager = WorkloadManager(cpu=cpu, cgroup_manager=cgroup_manager, cpu_allocator=cpu_allocator)
     set_workload_manager(workload_manager)
 
     # Setup the event handlers
@@ -87,7 +87,7 @@ def main(admin_port):
 
     # Report metrics
     log.info("Starting metrics reporting...")
-    MetricsManager([workload_manager, event_manager, workload_monitor_manager])
+    MetricsManager([workload_manager, event_manager, workload_monitor_manager, event_log_manager])
 
     # Initialize currently running containers as workloads
     log.info("Isolating currently running workloads...")

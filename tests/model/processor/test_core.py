@@ -42,3 +42,23 @@ class TestCore(unittest.TestCase):
 
         t0.claim(uuid.uuid4())
         self.assertEqual([], c.get_empty_threads())
+
+    def test_equality(self):
+        t_0_0 = Thread(0)
+        t_0_1 = Thread(1)
+        c_x = Core(0, [t_0_0, t_0_1])
+
+        t_1_0 = Thread(0)
+        t_1_1 = Thread(1)
+        c_y = Core(0, [t_1_0, t_1_1])
+        self.assertEqual(c_x, c_y)
+
+        t_0_1.claim("a")
+        self.assertNotEqual(c_x, c_y)
+
+        t_1_1.claim("a")
+        self.assertEqual(c_x, c_y)
+
+        t_0_0.claim("b")
+        t_1_0.claim("b")
+        self.assertEqual(c_x, c_y)

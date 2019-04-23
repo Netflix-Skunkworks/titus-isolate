@@ -4,8 +4,8 @@ import schedule
 from spectator import GlobalRegistry
 
 from titus_isolate import log
-from titus_isolate.allocate.constants import UNKNOWN_CPU_ALLOCATOR
-from titus_isolate.utils import get_workload_manager
+from titus_isolate.allocate.constants import UNKNOWN_CPU_ALLOCATOR, CELL, CPU_ALLOCATOR
+from titus_isolate.utils import get_workload_manager, get_cell_name
 
 registry = GlobalRegistry
 
@@ -46,6 +46,8 @@ class MetricsManager:
         else:
             allocator_name = wm.get_allocator_name()
 
-        tags["cpu_allocator"] = allocator_name
+        tags[CPU_ALLOCATOR] = allocator_name
+        tags[CELL] = get_cell_name()
 
         return tags
+

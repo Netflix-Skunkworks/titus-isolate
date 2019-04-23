@@ -1,3 +1,6 @@
+from titus_isolate.allocate.allocate_request import AllocateRequest
+from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.constants import DEFAULT_MAX_SOLVER_RUNTIME, MAX_SOLVER_RUNTIME
 from titus_isolate.metrics.event_log_manager import EventLogManager
@@ -6,7 +9,6 @@ from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
 from titus_isolate.event.constants import STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT
-from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import is_cpu_full
 from titus_isolate.model.utils import get_sorted_workloads, get_burst_workloads, release_all_threads, \
     update_burst_workloads, rebalance
@@ -25,29 +27,39 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         self.__free_thread_provider = free_thread_provider
         self.__event_log_manager = None
 
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+    def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
+        cpu = request.get_cpu()
+        workloads = request.get_workloads()
+        workload_id = request.get_workload_id()
+
         burst_workloads = get_burst_workloads(workloads.values())
         release_all_threads(cpu, burst_workloads)
         if workloads[workload_id].get_type() == STATIC:
             self.__assign_threads(cpu, workload_id, workloads)
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
-        return cpu
 
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+        return AllocateResponse(cpu, self.get_name())
+
+    def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
+        cpu = request.get_cpu()
+        workloads = request.get_workloads()
+        workload_id = request.get_workload_id()
+
         burst_workloads = get_burst_workloads(workloads.values())
         release_all_threads(cpu, burst_workloads)
         if workloads[workload_id].get_type() == STATIC:
             self.__free_threads(cpu, workload_id, workloads)
         burst_workloads = [w for w in burst_workloads if w.get_id() != workload_id]
         update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
-        return cpu
 
-    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
+        return AllocateResponse(cpu, self.get_name())
+
+    def rebalance(self, request: AllocateRequest) -> AllocateResponse:
+        cpu = request.get_cpu()
+        workloads = request.get_workloads()
+
         cpu = rebalance(cpu, workloads, self.__free_thread_provider)
-        self.report_cpu_event(self.__event_log_manager, cpu, list(workloads.values()), cpu_usage, instance_id)
-        return cpu
+        return AllocateResponse(cpu, self.get_name())
 
     def get_name(self) -> str:
         return self.__class__.__name__

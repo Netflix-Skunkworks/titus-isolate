@@ -1,11 +1,14 @@
 from titus_isolate import log
 from titus_isolate.metrics.event_log_manager import EventLogManager
-from titus_isolate.model.processor.cpu import Cpu
 
 
 class TestEventLogManager(EventLogManager):
-    def report_cpu(self, cpu: Cpu, workloads: list):
-        log.info("Mock reporting cpu: {}, workloads: {}".format(cpu, workloads))
+    def __init__(self):
+        self.payloads = []
+
+    def report_event(self, payload: dict):
+        log.info("Mock reporting event: {}".format(payload))
+        self.payloads.append(payload)
 
     def set_registry(self, registry):
         pass

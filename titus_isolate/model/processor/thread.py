@@ -31,3 +31,13 @@ class Thread:
 
     def is_claimed(self):
         return len(self.get_workload_ids()) > 0
+
+    def __eq__(self, other):
+        if isinstance(other, Thread):
+            return self.get_id() == other.get_id() and \
+                   set(self.get_workload_ids()) == set(other.get_workload_ids())
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(tuple([self.get_id(), frozenset(self.get_workload_ids())]))
+

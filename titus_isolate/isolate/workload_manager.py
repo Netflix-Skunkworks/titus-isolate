@@ -3,9 +3,13 @@ from threading import Lock
 import time
 
 from titus_isolate import log
+
+from titus_isolate.allocate.allocate_request import AllocateRequest
+from titus_isolate.allocate.constants import CPU_ALLOCATOR
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
+from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
 from titus_isolate.config.constants import EC2_INSTANCE_ID
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
@@ -17,7 +21,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
     UNALLOCATED_SIZE_KEY, REBALANCED_KEY
-from titus_isolate.metrics.event_log_manager import EventLogManager
+from titus_isolate.metrics.event_log import report_cpu_event
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import visualize_cpu_comparison
@@ -27,19 +31,13 @@ from titus_isolate.utils import get_workload_monitor_manager, get_config_manager
 
 class WorkloadManager(MetricsReporter):
 
-    def __init__(
-            self,
-            cpu: Cpu,
-            cgroup_manager: CgroupManager,
-            cpu_allocator: CpuAllocator,
-            event_log_manager: EventLogManager):
+    def __init__(self, cpu: Cpu, cgroup_manager: CgroupManager, cpu_allocator: CpuAllocator):
 
         self.__reg = None
         self.__lock = Lock()
         self.__instance_id = get_config_manager().get_str(EC2_INSTANCE_ID)
 
         self.__cpu_allocator = cpu_allocator
-        self.__cpu_allocator.set_event_log_manager(event_log_manager)
 
         self.__error_count = 0
         self.__added_count = 0
@@ -51,7 +49,6 @@ class WorkloadManager(MetricsReporter):
         self.__cpu = cpu
         self.__cgroup_manager = cgroup_manager
         self.__wmm = get_workload_monitor_manager()
-        self.__event_log_manager = event_log_manager
         self.__workloads = {}
 
         log.info("Created workload manager")
@@ -71,15 +68,9 @@ class WorkloadManager(MetricsReporter):
         self.__removed_count += 1
 
     def rebalance(self):
-        with self.__lock:
-            log.debug("Rebalancing...")
-            new_cpu = self.get_cpu_copy()
-            workload_map = self.get_workload_map_copy()
-            cpu_usage = self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
-            new_cpu = self.__cpu_allocator.rebalance(new_cpu, workload_map, cpu_usage, self.__instance_id)
+        succeeded = self.__update_workload(self.__rebalance, None, None)
+        if succeeded:
             self.__rebalanced_count += 1
-            self.__update_state(new_cpu, workload_map)
-            log.debug("Rebalanced")
 
     def __update_workload(self, func, arg, workload_id):
         try:
@@ -100,18 +91,14 @@ class WorkloadManager(MetricsReporter):
     def __add_workload(self, workload):
         log.info("Assigning '{}' thread(s) to workload: '{}'".format(workload.get_thread_count(), workload.get_id()))
 
-        new_cpu = self.get_cpu_copy()
         workload_map = self.get_workload_map_copy()
         workload_map[workload.get_id()] = workload
 
-        cpu_usage = self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
-        new_cpu = self.__cpu_allocator.assign_threads(
-            new_cpu,
-            workload.get_id(),
-            workload_map,
-            cpu_usage,
-            self.__instance_id)
-        self.__update_state(new_cpu, workload_map)
+        request = self.__get_threads_request(workload.get_id(), workload_map, "assign")
+        response = self.__cpu_allocator.assign_threads(request)
+
+        self.__update_state(response.get_cpu(), workload_map)
+        report_cpu_event(request, response)
 
     def __remove_workload(self, workload_id):
         log.info("Removing workload: {}".format(workload_id))
@@ -119,27 +106,29 @@ class WorkloadManager(MetricsReporter):
             log.error("Attempted to remove unknown workload: '{}'".format(workload_id))
             return
 
-        new_cpu = self.get_cpu_copy()
         workload_map = self.get_workload_map_copy()
-        workload = workload_map[workload_id]
 
-        cpu_usage = self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
-        new_cpu = self.__cpu_allocator.free_threads(
-            new_cpu,
-            workload.get_id(),
-            workload_map,
-            cpu_usage,
-            self.__instance_id)
-        workload_map.pop(workload.get_id())
-        self.__update_state(new_cpu, workload_map)
+        request = self.__get_threads_request(workload_id, workload_map, "free")
+        response = self.__cpu_allocator.free_threads(request)
+
+        workload_map.pop(workload_id)
+        self.__update_state(response.get_cpu(), workload_map)
+        report_cpu_event(request, response)
+
+    def __rebalance(self, dummy):
+        request = self.__get_rebalance_request()
+        response = self.__cpu_allocator.rebalance(request)
+
+        self.__update_state(response.get_cpu(), request.get_workloads())
+        report_cpu_event(request, response)
 
     def __update_state(self, new_cpu, new_workloads):
         old_cpu = self.get_cpu_copy()
-        updated = self.__apply_cpuset_updates(old_cpu, new_cpu)
+        self.__apply_cpuset_updates(old_cpu, new_cpu)
         self.__cpu = new_cpu
         self.__workloads = new_workloads
 
-        if updated:
+        if old_cpu != new_cpu:
             self.__report_cpu_state(old_cpu, new_cpu)
 
     def __apply_cpuset_updates(self, old_cpu, new_cpu):
@@ -148,7 +137,32 @@ class WorkloadManager(MetricsReporter):
             log.info("updating workload: '{}' to '{}'".format(workload_id, thread_ids))
             self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
 
-        return len(updates) > 0
+    def __get_request_metadata(self, request_type) -> dict:
+        config_manager = get_config_manager()
+        return {
+            "type": request_type,
+            "instance_id": self.__instance_id,
+            "region": config_manager.get_region(),
+            "environment": config_manager.get_environment()
+        }
+
+    def __get_cpu_usage(self) -> dict:
+        return self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
+
+    def __get_threads_request(self, workload_id, workload_map, request_type):
+        return AllocateThreadsRequest(
+            self.get_cpu_copy(),
+            workload_id,
+            workload_map,
+            self.__get_cpu_usage(),
+            self.__get_request_metadata(request_type))
+
+    def __get_rebalance_request(self):
+        return AllocateRequest(
+            self.get_cpu_copy(),
+            self.get_workload_map_copy(),
+            self.__get_cpu_usage(),
+            self.__get_request_metadata("rebalance"))
 
     def get_workloads(self):
         return list(self.__workloads.values())
@@ -200,7 +214,6 @@ class WorkloadManager(MetricsReporter):
         self.__reg = registry
         self.__cpu_allocator.set_registry(registry)
         self.__cgroup_manager.set_registry(registry)
-        self.__event_log_manager.set_registry(registry)
 
     def __report_cpu_state(self, old_cpu, new_cpu):
         log.info(visualize_cpu_comparison(old_cpu, new_cpu))
@@ -237,4 +250,3 @@ class WorkloadManager(MetricsReporter):
         # Have the sub-components report metrics
         self.__cpu_allocator.report_metrics(tags)
         self.__cgroup_manager.report_metrics(tags)
-        self.__event_log_manager.report_metrics(tags)

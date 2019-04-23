@@ -14,35 +14,6 @@ from titus_isolate.model.workload import Workload
 from titus_isolate.utils import get_config_manager
 
 
-def get_threads_body(cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> dict:
-    w_list = [w.to_dict() for w in workloads.values()]
-    return {
-        "instance_id": instance_id,
-        "cpu": cpu.to_dict(),
-        "workload_id": workload_id,
-        "workloads": w_list,
-        "cpu_usage": __get_serializable_cpu_usage(cpu_usage)
-    }
-
-
-def get_rebalance_body(cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> dict:
-    w_list = [w.to_dict() for w in workloads.values()]
-    return {
-        "instance_id": instance_id,
-        "cpu": cpu.to_dict(),
-        "workloads": w_list,
-        "cpu_usage": __get_serializable_cpu_usage(cpu_usage)
-    }
-
-
-def __get_serializable_cpu_usage(cpu_usage: dict) -> dict:
-    serializable_cpu_usage = {}
-    for k, v in cpu_usage.items():
-        serializable_cpu_usage[k] = [str(val) for val in v]
-
-    return serializable_cpu_usage
-
-
 def parse_cpu(cpu_dict: dict) -> Cpu:
     packages = []
     for p in cpu_dict["packages"]:
@@ -58,6 +29,13 @@ def parse_cpu(cpu_dict: dict) -> Cpu:
         packages.append(Package(p["id"], cores))
 
     return Cpu(packages)
+
+
+def parse_workloads(workloads: dict) -> list:
+    __workloads = {}
+    for w_id, workload in workloads.items():
+        __workloads[w_id] = parse_workload(workload)
+    return __workloads
 
 
 def parse_workload(workload_dict: dict) -> Workload:
@@ -88,7 +66,6 @@ def parse_cpu_usage(cpu_usage: dict) -> dict:
         parsed_cpu_usage[k] = [float(val) for val in v]
 
     return parsed_cpu_usage
-
 
 def get_cpu_model_bucket_name():
     format_str = get_required_property(MODEL_BUCKET_FORMAT_STR)

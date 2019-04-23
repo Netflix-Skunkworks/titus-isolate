@@ -17,3 +17,12 @@ class Core:
 
     def get_empty_threads(self):
         return utils.get_empty_threads(self.get_threads())
+
+    def __eq__(self, other):
+        if isinstance(other, Core):
+            return self.get_id() == other.get_id() and \
+                   set(self.get_threads()) == set(other.get_threads())
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(tuple([self.get_id(), frozenset(self.get_threads())]))

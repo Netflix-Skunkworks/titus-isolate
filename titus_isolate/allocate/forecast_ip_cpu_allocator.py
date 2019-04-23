@@ -1,13 +1,15 @@
 from datetime import datetime as dt
 from collections import defaultdict
 import copy
-from functools import wraps
 from math import ceil, floor
 import time
 
 from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSolverParameters
 
 from titus_isolate import log
+from titus_isolate.allocate.allocate_request import AllocateRequest
+from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC, DEFAULT_ALPHA_LLC, ALPHA_L12, \
@@ -70,75 +72,55 @@ class ForecastIPCpuAllocator(CpuAllocator):
         self.__config_manager = config_manager
         self.__cnt_rebalance_calls = 0
         self.__event_log_manager = None
-        self.__call_meta = None # track things __place_threads call
+        self.__call_meta = None  # track things __place_threads call
 
-    def __with_report(func):
-        @wraps(func)
-        def wrapped(inst, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str):
-            inst.__call_meta = {}
-            report = lambda cpu_ : inst.report_cpu_event(
-                inst.__event_log_manager,
-                cpu_,
-                list(workloads.values()),
-                cpu_usage,
-                instance_id,
-                inst.__call_meta) 
-            try:
-                cpu = func(inst, cpu, workload_id, workloads, cpu_usage, instance_id)
-                report(cpu)
-                return cpu
-            except Exception as e:
-                report(cpu)
-                raise e
-        return wrapped
-
-    @__with_report
-    def assign_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
-        self.__call_meta['type'] = 'add'
+    def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
+        self.__call_meta = {}
+        cpu = request.get_cpu()
+        cpu_usage = request.get_cpu_usage()
+        workloads = request.get_workloads()
+        workload_id = request.get_workload_id()
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
-        return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True)
 
-    @__with_report
-    def free_threads(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
-        self.__call_meta['type'] = 'free'
+        return AllocateResponse(
+            self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True),
+            self.get_name(),
+            self.__call_meta)
+
+    def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
+        self.__call_meta = {}
+        cpu = request.get_cpu()
+        cpu_usage = request.get_cpu_usage()
+        workloads = request.get_workloads()
+        workload_id = request.get_workload_id()
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         if workload_id not in curr_ids_per_workload:
             raise Exception("workload_id=`%s` is not placed on the instance. Cannot free it." % (workload_id,))
 
-        return self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, False)
+        return AllocateResponse(
+            self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, False),
+            self.get_name(),
+            self.__call_meta)
 
-    def rebalance(self, cpu: Cpu, workloads: dict, cpu_usage: dict, instance_id: str) -> Cpu:
-        self.__call_meta = {'type': 'rebalance'}
+    def rebalance(self, request: AllocateRequest) -> AllocateResponse:
+        self.__call_meta = {}
+        cpu = request.get_cpu()
+        cpu_usage = request.get_cpu_usage()
+        workloads = request.get_workloads()
         self.__cnt_rebalance_calls += 1
 
-        report = lambda cpu_ : self.report_cpu_event(
-                self.__event_log_manager,
-                cpu_,
-                list(workloads.values()),
-                cpu_usage,
-                instance_id,
-                self.__call_meta)
-
         if len(workloads) == 0:
+            log.warning("Ignoring rebalance of empty CPU.")
             self.__call_meta['rebalance_empty'] = 1
-            report(cpu)
-            return cpu
+            return AllocateResponse(cpu, self.__call_meta)
 
         log.info("Rebalancing with predictions...")
-        # slow path, predict and adjust
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
-
-        try:
-            cpu = self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None)
-            report(cpu)
-            return cpu
-        except:
-            log.exception("Failed to rebalance, doing nothing.")
-            self.__rebalance_failure_count += 1
-            report(cpu)
-            return cpu
-
+        return AllocateResponse(
+            self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None),
+            self.get_name(),
+            self.__call_meta)
 
     def get_name(self) -> str:
         return self.__class__.__name__
@@ -176,7 +158,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             self.__call_meta['pred_cpu_usage_burst'] = dict(res_burst)
         return res_static, res_burst
 
-    def __place_threads(self, cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, is_add):
+    def __place_threads(self, cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, is_add) -> Cpu:
         # this will predict against the new or deleted workload too if it's static
         predicted_usage_static, predicted_usage_burst = self.__predict_usage(workloads, cpu_usage)
         cu_vector = self.__get_requested_cu_vector(cpu, workload_id, workloads, curr_ids_per_workload, is_add)
