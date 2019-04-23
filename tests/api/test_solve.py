@@ -97,7 +97,7 @@ class TestStatus(unittest.TestCase):
             "/assign_threads",
             data=json.dumps(body),
             content_type='application/json')
-        cpu_out_1 = deserialize_response(cpu_out_1).get_cpu()
+        cpu_out_1 = deserialize_response(cpu_out_1.headers, cpu_out_1.json).get_cpu()
 
         log.info("cpu_out_0: {}".format(cpu_out_0))
         log.info("cpu_out_1: {}".format(cpu_out_1))
@@ -115,7 +115,7 @@ class TestStatus(unittest.TestCase):
             "/free_threads",
             data=json.dumps(body),
             content_type='application/json')
-        cpu_out_1 = deserialize_response(cpu_out_1).get_cpu()
+        cpu_out_1 = deserialize_response(cpu_out_1.headers, cpu_out_1.json).get_cpu()
 
         log.info("cpu_out_0: {}".format(cpu_out_0))
         log.info("cpu_out_1: {}".format(cpu_out_1))

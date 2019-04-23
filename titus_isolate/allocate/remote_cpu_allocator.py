@@ -30,7 +30,7 @@ class RemoteCpuAllocator(CpuAllocator):
         log.debug("assign_threads response code: {}".format(response.status_code))
 
         if response.status_code == 200:
-            return deserialize_response(response)
+            return deserialize_response(response.headers, response.json())
 
         raise CpuAllocationException("Failed to assign threads: {}".format(response.text))
 
@@ -42,7 +42,7 @@ class RemoteCpuAllocator(CpuAllocator):
         log.debug("free_threads response code: {}".format(response.status_code))
 
         if response.status_code == 200:
-            return deserialize_response(response)
+            return deserialize_response(response.headers, response.json())
 
         raise CpuAllocationException("Failed to free threads: {}".format(response.text))
 
@@ -54,7 +54,7 @@ class RemoteCpuAllocator(CpuAllocator):
         log.debug("rebalance response code: {}".format(response.status_code))
 
         if response.status_code == 200:
-            return deserialize_response(response)
+            return deserialize_response(response.headers, response.json())
 
         raise CpuAllocationException("Failed to rebalance threads: {}".format(response.text))
 

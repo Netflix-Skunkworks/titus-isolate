@@ -23,9 +23,8 @@ class AllocateResponse:
         }
 
 
-def deserialize_response(serialized_response) -> AllocateResponse:
-    body = serialized_response.json
-    cell = serialized_response.headers.get(TITUS_ISOLATE_CELL_HEADER, UNKNOWN_CELL)
+def deserialize_response(headers, body) -> AllocateResponse:
+    cell = headers.get(TITUS_ISOLATE_CELL_HEADER, UNKNOWN_CELL)
     cpu = parse_cpu(body[CPU])
     metadata = body[METADATA]
     metadata[CELL] = cell
