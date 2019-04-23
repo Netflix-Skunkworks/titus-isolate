@@ -42,3 +42,25 @@ class TestPackage(unittest.TestCase):
 
         t1.clear()
         self.assertEqual([t0, t2, t1, t3], p.get_empty_threads())
+
+    def test_equality(self):
+        t_0_0 = Thread(0)
+        t_0_1 = Thread(1)
+        c_x = Core(0, [t_0_0, t_0_1])
+        p_x = Package(0, [c_x])
+
+        t_1_0 = Thread(0)
+        t_1_1 = Thread(1)
+        c_y = Core(0, [t_1_0, t_1_1])
+        p_y = Package(0, [c_y])
+        self.assertEqual(p_x, p_y)
+
+        t_0_1.claim("a")
+        self.assertNotEqual(p_x, p_y)
+
+        t_1_1.claim("a")
+        self.assertEqual(p_x, p_y)
+
+        t_0_0.claim("b")
+        t_1_0.claim("b")
+        self.assertEqual(p_x, p_y)

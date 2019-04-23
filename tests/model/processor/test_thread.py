@@ -88,3 +88,19 @@ class TestThread(unittest.TestCase):
         t.clear()
         self.assertFalse(t.is_claimed())
         self.assertEqual(0, len(t.get_workload_ids()))
+
+    def test_equality(self):
+        t_x = Thread(42)
+        t_y = Thread(42)
+        self.assertEqual(t_x, t_y)
+
+        t_x.claim("a")
+        self.assertNotEqual(t_x, t_y)
+
+        t_y.claim("a")
+        self.assertEqual(t_x, t_y)
+
+        t_x.claim("b")
+        t_y.claim("b")
+        self.assertEqual(t_x, t_y)
+

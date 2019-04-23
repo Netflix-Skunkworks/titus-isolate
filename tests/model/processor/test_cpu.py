@@ -12,6 +12,7 @@ config_logs(logging.DEBUG)
 
 
 class TestCpu(unittest.TestCase):
+
     def test_construction(self):
         p0 = Package(0, [
             Core(0, [Thread(0), Thread(4)]),
@@ -65,3 +66,27 @@ class TestCpu(unittest.TestCase):
         # When an equal number of threads are claimed on both packages, the first should be returned
         t4.claim(uuid.uuid4())
         self.assertEqual(p0, cpu.get_emptiest_package())
+
+    def test_equality(self):
+        t_0_0 = Thread(0)
+        t_0_1 = Thread(1)
+        c_x = Core(0, [t_0_0, t_0_1])
+        p_x = Package(0, [c_x])
+        cpu_x = Cpu([p_x])
+
+        t_1_0 = Thread(0)
+        t_1_1 = Thread(1)
+        c_y = Core(0, [t_1_0, t_1_1])
+        p_y = Package(0, [c_y])
+        cpu_y = Cpu([p_y])
+        self.assertEqual(cpu_x, cpu_y)
+
+        t_0_1.claim("a")
+        self.assertNotEqual(cpu_x, cpu_y)
+
+        t_1_1.claim("a")
+        self.assertEqual(cpu_x, cpu_y)
+
+        t_0_0.claim("b")
+        t_1_0.claim("b")
+        self.assertEqual(cpu_x, cpu_y)

@@ -93,3 +93,11 @@ class Cpu:
                 len(self.get_claimed_threads()),
                 utils.visualize(self)
             )
+
+    def __eq__(self, other):
+        if isinstance(other, Cpu):
+            return set(self.get_packages()) == set(other.get_packages())
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(tuple([frozenset(self.get_packages())]))
