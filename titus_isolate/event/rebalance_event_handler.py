@@ -7,7 +7,7 @@ from titus_isolate.event.event_handler import EventHandler
 class RebalanceEventHandler(EventHandler):
 
     def __init__(self, workload_manager):
-        super().__init__(workload_manager, logging.DEBUG)
+        super().__init__(workload_manager)
 
     def handle(self, event):
         if not self.__relevant(event):
