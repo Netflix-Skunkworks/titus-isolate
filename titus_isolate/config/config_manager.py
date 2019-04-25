@@ -28,3 +28,6 @@ class ConfigManager:
 
     def get_environment(self):
         return self.__property_provider.get('NETFLIX_ENVIRONMENT')
+
+    def get_stack(self):
+        return self.__property_provider.get('NETFLIX_STACK')

@@ -143,7 +143,8 @@ class WorkloadManager(MetricsReporter):
             "type": request_type,
             "instance_id": self.__instance_id,
             "region": config_manager.get_region(),
-            "environment": config_manager.get_environment()
+            "environment": config_manager.get_environment(),
+            "stack": config_manager.get_stack()
         }
 
     def __get_cpu_usage(self) -> dict:
