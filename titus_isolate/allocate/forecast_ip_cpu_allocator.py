@@ -1,7 +1,5 @@
 from datetime import datetime as dt
 from collections import defaultdict
-import copy
-from math import ceil, floor
 import time
 
 from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSolverParameters
@@ -13,17 +11,17 @@ from titus_isolate.allocate.allocate_threads_request import AllocateThreadsReque
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC, DEFAULT_ALPHA_LLC, ALPHA_L12, \
-    DEFAULT_ALPHA_L12, ALPHA_ORDER, DEFAULT_ALPHA_ORDER, ALPHA_PREV, DEFAULT_ALPHA_PREV, BURST_MULTIPLIER, \
-    DEFAULT_BURST_MULTIPLIER, MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO, \
-    BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH, WEIGHT_CPU_USE_BURST, \
-    DEFAULT_WEIGHT_CPU_USE_BURST, MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME, \
+    DEFAULT_ALPHA_L12, ALPHA_ORDER, DEFAULT_ALPHA_ORDER, ALPHA_PREV, DEFAULT_ALPHA_PREV, \
+    MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME, \
     RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP, MIP_SOLVER, DEFAULT_MIP_SOLVER
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT, FORECAST_REBALANCE_FAILURE_COUNT
 from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.utils import get_burst_workloads, release_all_threads
+from titus_isolate.model.utils import get_burst_workloads, release_all_threads, update_burst_workloads, \
+    get_static_workloads
 from titus_isolate.model.utils import get_sorted_workloads
+from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
 
@@ -59,11 +57,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             alpha_llc=config_manager.get_float(ALPHA_LLC, DEFAULT_ALPHA_LLC),
             alpha_l12=config_manager.get_float(ALPHA_L12, DEFAULT_ALPHA_L12),
             alpha_order=config_manager.get_float(ALPHA_ORDER, DEFAULT_ALPHA_ORDER),
-            alpha_prev=config_manager.get_float(ALPHA_PREV, DEFAULT_ALPHA_PREV),
-            burst_multiplier=config_manager.get_float(BURST_MULTIPLIER, DEFAULT_BURST_MULTIPLIER),
-            max_burst_pool_increase_ratio=config_manager.get_float(MAX_BURST_POOL_INCREASE_RATIO, DEFAULT_MAX_BURST_POOL_INCREASE_RATIO),
-            burst_core_colloc_usage_thresh=config_manager.get_float(BURST_CORE_COLLOC_USAGE_THRESH, DEFAULT_BURST_CORE_COLLOC_USAGE_THRESH),
-            weight_cpu_use_burst=config_manager.get_float(WEIGHT_CPU_USE_BURST, DEFAULT_WEIGHT_CPU_USE_BURST))
+            alpha_prev=config_manager.get_float(ALPHA_PREV, DEFAULT_ALPHA_PREV))
 
         self.__solver_max_runtime_secs = config_manager.get_float(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
         self.__solver_name = config_manager.get_str(MIP_SOLVER, DEFAULT_MIP_SOLVER)
@@ -83,7 +77,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         return AllocateResponse(
-            self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True),
+            self.__compute_allocation(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True),
             self.get_name(),
             self.__call_meta)
 
@@ -99,7 +93,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             raise Exception("workload_id=`%s` is not placed on the instance. Cannot free it." % (workload_id,))
 
         return AllocateResponse(
-            self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, False),
+            self.__compute_allocation(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, False),
             self.get_name(),
             self.__call_meta)
 
@@ -117,10 +111,31 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         log.info("Rebalancing with predictions...")
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
+
         return AllocateResponse(
-            self.__place_threads(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None),
+            self.__compute_allocation(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None),
             self.get_name(),
             self.__call_meta)
+
+    def __compute_allocation(self, cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, is_add):
+        # Release burst threads
+        burst_workloads = get_burst_workloads(workloads.values())
+        release_all_threads(cpu, burst_workloads)
+
+        # Static workload computation
+        static_workloads = {}
+        for w_id, workload in workloads.items():
+            if workload.get_type() == STATIC:
+                static_workloads[w_id] = workload
+
+        if len(static_workloads) > 0:
+            cpu = self.__place_threads(cpu, workload_id, static_workloads, curr_ids_per_workload, cpu_usage, is_add)
+
+        # Burst workload computation
+        if not is_add:
+            burst_workloads = [workload for workload in burst_workloads if workload.get_id() != workload_id]
+        update_burst_workloads(cpu, burst_workloads, EmptyFreeThreadProvider())
+        return cpu
 
     def get_name(self) -> str:
         return self.__class__.__name__
@@ -166,13 +181,10 @@ class ForecastIPCpuAllocator(CpuAllocator):
         cpu = self.__compute_apply_placement(
             cpu,
             cu_vector.requested_cus,
-            cu_vector.burst_pool_size_req,
             cu_vector.curr_placement_vectors_static,
             predicted_usage_static,
-            predicted_usage_burst,
             workloads,
-            cu_vector.ordered_workload_ids_static,
-            cu_vector.ordered_workload_ids_burst)
+            cu_vector.ordered_workload_ids_static)
 
         return cpu
 
@@ -244,46 +256,28 @@ class ForecastIPCpuAllocator(CpuAllocator):
             self,
             cpu,
             requested_cus,
-            burst_pool_size_req,
             curr_placement_vectors_static,
             predicted_usage_static,
-            predicted_usage_burst,
             workloads,
-            ordered_workload_ids_static,
-            ordered_workload_ids_burst):
+            ordered_workload_ids_static):
 
         predicted_usage_static_vector = None
         if len(predicted_usage_static) > 0:
             predicted_usage_static_vector = [predicted_usage_static[w_id] for w_id in ordered_workload_ids_static]
 
-        sum_burst_pred = 0.0
-        if len(predicted_usage_burst) > 0:
-            sum_burst_pred = sum(v for v in predicted_usage_burst.values())
-
         new_placement_vectors = self.__compute_new_placement(
             cpu,
             requested_cus,
-            burst_pool_size_req,
-            sum_burst_pred,
             curr_placement_vectors_static,
             predicted_usage_static_vector)
-
-        new_placement_vectors_static = new_placement_vectors[:-1] if burst_pool_size_req != 0 else new_placement_vectors
-        new_placement_vector_burst = new_placement_vectors[-1] if burst_pool_size_req != 0 else None
 
         tid_2order = cpu.get_natural_indexing_2_original_indexing()
         thread_id2workload_ids = defaultdict(list)
 
-        for w_ind, v in enumerate(new_placement_vectors_static):
+        for w_ind, v in enumerate(new_placement_vectors):
             for i, e in enumerate(v):
                 if e == 1:
                     thread_id2workload_ids[tid_2order[i]].append(ordered_workload_ids_static[w_ind])
-
-        if new_placement_vector_burst is not None:
-            for i, e in enumerate(new_placement_vector_burst):
-                if e == 1:
-                    for w_ind in ordered_workload_ids_burst:
-                        thread_id2workload_ids[tid_2order[i]].append(w_ind)
 
         release_all_threads(cpu, workloads.values())
         self.__assign_new_mapping(cpu, thread_id2workload_ids)
@@ -295,25 +289,11 @@ class ForecastIPCpuAllocator(CpuAllocator):
             self,
             cpu,
             requested_units,
-            burst_pool_size_req,
-            sum_burst_pred,
             current_placement,
             predicted_usage_static):
 
         num_threads = len(cpu.get_threads())
-
         ip_params = self.__ip_solver_params
-        if burst_pool_size_req > 0 and sum_burst_pred > 0:
-            ip_params.weight_cpu_use_burst = sum_burst_pred / burst_pool_size_req
-
-        # if the instance is mostly empty, loosen constraint
-        # on burst pool growth size
-        num_req_static = sum(requested_units)
-        if num_req_static < num_threads / 2 and burst_pool_size_req > 0:
-            ip_params = copy.deepcopy(ip_params)
-            th_num_cores_static = ceil(num_req_static)
-            ip_params.max_burst_pool_increase_ratio = floor((num_threads - th_num_cores_static) / burst_pool_size_req)
-
         log.info("Using solver: {}".format(self.__solver_name))
 
         num_packages = len(cpu.get_packages())
@@ -328,11 +308,8 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         self.__call_meta['ip_solver_call_args'] = {
             "req_units": [int(e) for e in requested_units],
-            "burst_pool_sz_req": burst_pool_size_req,
             "num_threads": num_threads,
-            "num_packages": num_packages,
-            "weight_cpu_use_burst": ip_params.weight_cpu_use_burst,
-            "max_burst_pool_incr_ratio": ip_params.max_burst_pool_increase_ratio
+            "num_packages": num_packages
         }
 
         if sparse_prev_alloc is not None:
@@ -344,7 +321,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
             start_time = time.time()
             placement, status = optimize_ip(
                 requested_units,
-                burst_pool_size_req,
                 num_threads,
                 num_packages,
                 previous_allocation=current_placement,
