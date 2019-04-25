@@ -113,7 +113,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         if len(workloads) == 0:
             log.warning("Ignoring rebalance of empty CPU.")
             self.__call_meta['rebalance_empty'] = 1
-            return AllocateResponse(cpu, self.__call_meta)
+            return AllocateResponse(cpu, self.get_name(), self.__call_meta)
 
         log.info("Rebalancing with predictions...")
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
