@@ -5,5 +5,5 @@ flask
 requests
 schedule
 cvxpy
-titus-optimize==0.3.4
+titus-optimize==0.4.0
 netflix-spectator-py
