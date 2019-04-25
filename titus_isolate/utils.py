@@ -139,7 +139,7 @@ def get_cell_name():
             log.warning("Titus isolation cell header is not set.")
             return UNKNOWN_CELL
         else:
-            return UNKNOWN_CELL
+            return cell_name
     except:
         log.exception("Failed to determine isolation cell.")
         return UNKNOWN_CELL
