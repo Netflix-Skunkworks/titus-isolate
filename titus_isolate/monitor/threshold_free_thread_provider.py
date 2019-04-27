@@ -29,17 +29,6 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
 
         return free_threads
 
-    @staticmethod
-    def __is_reporting_metrics(workload_id, usage_dicts: list) -> bool:
-        for d in usage_dicts:
-            if workload_id not in d:
-                return False
-
-            if d[workload_id] is None:
-                return False
-
-        return True
-
     def __get_free_threads(self, core: Core, workload_usage: Dict[str, float], workload_map: Dict[str, Workload]):
         def is_empty(c: Core):
             return len(c.get_empty_threads()) == len(core.get_threads())
@@ -61,8 +50,13 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
 
         predicted_static_usage = 0
         for w_id in workload_ids:
-            if workload_map[w_id].get_type() == STATIC:
-                predicted_static_usage += workload_usage.get(w_id, 100.0)
+            workload = workload_map[w_id]
+            if workload.get_type() == STATIC:
+                predicted_static_usage += \
+                    workload_usage.get(w_id, workload.get_thread_count()) / workload.get_thread_count()
+
+        log.info("Comparing predicted static usage: {} against threshold: {}".format(
+            predicted_static_usage, self.__total_threshold))
 
         if predicted_static_usage > self.__total_threshold:
             return []

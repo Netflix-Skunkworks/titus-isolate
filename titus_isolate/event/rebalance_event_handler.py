@@ -1,5 +1,3 @@
-import logging
-
 from titus_isolate.event.constants import ACTION, REBALANCE
 from titus_isolate.event.event_handler import EventHandler
 
