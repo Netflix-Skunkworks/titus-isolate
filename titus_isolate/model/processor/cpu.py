@@ -4,6 +4,7 @@ from typing import List
 
 from titus_isolate.model.processor import utils
 from titus_isolate.model.processor.core import Core
+from titus_isolate.model.processor.package import Package
 
 
 class Cpu:
@@ -13,7 +14,7 @@ class Cpu:
 
         self.__packages = packages
 
-    def get_packages(self):
+    def get_packages(self) -> List[Package]:
         return self.__packages
 
     def get_emptiest_package(self):

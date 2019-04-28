@@ -4,6 +4,7 @@ from titus_isolate import log
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
+from titus_isolate.model.processor.package import Package
 from titus_isolate.model.processor.thread import Thread
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
@@ -24,12 +25,19 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
         log.info("cpu_usage: {}".format(cpu_usage))
 
         free_threads = []
-        for core in cpu.get_cores():
-            free_threads += self.__get_free_threads(core, cpu_usage, workload_map)
+        for package in cpu.get_packages():
+            for core in package.get_cores():
+                free_threads += self.__get_free_threads(package, core, cpu_usage, workload_map)
 
         return free_threads
 
-    def __get_free_threads(self, core: Core, workload_usage: Dict[str, float], workload_map: Dict[str, Workload]):
+    def __get_free_threads(
+            self,
+            package: Package,
+            core: Core,
+            workload_usage: Dict[str, float],
+            workload_map: Dict[str, Workload]):
+
         def is_empty(c: Core):
             return len(c.get_empty_threads()) == len(core.get_threads())
 
@@ -49,19 +57,27 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
             workload_ids += t.get_workload_ids()
 
         predicted_static_usage = 0
+        static_workload_ids = []
         for w_id in workload_ids:
             workload = workload_map[w_id]
             if workload.get_type() == STATIC:
                 predicted_static_usage += \
                     workload_usage.get(w_id, workload.get_thread_count()) / workload.get_thread_count()
+                static_workload_ids.append(workload.get_id())
 
-        log.info("Comparing predicted static usage: {} against threshold: {}".format(
-            predicted_static_usage, self.__total_threshold))
+        is_free = predicted_static_usage <= self.__total_threshold
 
-        if predicted_static_usage > self.__total_threshold:
+        log.info(
+            "Package:Core {}:{} is free: {} based on predicted static usage: {} threshold: {} for workloads: {}".format(
+                package.get_id(),
+                core.get_id(),
+                is_free,
+                predicted_static_usage,
+                self.__total_threshold,
+                static_workload_ids))
+
+        if is_free:
+            return core.get_empty_threads()
+        else:
             return []
-
-        # At this point the empty thread may be allocated to the BURST pool because STATIC workload usage
-        # is below the threshold
-        return core.get_empty_threads()
 
