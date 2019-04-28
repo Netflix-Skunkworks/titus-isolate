@@ -1,5 +1,6 @@
 from typing import List, Dict
 
+from titus_isolate import log
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.thread import Thread
 from titus_isolate.model.workload import Workload
@@ -13,4 +14,5 @@ class NoFreeThreadProvider(FreeThreadProvider):
             cpu: Cpu,
             cpu_usage: Dict[str, float],
             workload_map: Dict[str, Workload]) -> List[Thread]:
+        log.info("No threads are every free.")
         return []
