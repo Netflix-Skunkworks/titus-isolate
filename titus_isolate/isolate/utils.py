@@ -12,10 +12,10 @@ from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAULT_ALLOCATOR, \
     CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, IP, GREEDY, NOOP, FORECAST_CPU_IP, \
     NOOP_RESET, FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER, EMPTY, THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
-    TOTAL_THRESHOLD, REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, NONE
+    TOTAL_THRESHOLD, REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, NOTHING
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
-from titus_isolate.monitor.no_free_thread_provider import NoFreeThreadProvider
+from titus_isolate.monitor.nothing_free_thread_provider import NothingFreeThreadProvider
 from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
 from titus_isolate.utils import get_cpu_usage_predictor_manager
 
@@ -36,8 +36,8 @@ def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvide
 
     if free_thread_provider_str == EMPTY:
         free_thread_provider = EmptyFreeThreadProvider()
-    elif free_thread_provider_str == NONE:
-        free_thread_provider = NoFreeThreadProvider()
+    elif free_thread_provider_str == NOTHING:
+        free_thread_provider = NothingFreeThreadProvider()
     elif free_thread_provider_str == THRESHOLD:
         total_threshold = config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
         free_thread_provider = ThresholdFreeThreadProvider(total_threshold=total_threshold)

@@ -7,7 +7,7 @@ from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 
 
-class NoFreeThreadProvider(FreeThreadProvider):
+class NothingFreeThreadProvider(FreeThreadProvider):
 
     def get_free_threads(
             self,
