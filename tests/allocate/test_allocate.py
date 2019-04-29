@@ -19,10 +19,11 @@ from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
+from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_workload_monitor_manager
 
-config_logs(logging.DEBUG)
+config_logs(logging.INFO)
 
 
 class TestPredictor(object):
@@ -67,7 +68,8 @@ class TestWorkloadMonitorManager(CpuUsageProvider):
 
 forecast_ip_alloc_simple = ForecastIPCpuAllocator(
     TestCpuUsagePredictorManager(),
-    ConfigManager(TestPropertyProvider({})))
+    ConfigManager(TestPropertyProvider({})),
+    ThresholdFreeThreadProvider(0.1))
 
 ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
 
@@ -373,7 +375,7 @@ class TestCpu(unittest.TestCase):
             self.assertEqual(3 + 4 + 2, len(cpu.get_claimed_threads()))
 
             request = AllocateThreadsRequest(cpu, w1.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
-            allocator.free_threads(request).get_cpu()
+            cpu = allocator.free_threads(request).get_cpu()
             self.assertEqual(3 + 4, len(cpu.get_claimed_threads()))
 
             workload_ids_left = set()
@@ -517,7 +519,7 @@ class TestCpu(unittest.TestCase):
 
         upm = TestCpuUsagePredictorManager(UsagePredictorWithBurst())
         cm = ConfigManager(TestPropertyProvider({BURST_CORE_COLLOC_USAGE_THRESH: 0.9}))
-        allocator = ForecastIPCpuAllocator(upm, cm)
+        allocator = ForecastIPCpuAllocator(upm, cm, ThresholdFreeThreadProvider(0.1))
 
         cpu = get_cpu(package_count=2, cores_per_package=16)
         w_a = get_test_workload("static_a", 14, STATIC)
@@ -553,3 +555,84 @@ class TestCpu(unittest.TestCase):
                     elif (wt1 == 'static_b' and wt2 == 'burst_c') or (wt1 == 'burst_c' and wt2 == 'static_b'):
                         colloc_b += 1
         self.assertLessEqual(colloc_a, colloc_b)
+
+    def test_forecast_threshold_no_usage(self):
+        allocator = ForecastIPCpuAllocator(
+            TestCpuUsagePredictorManager(),
+            ConfigManager(TestPropertyProvider({})),
+            ThresholdFreeThreadProvider(0.1))
+
+        thread_count = DEFAULT_TOTAL_THREAD_COUNT / 2
+        cpu = get_cpu()
+
+        w0 = get_test_workload(uuid.uuid4(), thread_count, STATIC)
+
+        request = AllocateThreadsRequest(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        cpu = allocator.assign_threads(request).get_cpu()
+        log.info(cpu)
+
+        # All cores should be occupied
+        for c in cpu.get_cores():
+            self.assertEqual(1, len(c.get_empty_threads()))
+
+        w1 = get_test_workload(uuid.uuid4(), thread_count, BURST)
+        request = AllocateThreadsRequest(
+            cpu,
+            w1.get_id(),
+            {
+                w0.get_id(): w0,
+                w1.get_id(): w1
+            },
+            {},
+            DEFAULT_TEST_REQUEST_METADATA)
+        cpu = allocator.assign_threads(request).get_cpu()
+        log.info(cpu)
+
+        # No threads should be shared
+        for c in cpu.get_cores():
+            self.assertEqual(c.get_threads()[0].get_workload_ids(), c.get_threads()[1].get_workload_ids())
+
+    def test_forecast_threshold_usage(self):
+        allocator = ForecastIPCpuAllocator(
+            TestCpuUsagePredictorManager(TestCpuUsagePredictor(10)),
+            ConfigManager(TestPropertyProvider({})),
+            ThresholdFreeThreadProvider(0.05))
+
+        thread_count = DEFAULT_TOTAL_THREAD_COUNT / 4
+        cpu = get_cpu()
+
+        w0 = get_test_workload(uuid.uuid4(), thread_count, STATIC)
+        log.info(w0)
+
+        request = AllocateThreadsRequest(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        cpu = allocator.assign_threads(request).get_cpu()
+        log.info(cpu)
+
+        # All cores should be occupied
+        for c in cpu.get_cores():
+            self.assertTrue(len(c.get_empty_threads()) == 1 or len(c.get_empty_threads()) == 2)
+
+        w1 = get_test_workload(uuid.uuid4(), thread_count, BURST)
+        log.info(w1)
+        request = AllocateThreadsRequest(
+            cpu,
+            w1.get_id(),
+            {
+                w0.get_id(): w0,
+                w1.get_id(): w1
+            },
+            {},
+            DEFAULT_TEST_REQUEST_METADATA)
+        cpu = allocator.assign_threads(request).get_cpu()
+        log.info(cpu)
+
+        for c in cpu.get_cores():
+            # Static workload should have unshared cores
+            if len(c.get_empty_threads()) == 1:
+                for t in c.get_threads():
+                    if t.is_claimed():
+                        self.assertEqual([w0.get_id()], t.get_workload_ids())
+            # Burst workload should have shared cores only with itself
+            if len(c.get_empty_threads()) == 0:
+                self.assertEqual(c.get_threads()[0].get_workload_ids(), c.get_threads()[1].get_workload_ids())
+                self.assertEqual([w1.get_id()], c.get_threads()[1].get_workload_ids())

@@ -1,7 +1,10 @@
 from collections import defaultdict
 from functools import reduce
+from typing import List
 
 from titus_isolate.model.processor import utils
+from titus_isolate.model.processor.core import Core
+from titus_isolate.model.processor.package import Package
 
 
 class Cpu:
@@ -11,7 +14,7 @@ class Cpu:
 
         self.__packages = packages
 
-    def get_packages(self):
+    def get_packages(self) -> List[Package]:
         return self.__packages
 
     def get_emptiest_package(self):
@@ -27,7 +30,7 @@ class Cpu:
 
         return emptiest_package
 
-    def get_cores(self):
+    def get_cores(self) -> List[Core]:
         return reduce(list.__add__, [package.get_cores() for package in self.get_packages()])
 
     def get_threads(self):
