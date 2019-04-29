@@ -19,10 +19,12 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
     def get_free_threads(
             self,
             cpu: Cpu,
-            cpu_usage: Dict[str, float],
-            workload_map: Dict[str, Workload]) -> List[Thread]:
+            cpu_usage: Dict[str, float] = None,
+            workload_map: Dict[str, Workload] = None) -> List[Thread]:
 
-        log.info("cpu_usage: {}".format(cpu_usage))
+        if cpu_usage is None or workload_map is None:
+            log.error("CPU usage and workload_map required, defaulting to EMPTY threads being free.")
+            return cpu.get_empty_threads()
 
         free_threads = []
         for package in cpu.get_packages():
@@ -59,8 +61,8 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
         predicted_static_usage = 0
         static_workload_ids = []
         for w_id in workload_ids:
-            workload = workload_map[w_id]
-            if workload.get_type() == STATIC:
+            workload = workload_map.get(w_id, None)
+            if workload is not None and workload.get_type() == STATIC:
                 predicted_static_usage += \
                     workload_usage.get(w_id, workload.get_thread_count()) / workload.get_thread_count()
                 static_workload_ids.append(workload.get_id())

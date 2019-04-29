@@ -12,7 +12,7 @@ class NothingFreeThreadProvider(FreeThreadProvider):
     def get_free_threads(
             self,
             cpu: Cpu,
-            cpu_usage: Dict[str, float],
-            workload_map: Dict[str, Workload]) -> List[Thread]:
-        log.info("No threads are every free.")
+            cpu_usage: Dict[str, float] = None,
+            workload_map: Dict[str, Workload] = None) -> List[Thread]:
+        log.info("No threads are free.")
         return []
