@@ -562,8 +562,10 @@ class TestCpu(unittest.TestCase):
             ConfigManager(TestPropertyProvider({})),
             ThresholdFreeThreadProvider(0.1))
 
+        thread_count = DEFAULT_TOTAL_THREAD_COUNT / 2
         cpu = get_cpu()
-        w0 = get_test_workload(uuid.uuid4(), 8, STATIC)
+
+        w0 = get_test_workload(uuid.uuid4(), thread_count, STATIC)
 
         request = AllocateThreadsRequest(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
         cpu = allocator.assign_threads(request).get_cpu()
@@ -573,7 +575,7 @@ class TestCpu(unittest.TestCase):
         for c in cpu.get_cores():
             self.assertEqual(1, len(c.get_empty_threads()))
 
-        w1 = get_test_workload(uuid.uuid4(), 8, BURST)
+        w1 = get_test_workload(uuid.uuid4(), thread_count, BURST)
         request = AllocateThreadsRequest(
             cpu,
             w1.get_id(),
@@ -596,8 +598,10 @@ class TestCpu(unittest.TestCase):
             ConfigManager(TestPropertyProvider({})),
             ThresholdFreeThreadProvider(0.05))
 
+        thread_count = DEFAULT_TOTAL_THREAD_COUNT / 4
         cpu = get_cpu()
-        w0 = get_test_workload(uuid.uuid4(), 4, STATIC)
+
+        w0 = get_test_workload(uuid.uuid4(), thread_count, STATIC)
         log.info(w0)
 
         request = AllocateThreadsRequest(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
@@ -608,7 +612,7 @@ class TestCpu(unittest.TestCase):
         for c in cpu.get_cores():
             self.assertTrue(len(c.get_empty_threads()) == 1 or len(c.get_empty_threads()) == 2)
 
-        w1 = get_test_workload(uuid.uuid4(), 4, BURST)
+        w1 = get_test_workload(uuid.uuid4(), thread_count, BURST)
         log.info(w1)
         request = AllocateThreadsRequest(
             cpu,

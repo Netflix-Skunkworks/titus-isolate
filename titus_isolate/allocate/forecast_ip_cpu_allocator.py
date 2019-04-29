@@ -157,7 +157,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         log.info("Usage prediction per workload: " + str(res))
         if len(res) > 0:
-            self.__call_meta['pred_cpu_usage_static'] = dict(res)
+            self.__call_meta['pred_cpu_usage'] = dict(res)
         return res
 
     def __place_threads(self, cpu, workload_id, workloads, curr_ids_per_workload, predicted_cpu_usage, is_add) -> Cpu:

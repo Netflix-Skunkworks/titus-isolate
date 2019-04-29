@@ -13,6 +13,11 @@ from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 class ThresholdFreeThreadProvider(FreeThreadProvider):
 
     def __init__(self, total_threshold: float):
+        """
+        This class determines whether threads are free based on the cpu usage of workloads.
+
+        :param total_threshold: The percentage of usage under which threads are considered to be free.
+        """
         self.__total_threshold = total_threshold
         log.debug("ThresholdFreeThreadProvider created with threshold: '{}'".format(self.__total_threshold))
 
@@ -40,18 +45,6 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
             workload_usage: Dict[str, float],
             workload_map: Dict[str, Workload]):
 
-        def is_empty(c: Core):
-            return len(c.get_empty_threads()) == len(core.get_threads())
-
-        def is_full(c: Core):
-            return len(c.get_empty_threads()) == 0
-
-        if is_empty(core):
-            return core.get_threads()
-
-        if is_full(core):
-            return []
-
         # At this point the core is partially allocated (one thread allocated, one thread unallocated).
         # If the sum of STATIC predicted CPU usage exceeds the threshold no threads are free to be allocated.
         workload_ids = []
@@ -65,7 +58,7 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
             if workload is not None and workload.get_type() == STATIC:
                 predicted_static_usage += \
                     workload_usage.get(w_id, workload.get_thread_count()) / workload.get_thread_count()
-                static_workload_ids.append(workload.get_id())
+                static_workload_ids.append(w_id)
 
         is_free = predicted_static_usage <= self.__total_threshold
 
