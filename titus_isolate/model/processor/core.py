@@ -1,4 +1,7 @@
+from typing import List
+
 from titus_isolate.model.processor import utils
+from titus_isolate.model.processor.thread import Thread
 
 
 class Core:
@@ -12,7 +15,7 @@ class Core:
     def get_id(self):
         return self.__identifier
 
-    def get_threads(self):
+    def get_threads(self) -> List[Thread]:
         return self.__threads
 
     def get_empty_threads(self):
