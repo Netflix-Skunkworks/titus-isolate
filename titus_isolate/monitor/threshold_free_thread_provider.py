@@ -19,11 +19,11 @@ class ThresholdFreeThreadProvider(FreeThreadProvider):
     def get_free_threads(
             self,
             cpu: Cpu,
-            cpu_usage: Dict[str, float] = None,
-            workload_map: Dict[str, Workload] = None) -> List[Thread]:
+            workload_map: Dict[str, Workload],
+            cpu_usage: Dict[str, float] = None) -> List[Thread]:
 
-        if cpu_usage is None or workload_map is None:
-            log.error("CPU usage and workload_map required, defaulting to EMPTY threads being free.")
+        if cpu_usage is None:
+            log.error("CPU usage is required, defaulting to EMPTY threads being free.")
             return cpu.get_empty_threads()
 
         free_threads = []

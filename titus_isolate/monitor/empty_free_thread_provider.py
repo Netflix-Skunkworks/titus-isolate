@@ -12,7 +12,6 @@ class EmptyFreeThreadProvider(FreeThreadProvider):
     def get_free_threads(
             self,
             cpu: Cpu,
-            cpu_usage: Dict[str, float] = None,
-            workload_map: Dict[str, Workload] = None) -> List[Thread]:
-        log.info("All empty threads are free")
+            workload_map: Dict[str, Workload],
+            cpu_usage: Dict[str, float] = None) -> List[Thread]:
         return [t for t in cpu.get_threads() if len(t.get_workload_ids()) == 0]

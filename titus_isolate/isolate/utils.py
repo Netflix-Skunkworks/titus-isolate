@@ -15,7 +15,6 @@ from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAUL
     TOTAL_THRESHOLD, REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, NOTHING
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
-from titus_isolate.monitor.nothing_free_thread_provider import NothingFreeThreadProvider
 from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
 from titus_isolate.utils import get_cpu_usage_predictor_manager
 
@@ -36,8 +35,6 @@ def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvide
 
     if free_thread_provider_str == EMPTY:
         free_thread_provider = EmptyFreeThreadProvider()
-    elif free_thread_provider_str == NOTHING:
-        free_thread_provider = NothingFreeThreadProvider()
     elif free_thread_provider_str == THRESHOLD:
         total_threshold = config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
         free_thread_provider = ThresholdFreeThreadProvider(total_threshold=total_threshold)

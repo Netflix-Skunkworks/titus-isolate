@@ -1,3 +1,5 @@
+import copy
+
 from titus_isolate.allocate.constants import CPU, CPU_USAGE, WORKLOADS, METADATA
 from titus_isolate.allocate.utils import parse_cpu, parse_workloads, parse_cpu_usage
 from titus_isolate.model.processor.cpu import Cpu
@@ -14,10 +16,10 @@ class AllocateRequest:
                           The keys are workload ids, the objects are Workload objects
         :param cpu_usage: A map of cpu usage per workload
         """
-        self.__cpu = cpu
-        self.__workloads = workloads
-        self.__cpu_usage = cpu_usage
-        self.__metadata = metadata
+        self.__cpu = copy.deepcopy(cpu)
+        self.__workloads = copy.deepcopy(workloads)
+        self.__cpu_usage = copy.deepcopy(cpu_usage)
+        self.__metadata = copy.deepcopy(metadata)
 
     def get_cpu(self):
         return self.__cpu

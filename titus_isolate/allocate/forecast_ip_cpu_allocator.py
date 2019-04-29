@@ -124,7 +124,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         # Claim all free threads for burst workloads
         burst_workload_ids = [w.get_id() for w in burst_workloads]
-        free_threads = self.__free_thread_provider.get_free_threads(cpu, predicted_usage, workloads)
+        free_threads = self.__free_thread_provider.get_free_threads(cpu, workloads, predicted_usage)
         for t in free_threads:
             for w_id in burst_workload_ids:
                 t.claim(w_id)

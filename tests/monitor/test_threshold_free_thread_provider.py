@@ -13,6 +13,7 @@ from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeTh
 
 config_logs(logging.DEBUG)
 TEST_WORKLOAD_THREAD_COUNT = 4
+TEST_THRESHOLD_USAGE = DEFAULT_TOTAL_THRESHOLD * TEST_WORKLOAD_THREAD_COUNT
 
 
 class TestWorkloadManager(unittest.TestCase):
@@ -28,11 +29,11 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertEqual([], free_threads)
 
     def test_low_static_usage(self):
-        free_threads = self.__test_uniform_usage(DEFAULT_TOTAL_THRESHOLD)
+        free_threads = self.__test_uniform_usage(TEST_THRESHOLD_USAGE)
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - TEST_WORKLOAD_THREAD_COUNT, len(free_threads))
 
     def test_high_static_usage(self):
-        free_threads = self.__test_uniform_usage(DEFAULT_TOTAL_THRESHOLD + 0.001)
+        free_threads = self.__test_uniform_usage(TEST_THRESHOLD_USAGE + 0.001)
         self.assertEqual(8, len(free_threads))
 
     def __test_uniform_usage(self, usage):
@@ -44,7 +45,10 @@ class TestWorkloadManager(unittest.TestCase):
         log.info(cpu)
         w_usage = {"a": usage}
 
-        return ThresholdFreeThreadProvider(DEFAULT_TOTAL_THRESHOLD).get_free_threads(cpu, w_usage, {workload.get_id(): workload})
+        return ThresholdFreeThreadProvider(DEFAULT_TOTAL_THRESHOLD).get_free_threads(
+            cpu,
+            {workload.get_id(): workload},
+            w_usage)
 
     @staticmethod
     def __assign_workload(cpu, workload):

@@ -375,7 +375,7 @@ class TestCpu(unittest.TestCase):
             self.assertEqual(3 + 4 + 2, len(cpu.get_claimed_threads()))
 
             request = AllocateThreadsRequest(cpu, w1.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
-            allocator.free_threads(request).get_cpu()
+            cpu = allocator.free_threads(request).get_cpu()
             self.assertEqual(3 + 4, len(cpu.get_claimed_threads()))
 
             workload_ids_left = set()

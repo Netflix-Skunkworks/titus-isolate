@@ -1,3 +1,5 @@
+import copy
+
 from titus_isolate.allocate.allocate_request import AllocateRequest, deserialize_allocate_request
 from titus_isolate.allocate.constants import WORKLOAD_ID
 from titus_isolate.model.processor.cpu import Cpu
@@ -17,7 +19,7 @@ class AllocateThreadsRequest(AllocateRequest):
         :param cpu_usage: A map of cpu usage per workload
         """
         super().__init__(cpu, workloads, cpu_usage, metadata)
-        self.__workload_id = workload_id
+        self.__workload_id = copy.deepcopy(workload_id)
 
     def get_workload_id(self):
         return self.__workload_id

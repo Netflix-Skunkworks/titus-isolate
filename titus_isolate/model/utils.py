@@ -1,3 +1,5 @@
+from typing import Dict
+
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.event.utils import get_container_name, get_cpu, get_mem, get_disk, get_network, get_workload_type, \
     get_image, get_app_name, get_job_type, get_owner_email, get_command, get_entrypoint
@@ -64,8 +66,12 @@ def release_threads(cpu, workload_id):
         t.free(workload_id)
 
 
-def update_burst_workloads(cpu, burst_workloads, free_thread_provider):
-    free_threads = free_thread_provider.get_free_threads(cpu)
+def update_burst_workloads(cpu: Cpu, workload_map: Dict[str, Workload], free_thread_provider: FreeThreadProvider):
+    free_threads = free_thread_provider.get_free_threads(cpu, workload_map)
+    burst_workloads = get_burst_workloads(workload_map.values())
+    if len(burst_workloads) == 0:
+        return
+
     for t in free_threads:
         for w in burst_workloads:
             t.claim(w.get_id())
@@ -74,6 +80,6 @@ def update_burst_workloads(cpu, burst_workloads, free_thread_provider):
 def rebalance(cpu: Cpu, workloads: dict, free_thread_provider: FreeThreadProvider) -> Cpu:
     burst_workloads = get_burst_workloads(workloads.values())
     release_all_threads(cpu, burst_workloads)
-    update_burst_workloads(cpu, burst_workloads, free_thread_provider)
+    update_burst_workloads(cpu, workloads, free_thread_provider)
 
     return cpu

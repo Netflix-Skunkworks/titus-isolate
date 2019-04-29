@@ -27,7 +27,7 @@ class GreedyCpuAllocator(CpuAllocator):
         release_all_threads(cpu, burst_workloads)
         if workloads[workload_id].get_type() == STATIC:
             self.__assign_threads(cpu, workloads[workload_id])
-        update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
+        update_burst_workloads(cpu, workloads, self.__free_thread_provider)
 
         return AllocateResponse(cpu, self.get_name())
 
@@ -42,8 +42,8 @@ class GreedyCpuAllocator(CpuAllocator):
             if workload_id in t.get_workload_ids():
                 t.free(workload_id)
 
-        burst_workloads = [w for w in burst_workloads if w.get_id() != workload_id]
-        update_burst_workloads(cpu, burst_workloads, self.__free_thread_provider)
+        workloads.pop(workload_id)
+        update_burst_workloads(cpu, workloads, self.__free_thread_provider)
 
         return AllocateResponse(cpu, self.get_name())
 
