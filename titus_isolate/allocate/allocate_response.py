@@ -1,4 +1,6 @@
-from titus_isolate.allocate.constants import CPU, METADATA, TITUS_ISOLATE_CELL_HEADER, UNKNOWN_CELL, CELL, CPU_ALLOCATOR
+import os
+from titus_isolate.allocate.constants import CPU, METADATA, TITUS_ISOLATE_CELL_HEADER, UNKNOWN_CELL, CELL, \
+    CPU_ALLOCATOR, ALLOCATOR_SERVICE_TASK_ID, UNKNOWN_ALLOCATOR_SERVICE_TASK_ID, TITUS_TASK_ID
 from titus_isolate.allocate.utils import parse_cpu
 from titus_isolate.model.processor.cpu import Cpu
 
@@ -9,6 +11,9 @@ class AllocateResponse:
         self.__cpu = cpu
         self.__metadata = metadata
         self.__metadata[CPU_ALLOCATOR] = cpu_allocator_name
+        if ALLOCATOR_SERVICE_TASK_ID not in self.__metadata:
+            alloc_service_id = os.environ.get(TITUS_TASK_ID, UNKNOWN_ALLOCATOR_SERVICE_TASK_ID)
+            self.__metadata[ALLOCATOR_SERVICE_TASK_ID] = alloc_service_id
 
     def get_cpu(self):
         return self.__cpu
