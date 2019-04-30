@@ -1,12 +1,13 @@
 import copy
-from threading import Thread, Lock
+from threading import Thread, Lock, RLock
 
 from titus_isolate import log
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
 from titus_isolate.cgroup.utils import set_cpuset, wait_for_files, get_cpuset, parse_cpuset
 from titus_isolate.config.constants import WAIT_CGROUP_FILE_KEY, WAIT_JSON_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC, \
     DEFAULT_WAIT_JSON_FILE_SEC
-from titus_isolate.metrics.constants import WRITE_CPUSET_FAILED_KEY, WRITE_CPUSET_SUCCEEDED_KEY, ISOLATED_WORKLOAD_COUNT
+from titus_isolate.metrics.constants import WRITE_CPUSET_FAILED_KEY, WRITE_CPUSET_SUCCEEDED_KEY, \
+    ISOLATED_WORKLOAD_COUNT, CPUSET_THREAD_COUNT
 from titus_isolate.utils import get_config_manager, get_workload_manager
 
 
@@ -18,14 +19,20 @@ class FileCgroupManager(CgroupManager):
         self.__write_count = 0
         self.__fail_count = 0
         self.__isolated_workload_ids = set([])
+        self.__thread_lock = RLock()
+        self.__threads = []
 
     def set_cpuset(self, container_name, thread_ids):
-        Thread(target=self.__set_cpuset, args=[container_name, thread_ids]).start()
+        with self.__thread_lock:
+            t = Thread(target=self.__set_cpuset, args=[container_name, thread_ids])
+            t.start()
+            self.__threads.append(t)
+            self.__remove_dead_threads()
 
     def get_cpuset(self, container_name):
         cpuset_str = self.__get_cpuset(container_name)
         if cpuset_str is None:
-            return None
+            return []
         else:
             return parse_cpuset(cpuset_str)
 
@@ -43,6 +50,19 @@ class FileCgroupManager(CgroupManager):
             workload_ids = set([w.get_id() for w in workloads])
             self.__isolated_workload_ids = self.__isolated_workload_ids.intersection(workload_ids)
             return copy.deepcopy(self.__isolated_workload_ids)
+
+    def has_pending_work(self):
+        with self.__thread_lock:
+            return self.__get_thread_count() > 0
+
+    def __get_thread_count(self) -> int:
+        with self.__thread_lock:
+            self.__remove_dead_threads()
+            return len(self.__threads)
+
+    def __remove_dead_threads(self):
+        with self.__thread_lock:
+            self.__threads = [t for t in self.__threads if t.is_alive()]
 
     def __set_cpuset(self, container_name, thread_ids):
         thread_ids_str = self.__get_thread_ids_str(thread_ids)
@@ -92,4 +112,4 @@ class FileCgroupManager(CgroupManager):
         self.__reg.gauge(WRITE_CPUSET_SUCCEEDED_KEY, tags).set(self.__write_count)
         self.__reg.gauge(WRITE_CPUSET_FAILED_KEY, tags).set(self.__fail_count)
         self.__reg.gauge(ISOLATED_WORKLOAD_COUNT, tags).set(len(self.get_isolated_workload_ids()))
-
+        self.__reg.gauge(CPUSET_THREAD_COUNT, tags).set(self.__get_thread_count())
