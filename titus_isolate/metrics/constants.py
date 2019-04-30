@@ -17,6 +17,7 @@ FORECAST_REBALANCE_FAILURE_COUNT = 'titus-isolate.forecastRebalanceFailureCount'
 WRITE_CPUSET_SUCCEEDED_KEY = 'titus-isolate.writeCpusetSucceeded'
 WRITE_CPUSET_FAILED_KEY = 'titus-isolate.writeCpusetFailed'
 ISOLATED_WORKLOAD_COUNT = 'titus-isolate.isolatedWorkloadCount'
+CPUSET_THREAD_COUNT = 'titus-isolate.cpusetThreadCount'
 
 PACKAGE_VIOLATIONS_KEY = 'titus-isolate.crossPackageViolations'
 CORE_VIOLATIONS_KEY = 'titus-isolate.sharedCoreViolations'
@@ -52,3 +53,6 @@ STATIC_POOL_USAGE_KEY = 'titus-isolate.staticPoolUsage'
 BURST_POOL_USAGE_KEY = 'titus-isolate.burstPoolUsage'
 
 RUNNING = 'titus-isolate.running'
+
+RECONCILE_SKIP_COUNT = 'titus-isolate.reconcileSkipCount'
+RECONCILE_SUCCESS_COUNT = 'titus-isolate.reconcileSuccessCount'

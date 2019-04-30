@@ -77,7 +77,8 @@ def main(admin_port):
     create_event_handler = CreateEventHandler(workload_manager)
     free_event_handler = FreeEventHandler(workload_manager)
     rebalance_event_handler = RebalanceEventHandler(workload_manager)
-    reconcile_event_handler = ReconcileEventHandler(Reconciler(cgroup_manager, RealExitHandler()))
+    reconciler = Reconciler(cgroup_manager, RealExitHandler())
+    reconcile_event_handler = ReconcileEventHandler(reconciler)
     event_handlers = [create_event_handler, free_event_handler, rebalance_event_handler, reconcile_event_handler]
 
     # Start event processing
@@ -87,7 +88,13 @@ def main(admin_port):
 
     # Report metrics
     log.info("Starting metrics reporting...")
-    MetricsManager([workload_manager, event_manager, workload_monitor_manager, event_log_manager])
+    MetricsManager([
+        cgroup_manager,
+        event_log_manager,
+        event_manager,
+        reconciler,
+        workload_manager,
+        workload_monitor_manager])
 
     # Initialize currently running containers as workloads
     log.info("Isolating currently running workloads...")

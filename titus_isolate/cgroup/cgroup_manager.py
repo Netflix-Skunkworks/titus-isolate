@@ -20,3 +20,7 @@ class CgroupManager(MetricsReporter):
     @abstractmethod
     def get_isolated_workload_ids(self):
         pass
+
+    @abstractmethod
+    def has_pending_work(self):
+        pass
