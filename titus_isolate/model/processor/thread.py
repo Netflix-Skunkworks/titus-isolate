@@ -15,7 +15,9 @@ class Thread:
         return self.__processor_id
 
     def claim(self, workload_id):
-        self.__workload_ids.append(workload_id)
+        workload_ids = list(self.__workload_ids)
+        workload_ids.append(workload_id)
+        self.__workload_ids = list(set(workload_ids))
 
     def free(self, workload_id):
         log.debug("Removing workload: '{}' from thread '{}'".format(workload_id, self.get_id()))
