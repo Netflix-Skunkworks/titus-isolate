@@ -12,9 +12,10 @@ from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAULT_ALLOCATOR, \
     CPU_ALLOCATOR_A, CPU_ALLOCATOR_B, AB_TEST, EC2_INSTANCE_ID, IP, GREEDY, NOOP, FORECAST_CPU_IP, \
     NOOP_RESET, FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER, EMPTY, THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
-    TOTAL_THRESHOLD, REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, NOTHING
+    TOTAL_THRESHOLD, REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, OVERSUBSCRIBE
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
+from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
 from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
 from titus_isolate.utils import get_cpu_usage_predictor_manager
 
@@ -33,13 +34,16 @@ def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvide
     free_thread_provider_str = config_manager.get_str(FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER)
     free_thread_provider = None
 
+    total_threshold = config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
+
     if free_thread_provider_str == EMPTY:
         free_thread_provider = EmptyFreeThreadProvider()
     elif free_thread_provider_str == THRESHOLD:
-        total_threshold = config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
-        free_thread_provider = ThresholdFreeThreadProvider(total_threshold=total_threshold)
+        free_thread_provider = ThresholdFreeThreadProvider(total_threshold)
+    elif free_thread_provider_str == OVERSUBSCRIBE:
+        free_thread_provider = OversubscribeFreeThreadProvider(total_threshold)
 
-    log.debug("Free thread provider: '{}'".format(free_thread_provider.__class__.__name__))
+    log.info("Free thread provider: '{}'".format(free_thread_provider.__class__.__name__))
     return free_thread_provider
 
 
