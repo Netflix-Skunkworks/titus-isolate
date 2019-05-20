@@ -1,130 +1,125 @@
 ## Introduction
 
-`titus-isolate` applies isolation primitives to workloads running on a given agent in an attempt to control the impact of "noisy neighbors" depending on user requirements.
+`titus-isolate` enables the isolated and efficient use of compute resources in a multi-tenant container environment.
+Given a machine hosting multiple containers, `titus-isolate` partitions the available compute hardware (hyper-threads) 
+to achieve isolation and efficiency goals.
 
-## Install Dependencies
-
-First we setup a virtual environment.
-```bash
-$ virtualenv env
-New python executable in <OMITTED>
-Installing setuptools, pip, wheel...done.
-$ . env/bin/activate
-```
-
-Then we install the package.
-```bash
-$ python3 setup.py install
-running install
-running build
-running build_py
-running build_scripts
-running install_lib
-running install_scripts
-changing mode of <OMITTED>/titus-isolate/venv/bin/titus-isolate to 755
-changing mode of <OMITTED>/titus-isolate/venv/bin/main.py to 755
-running install_egg_info
-Removing <OMITTED>/titus-isolate/venv/lib/python3.7/site-packages/titus_isolate-0.SNAPSHOT-py3.7.egg-info
-Writing <OMITTED>/titus-isolate/venv/lib/python3.7/site-packages/titus_isolate-0.SNAPSHOT-py3.7.egg-info
-```
-
-See `Usage` for starting the `titus-isolate` server.
-
-## Usage
-In order to use `titus-isolate` two components must cooperate.  A server subscribes to events from Docker and workloads adhere to a container labeling convention.
-
-### Server
-
-The server must be started with three arguments indicating the structure of the CPU which workloads will consume.
-```bash
-$ titus-isolate --help
-Usage: titus-isolate [OPTIONS]
-
-Options:
-  --admin-port INTEGER  The port for the HTTP server to listen on (default:
-                        5000)
-  --help                Show this message and exit.
-```
-
-The server will automatically determine the topology of the CPU on which it is running.  It supports MacOS and Linux systems today.
-It requires that the python method `platform.system()` return either `Darwin` or `Linux`.  For example:
-
-```bash
-$ python
-Python 3.7.0 (default, Oct  2 2018, 09:20:07)
-[Clang 10.0.0 (clang-1000.11.45.2)] on darwin
-Type "help", "copyright", "credits" or "license" for more information.
->>> import platform
->>> platform.system()
-'Darwin'
-```
-
-### Workloads
-Workloads must indicate that they are opting into isolation by the `titus-isolate` component.  They do this through the Docker conatainer label mechanism.
-
-Workloads must provide two pieces of information: number of "cpus" and workload type.
-* cpus: an integer indicating an abstract amount of processing capacity which may refer to threads or cores depending on the underlying hardware.
-* type: one of either "static" or "burst"
-
-This information is provided using the following labels: `com.netflix.titus.cpu` and `com.netflix.titus.workload.type`.
-
-If a `titus-isolate` server is already running on the current host we could add a workload as follows.
-```bash
-$ docker run --rm -l com.netflix.titus.cpu=2 -l com.netflix.titus.workload.type=static ubuntu:latest sleep 30
-```
-
-We should expect to see logs like the following emitted by the server.
-```
-30-10-2018:18:40:16,789 INFO [workload_manager.py:30] Adding workloads: ['frosty_swartz']
-30-10-2018:18:40:16,791 INFO [cpu.py:16] Assigning '2' thread(s) to workload: 'frosty_swartz'
-30-10-2018:18:40:16,791 INFO [cpu.py:29] Claiming package:core:thread '0:0:0' for workload 'frosty_swartz'
-30-10-2018:18:40:16,791 INFO [cpu.py:29] Claiming package:core:thread '0:0:32' for workload 'frosty_swartz'
-30-10-2018:18:40:16,791 INFO [update.py:15] workload: 'frosty_swartz' updated threads from: '[]' to: '[0, 32]'
-30-10-2018:18:40:16,791 INFO [workload_manager.py:93] Found footprint updates: '{'frosty_swartz': [0, 32], 'burst': [1, 33, 2, 34, 3, 35, ... 30, 62, 31, 63]}'
-...
-```
-
-Above we see that the launched static workload is assigned two particular threads: `0` and `32` and generates updates indicating that the pool of threads available for burst workloads has changed.
+In general greater efficiency implies less isolation and vice-versa.  To achieve maximal isolation workloads 
+(containers) could each be running on their own dedicated machine, at the cost of great inefficiency.  On the other hand,
+to achieve maximal efficiency, many containers (thousands) could be run on the same machine, but at the cost of high
+interference and poor performance.
 
 ## Isolation
 
-### CPU
-The first isolation primitive to be applied is the CPU affinity capability enabled by the [`cpusets` cgroup](https://www.kernel.org/doc/Documentation/cgroup-v1/cpusets.txt).
+The core mechanism which enables compute isolation is to partition access to sets of hyper-threads on a per workload basis.
+This is accomplished by manipulation of the [`cpusets` cgroup](https://www.kernel.org/doc/Documentation/cgroup-v1/cpusets.txt)
 
 Workloads are categorized into either static or burst categories.  Each choice of workload type comes with a cost/benefit trade off.
 * static
-	* benefit: the workload will be isolated to the greatest possible, leading to more consistent performance
+	* benefit: the workload will be isolated to the greatest degree possible, leading to more consistent performance
 	* cost: the workload opts out of consuming unallocated CPU capacity
 * burst
 	* benefit: the workload may consume unallocate CPU capacity
 	* cost: the workload opts in to less isolation from other workloads, and will see greater variance in performance depending on CPU usage
+	
+Choosing an efficient and performant partitioning of CPU resources is not a perfectly solvable problem.  `titus-isolate`
+allows for the specification of two core components which determine actual partitioning behavior: `CpuAllocator` and `FreeThreadProvider`
 
-Each static workload is assigned a set of threads to which they have exclusive access.  All burst workloads share all those threads which are not claimed by static workloads.
+In general the `CpuAllocator` determines how best to partition CPU resources according to the requested capacity of each
+workload.  The `FreeThreadProvider` determines which hyper-threads are "free" and therefore consumable by `burst`
+workloads.  The most advanced choices for these components are the `ForecastIPCpuAllocator` and 
+`OversubscribeFreeThreadProvider` respectively.
 
-The primary placement algorithm is implemented in `titus-optimize` and relies on solving an integer program. Please refer to `titus-optimize`
-for further details.
-Once all the static workloads have been placed, burst workloads get the remaining CPU capacity.
-
-## Test
-We use `tox` to run tests.  After setting up a virtual environment, requirements and `tox` must be installed.
-```bash
-(venv) $ pip3 install -r requirements.txt
-(venv) $ pip3 install tox
-(venv) $ tox
-...
+### CPU Diagrams
+Let us walk through an example scenario to get a feel for how hyper-thread allocation occurs under different conditions.
+We diagram a CPU in the following manner.  Every CPU has two packages (sockets) with indices `0` and `1`.
 ```
+| 0 | 0 | 0 | 0 | 
+| 0 | 0 | 0 | 0 |
+| ------------- |
+| 1 | 1 | 1 | 1 |
+| 1 | 1 | 1 | 1 |
+```
+
+Each socket has an equal number of cores with corresponding indices:
+```
+| 0 | 1 | 2 | 3 | 
+| 0 | 1 | 2 | 3 |
+| ------------- |
+| 0 | 1 | 2 | 3 |
+| 0 | 1 | 2 | 3 |
+```
+
+As far as Linux and `cpuset`s are concerned the only index of note is that of the `thread`.  Thread indices across cores
+and sockets are assigned as follows:
+```
+|  0 |  1 |  2 |  3 | 
+|  8 |  9 | 10 | 11 |
+| ----------------- |
+|  4 |  5 |  6 |  7 |
+| 12 | 13 | 14 | 15 |
+```
+
+### Example
+Below we see a typical example CPU with a single static workload `a` requesting 2 threads.
+
+```
+| a | a |   |   |   a: ['static_2']
+|   |   |   |   |
+| ------------- |
+|   |   |   |   |
+|   |   |   |   |
+```
+
+Note that this allocation has two nice characteristics.
+1. The workload is constrained to a single socket
+2. The workload does not share a core
+
+Now let's add a `burst` workload requesting 4 threads.
+```
+| a | a | b | b |   a: ['static_2']
+|   |   | b | b |   b: ['burst0_4']
+| ------------- |
+| b | b | b | b |
+| b | b | b | b |
+```
+
+In this case workload `b` which requested 4 threads was actually given access to 12.  Note that the `static` workload
+still has an optimal arrangement avoiding hyper-threading either with itself or the `burst` workload.
+
+Let's add another `burst` workload requesting 4 threads.
+```
+| a | a | a | a |   a: ['burst0_4', 'burst1_4']
+| a | a | a | a |   b: ['static_2']
+| ------------- |
+| a | a | b | b |
+| a | a |   |   |
+```
+
+Most importantly the `static` workload still maintains an optimal placement. The two `burst` workloads now share the
+remainder of the compute resources.  The sharing mechanism here is not defined by `titus-isolate`.  The `titus-executor`
+has already applied the CFS shares mechanism to provide fair sharing within the confines of the burst footprint.
+
+The scenario above shows the allocation operating in a mode in which the `OversubscribeFreeThreadProvider` is operating 
+as conservatively as possible.  The `static` workload is exceeding a CPU usage threshold which guarantees that its 
+neighboring hyper-threads and its own occupied hyper-threads do not mingle with the `burst` pool.  However there is an 
+opportunity for efficiency here.  If the `static` workload were not using its CPU resources it would be more efficient 
+to temporarily donate access to its hardware resources while CPU usage was low.  Below we see this case in which the 
+`static` workload's CPU usages is below a configurable threshold.
+
+```
+| a | a | b | b |   a: ['burst0_4', 'burst1_4', 'static_2']
+| b | b | b | b |   b: ['burst0_4', 'burst1_4']
+| ------------- |
+| b | b | b | b |
+| b | b | b | b |
+```
+
+Here we see that the `burst` workloads are given access to _every_ thread.  The `static` workload continues to be
+limited to a subset which adheres to its request.
 
 ## Operations
 `titus-isolate` provides a few read only endpoints to observe the operation of the server.
-
-Unless otherwise stated, in the following examples we started the `titus-isolate` server with the following options.
-```bash
-$ ./main.py --package-count 1 --cores-per-package 4 --threads-per-core 2 --admin-port 5555
-```
-One workload was started as follows.
-```bash
-$ docker run --rm -l com.netflix.titus.cpu=1 -l com.netflix.titus.workload.type=static ubuntu:latest sleep 30
-```
 
 ### Workloads
 ```
@@ -135,7 +130,7 @@ This endpoint provides the `id`, `type` burst or static and `thread count` reque
 $ curl -s localhost:5555/workloads | jq
 [
   {
-    "id": "pedantic_hermann",
+    "id": "faddffa5-4227-4d67-a62b-dc4f1c2a07d1",
     "type": "static",
     "thread_count": 1
   }
@@ -159,11 +154,11 @@ $ curl -s localhost:5555/cpu | jq
           "threads": [
             {
               "id": 0,
-              "workload_id": "pedantic_hermann"
+              "workload_id": ["faddffa5-4227-4d67-a62b-dc4f1c2a07d1"]
             },
             {
               "id": 4,
-              "workload_id": null
+              "workload_id": []
             }
           ]
         },
@@ -173,11 +168,11 @@ $ curl -s localhost:5555/cpu | jq
           "threads": [
             {
               "id": 3,
-              "workload_id": null
+              "workload_id": [] 
             },
             {
               "id": 7,
-              "workload_id": null
+              "workload_id": []
             }
           ]
         }
