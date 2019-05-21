@@ -229,40 +229,6 @@ class TestWorkloadManager(unittest.TestCase):
         expected_unallocated_size = len(test_context.get_cpu().get_threads()) - workload.get_thread_count()
         self.assertTrue(gauge_value_equals(registry, UNALLOCATED_SIZE_KEY, expected_unallocated_size))
 
-    def test_edge_case_ip_allocator_metrics(self):
-        # This is a specific scenario causing troubles to the solver.
-        # We should hit the time-bound limit and report it.
-
-        registry = Registry()
-
-        cpu = get_cpu(2, 16, 2)
-        set_config_manager(ConfigManager(TestPropertyProvider({MAX_SOLVER_RUNTIME: 0.01})))
-        allocator = IntegerProgramCpuAllocator()
-        test_context = TestContext(cpu, allocator)
-
-        workload_manager = test_context.get_workload_manager()
-        workload_manager.set_registry(registry)
-        cnt_evts = 0
-
-        for i in range(15):
-            workload_manager.add_workload(get_test_workload(str(i), 2, STATIC))
-        cnt_evts += 15
-
-        workload_manager.add_workload(get_test_workload("15", 1, STATIC))
-        cnt_evts += 1
-
-        for i in range(9):
-            workload_manager.add_workload(get_test_workload(str(i+cnt_evts), 2, STATIC))
-            log.info(workload_manager.get_cpu())
-
-        workload_manager.remove_workload("15")
-        log.info(workload_manager.get_cpu())
-
-        workload_manager.report_metrics({})
-
-        self.assertTrue(gauge_value_reached(registry, IP_ALLOCATOR_TIMEBOUND_COUNT, 1))
-        self.assertTrue(gauge_value_reached(registry, ALLOCATOR_CALL_DURATION, 0.1))
-
     def test_assign_to_full_cpu_fails(self):
         for allocator in ALLOCATORS:
             # Fill the CPU

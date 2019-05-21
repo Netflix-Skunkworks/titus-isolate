@@ -4,7 +4,7 @@
 Given a machine hosting multiple containers, `titus-isolate` partitions the available compute hardware (hyper-threads) 
 to achieve isolation and efficiency goals.
 
-In general greater efficiency implies less isolation and vice-versa.  To achieve maximal isolation workloads 
+In general greater cost efficiency implies less isolation and vice-versa.  To achieve maximal isolation workloads 
 (containers) could each be running on their own dedicated machine, at the cost of great inefficiency.  On the other hand,
 to achieve maximal efficiency, many containers (thousands) could be run on the same machine, but at the cost of high
 interference and poor performance.
