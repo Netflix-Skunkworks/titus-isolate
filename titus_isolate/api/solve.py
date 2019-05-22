@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+
 from threading import Lock
 
 from flask import Flask, request, jsonify
@@ -28,6 +29,11 @@ lock = Lock()
 cpu_allocator = None
 
 app = Flask(__name__)
+
+if not is_testing():
+    import discovery_heartbeat
+    disco = discovery_heartbeat.client.Client()
+    disco.register()
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -98,6 +104,11 @@ rebalance_failure_count = 0
 
 
 @app.route('/', methods=['GET'])
+def root():
+    return remote_get_cpu_allocator()
+
+
+@app.route('/healthcheck', methods=['GET'])
 def health_check():
     return remote_get_cpu_allocator()
 
@@ -214,6 +225,7 @@ class SolverMetricsReporter(MetricsReporter):
 
 
 if __name__ != '__main__' and not is_testing():
+
     log.info("Configuring logging...")
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers

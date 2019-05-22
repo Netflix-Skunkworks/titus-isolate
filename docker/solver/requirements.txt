@@ -1,5 +1,6 @@
 --extra-index-url https://pypi.python.org/simple
 boto3
+discovery-heartbeat
 flask
 gunicorn
 netflix-spectator-py
