@@ -10,7 +10,6 @@ ExecStartPre=/usr/share/python/titus-isolate/bin/pip3 install 'netflix-spectator
 ExecStart=/usr/share/python/titus-isolate/bin/titus-isolate --admin-port 7500
 KillMode=mixed
 Restart=on-failure
-RestartSec=5
 
 [Install]
 Alias=titus-isolate
