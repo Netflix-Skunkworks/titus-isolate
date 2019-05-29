@@ -1,13 +1,15 @@
 [Unit]
 Description=Titus container isolation
 Wants=docker.service
+Requires=titus-isolate.socket
 
 [Service]
 EnvironmentFile=/run/titus.env
 Environment=PYTHONPATH=/usr/share/python/titus-isolate/lib/python3.5/site-packages:/usr/lib/python3/dist-packages/
 ExecStartPre=/bin/systemctl is-active docker
+ExecStartPre=/bin/systemctl is-active titus-isolate.socket
 ExecStartPre=/usr/share/python/titus-isolate/bin/pip3 install 'netflix-spectator-pyconf'
-ExecStart=/usr/share/python/titus-isolate/bin/titus-isolate --admin-port 7500
+ExecStart=/usr/bin/gunicorn3 -w 1 --log-level=debug titus_isolate.api.status:app
 KillMode=mixed
 Restart=on-failure
 
