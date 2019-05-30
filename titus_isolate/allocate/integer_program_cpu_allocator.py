@@ -3,7 +3,6 @@ from titus_isolate.allocate.allocate_response import AllocateResponse
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.constants import DEFAULT_MAX_SOLVER_RUNTIME, MAX_SOLVER_RUNTIME
-from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.utils import get_config_manager
 from titus_optimize.compute import IP_SOLUTION_TIME_BOUND, optimize_ip
 
@@ -25,7 +24,6 @@ class IntegerProgramCpuAllocator(CpuAllocator):
 
         self.__solver_max_runtime_secs = get_config_manager().get_float(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
         self.__free_thread_provider = free_thread_provider
-        self.__event_log_manager = None
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         cpu = request.get_cpu()
@@ -186,12 +184,8 @@ class IntegerProgramCpuAllocator(CpuAllocator):
     def set_solver_max_runtime_secs(self, val):
         self.__solver_max_runtime_secs = val
 
-    def set_event_log_manager(self, event_log_manager: EventLogManager):
-        self.__event_log_manager = event_log_manager
-
     def set_registry(self, registry):
         self.__reg = registry
 
     def report_metrics(self, tags):
         self.__reg.gauge(IP_ALLOCATOR_TIMEBOUND_COUNT, tags).set(self.__time_bound_call_count)
-

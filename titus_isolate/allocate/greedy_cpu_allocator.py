@@ -4,7 +4,6 @@ from titus_isolate.allocate.allocate_response import AllocateResponse
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.event.constants import STATIC
-from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads, update_burst_workloads, rebalance
 from titus_isolate.model.workload import Workload
@@ -16,7 +15,6 @@ class GreedyCpuAllocator(CpuAllocator):
 
     def __init__(self, free_thread_provider: FreeThreadProvider = EmptyFreeThreadProvider()):
         self.__free_thread_provider = free_thread_provider
-        self.__event_log_manager = None
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         cpu = request.get_cpu()
@@ -95,9 +93,6 @@ class GreedyCpuAllocator(CpuAllocator):
                 entrypoint=workload.get_entrypoint(),
                 job_type=workload.get_job_type(),
                 workload_type=workload.get_type()))
-
-    def set_event_log_manager(self, event_log_manager: EventLogManager):
-        self.__event_log_manager = event_log_manager
 
     def set_registry(self, registry):
         pass

@@ -15,7 +15,6 @@ from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC
     MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME, \
     RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP, MIP_SOLVER, DEFAULT_MIP_SOLVER
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT, FORECAST_REBALANCE_FAILURE_COUNT
-from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads
 from titus_isolate.model.utils import get_sorted_workloads
@@ -61,7 +60,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
         self.__config_manager = config_manager
         self.__free_thread_provider = free_thread_provider
         self.__cnt_rebalance_calls = 0
-        self.__event_log_manager = None
         self.__call_meta = None  # track things __place_threads call
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
@@ -312,9 +310,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
     def set_solver_max_runtime_secs(self, val):
         self.__solver_max_runtime_secs = val
-
-    def set_event_log_manager(self, event_log_manager: EventLogManager):
-        self.__event_log_manager = event_log_manager
 
     def set_registry(self, registry):
         self.__reg = registry

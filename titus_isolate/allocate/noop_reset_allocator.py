@@ -8,7 +8,7 @@ from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 
 class NoopResetCpuAllocator(CpuAllocator):
 
-    def __init__(self, free_thread_provider="", cgroup_manager=FileCgroupManager()):
+    def __init__(self, free_thread_provider=None, cgroup_manager=FileCgroupManager()):
         self.__cgroup_manager = cgroup_manager
 
     def get_cgroup_manager(self):
