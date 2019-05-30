@@ -13,5 +13,6 @@ RUN apt update && apt install -y \
 COPY build-deb.sh /
 COPY rules /
 COPY titus-isolate.service /
+COPY titus-isolate.socket /
 WORKDIR /src
 CMD ["/build-deb.sh"]

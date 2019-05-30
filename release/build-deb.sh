@@ -53,6 +53,9 @@ cp /rules debian/
 echo "Adding systemd unit file"
 cp /titus-isolate.service debian/
 
+echo "Adding systemd socket file"
+cp /titus-isolate.socket debian/
+
 echo "Building debian package"
 dpkg-buildpackage -us -uc
 
