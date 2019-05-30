@@ -10,7 +10,6 @@ from titus_isolate.api.testing import is_testing
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 from titus_isolate.config.constants import TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC, RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
-from titus_isolate.constants import FAILURE_EXIT_CODE
 from titus_isolate.event.create_event_handler import CreateEventHandler
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.event.free_event_handler import FreeEventHandler
@@ -113,6 +112,11 @@ def get_cpu_usage(workload_id, seconds, granularity):
 
 
 if __name__ != '__main__' and not is_testing():
+    log.info("Configuring logging...")
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+
     # Set the schedule library's logging level higher so it doesn't spam messages every time it schedules a task
     logging.getLogger('schedule').setLevel(logging.WARN)
 

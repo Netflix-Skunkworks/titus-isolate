@@ -43,7 +43,7 @@ def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvide
     elif free_thread_provider_str == OVERSUBSCRIBE:
         free_thread_provider = OversubscribeFreeThreadProvider(total_threshold)
 
-    log.info("Free thread provider: '{}'".format(free_thread_provider.__class__.__name__))
+    log.debug("Free thread provider: '{}'".format(free_thread_provider.__class__.__name__))
     return free_thread_provider
 
 
