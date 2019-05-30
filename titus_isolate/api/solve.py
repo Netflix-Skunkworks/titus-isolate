@@ -83,7 +83,7 @@ def are_allocators_set() -> bool:
 
 
 def get_allocator_name() -> str:
-    return "Assign({})Free({})Rebalance({})".format(
+    return "{}_{}_{}".format(
         get_assign_cpu_allocator().get_name(),
         get_free_cpu_allocator().get_name(),
         get_rebalance_cpu_allocator().get_name())
