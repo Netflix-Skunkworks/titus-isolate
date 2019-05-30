@@ -7,7 +7,7 @@ from spectator import Registry
 from tests.allocate.test_allocate import TestWorkloadMonitorManager, TestCpuUsagePredictorManager
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.utils import config_logs, TestContext, gauge_value_equals, gauge_value_reached, get_threads_with_workload, \
+from tests.utils import config_logs, TestContext, gauge_value_equals, get_threads_with_workload, \
     get_test_workload
 from titus_isolate import log
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
@@ -16,13 +16,13 @@ from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramC
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.config.constants import MAX_SOLVER_RUNTIME, DEFAULT_TOTAL_THRESHOLD
+from titus_isolate.config.constants import DEFAULT_TOTAL_THRESHOLD
 from titus_isolate.event.constants import STATIC, BURST
 from titus_isolate.isolate.detect import get_cross_package_violations
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, IP_ALLOCATOR_TIMEBOUND_COUNT, \
-    ALLOCATOR_CALL_DURATION, OVERSUBSCRIBED_THREADS_KEY, STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, \
+    OVERSUBSCRIBED_THREADS_KEY, STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, \
     BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, UNALLOCATED_SIZE_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
