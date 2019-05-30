@@ -17,7 +17,7 @@ from tests.allocate.crashing_allocators import CrashingAllocator
 from tests.utils import get_test_workload, config_logs, DEFAULT_TEST_REQUEST_METADATA
 from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
-from titus_isolate.api.solve import parse_workload, parse_cpu, app, set_cpu_allocator
+from titus_isolate.api.solve import parse_workload, parse_cpu, app, set_cpu_allocators
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 
@@ -65,7 +65,7 @@ class TestStatus(unittest.TestCase):
         self.assertEqual(cpu_in.to_dict(), cpu_out.to_dict())
 
     def test_allocator_failure(self):
-        set_cpu_allocator(CrashingAllocator())
+        self.__set_cpu_allocator(CrashingAllocator())
         response = self.client.put("/assign_threads")
         self.assertEqual(500, response.status_code)
 
@@ -83,7 +83,7 @@ class TestStatus(unittest.TestCase):
         }
 
         cpu_allocator = GreedyCpuAllocator()
-        set_cpu_allocator(cpu_allocator)
+        self.__set_cpu_allocator(cpu_allocator)
 
         # Assign threads
         log.info("Assign threads")
@@ -120,3 +120,7 @@ class TestStatus(unittest.TestCase):
         log.info("cpu_out_0: {}".format(cpu_out_0))
         log.info("cpu_out_1: {}".format(cpu_out_1))
         self.assertEqual(cpu_out_0.to_dict(), cpu_out_1.to_dict())
+
+    @staticmethod
+    def __set_cpu_allocator(allocator):
+        set_cpu_allocators(allocator, allocator, allocator)

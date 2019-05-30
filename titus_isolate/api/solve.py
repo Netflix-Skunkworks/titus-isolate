@@ -11,7 +11,8 @@ from titus_isolate.allocate.allocate_threads_request import AllocateThreadsReque
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.utils import parse_workload, parse_cpu, parse_cpu_usage
 from titus_isolate.api.testing import is_testing
-from titus_isolate.config.constants import CPU_ALLOCATOR
+from titus_isolate.config.constants import CPU_ALLOCATOR, REMOTE_ASSIGN_ALLOCATOR, REMOTE_FREE_ALLOCATOR, \
+    REMOTE_REBALANCE_ALLOCATOR
 from titus_isolate.config.env_property_provider import EnvPropertyProvider
 from titus_isolate.isolate.utils import get_allocator
 from titus_isolate.metrics.constants import SOLVER_GET_CPU_ALLOCATOR_SUCCESS, SOLVER_GET_CPU_ALLOCATOR_FAILURE, \
@@ -24,8 +25,10 @@ from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorM
 from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_manager, set_config_manager, \
     start_periodic_scheduling, set_event_log_manager
 
-lock = Lock()
-cpu_allocator = None
+allocator_lock = Lock()
+assign_cpu_allocator = None
+free_cpu_allocator = None
+rebalance_cpu_allocator = None
 
 app = Flask(__name__)
 
@@ -41,16 +44,49 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 
 
-def get_cpu_allocator() -> CpuAllocator:
-    with lock:
-        global cpu_allocator
-        return cpu_allocator
+def set_cpu_allocators(assign_allocator, free_allocator, rebalance_allocator):
+    with allocator_lock:
+        global assign_cpu_allocator
+        global free_cpu_allocator
+        global rebalance_cpu_allocator
+        log.info("Setting allocators, assign: {}, free: {}, rebalance: {}".format(
+            assign_allocator.get_name(), free_allocator.get_name(), rebalance_allocator.get_name()))
+
+        assign_cpu_allocator = assign_allocator
+        free_cpu_allocator = free_allocator
+        rebalance_cpu_allocator = rebalance_allocator
 
 
-def set_cpu_allocator(allocator):
-    with lock:
-        global cpu_allocator
-        cpu_allocator = allocator
+def get_assign_cpu_allocator() -> CpuAllocator:
+    with allocator_lock:
+        global assign_cpu_allocator
+        return assign_cpu_allocator
+
+
+def get_free_cpu_allocator() -> CpuAllocator:
+    with allocator_lock:
+        global free_cpu_allocator
+        return free_cpu_allocator
+
+
+def get_rebalance_cpu_allocator() -> CpuAllocator:
+    with allocator_lock:
+        global rebalance_cpu_allocator
+        return rebalance_cpu_allocator
+
+
+def are_allocators_set() -> bool:
+    if get_assign_cpu_allocator() is None or get_free_cpu_allocator() is None or get_rebalance_cpu_allocator() is None:
+        return False
+    else:
+        return True
+
+
+def get_allocator_name() -> str:
+    return "Assign({})Free({})Rebalance({})".format(
+        get_assign_cpu_allocator().get_name(),
+        get_free_cpu_allocator().get_name(),
+        get_rebalance_cpu_allocator().get_name())
 
 
 def __get_cpu(body):
@@ -104,26 +140,23 @@ def health_check():
 
 @app.route('/cpu_allocator', methods=['GET'])
 def remote_get_cpu_allocator():
-    allocator = get_cpu_allocator()
-    if cpu_allocator is None:
+    if not are_allocators_set():
         global get_cpu_allocator_failure_count
         get_cpu_allocator_failure_count += 1
-        return "CPU allocator not set", 404
+        return "CPU allocators not set: {}".format(get_allocator_name()), 404
 
     global get_cpu_allocator_success_count
     get_cpu_allocator_success_count += 1
-    return allocator.get_name()
+    return get_allocator_name()
 
 
 @app.route('/assign_threads', methods=['PUT'])
 def assign_threads():
-    allocator = get_cpu_allocator()
-
     try:
         body = request.get_json()
         log.info("Processing assign threads request: {}".format(body))
         threads_request = get_threads_request(body)
-        response = allocator.assign_threads(threads_request)
+        response = get_assign_cpu_allocator().assign_threads(threads_request)
 
         global assign_threads_success_count
         assign_threads_success_count += 1
@@ -138,13 +171,11 @@ def assign_threads():
 
 @app.route('/free_threads', methods=['PUT'])
 def free_threads():
-    allocator = get_cpu_allocator()
-
     try:
         body = request.get_json()
-        log.info("Processing assign threads request: {}".format(body))
+        log.info("Processing free threads request: {}".format(body))
         threads_request = get_threads_request(body)
-        response = allocator.free_threads(threads_request)
+        response = get_free_cpu_allocator().free_threads(threads_request)
 
         global free_threads_success_count
         free_threads_success_count += 1
@@ -159,13 +190,11 @@ def free_threads():
 
 @app.route('/rebalance', methods=['PUT'])
 def rebalance():
-    allocator = get_cpu_allocator()
-
     try:
         body = request.get_json()
         log.info("Processing rebalance threads request: {}".format(body))
         rebalance_request = get_rebalance_request(body)
-        response = allocator.rebalance(rebalance_request)
+        response = get_rebalance_cpu_allocator().rebalance(rebalance_request)
 
         global rebalance_success_count
         rebalance_success_count += 1
@@ -230,12 +259,19 @@ if __name__ != '__main__' and not is_testing():
     cpu_predictor_manager = CpuUsagePredictorManager()
     set_cpu_usage_predictor_manager(cpu_predictor_manager)
 
-    log.info("Setting cpu_allocator config manager...")
-    alloc_str = config_manager.get_str(CPU_ALLOCATOR)
-    cpu_allocator = get_allocator(alloc_str, config_manager)
-    cpu_allocator.set_event_log_manager(KeystoneEventLogManager())
-    set_cpu_allocator(cpu_allocator)
+    log.info("Setting cpu_allocators...")
+
+    assign_alloc_str = config_manager.get_str(REMOTE_ASSIGN_ALLOCATOR)
+    free_alloc_str = config_manager.get_str(REMOTE_FREE_ALLOCATOR)
+    rebalance_alloc_str = config_manager.get_str(REMOTE_REBALANCE_ALLOCATOR)
+    log.info("Setting cpu_allocators to assign: {}, free: {}, rebalance: {}".format(
+        assign_alloc_str, free_alloc_str, rebalance_alloc_str))
+
+    assign_allocator = get_allocator(assign_alloc_str, config_manager)
+    free_allocator = get_allocator(free_alloc_str, config_manager)
+    rebalance_allocator = get_allocator(rebalance_alloc_str, config_manager)
+    set_cpu_allocators(assign_allocator, free_allocator, rebalance_allocator)
 
     log.info("Starting metrics reporting...")
-    MetricsManager([SolverMetricsReporter(), cpu_allocator])
+    MetricsManager([SolverMetricsReporter(), assign_allocator, free_allocator, rebalance_allocator])
     start_periodic_scheduling()
