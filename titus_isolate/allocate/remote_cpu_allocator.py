@@ -8,7 +8,6 @@ from titus_isolate.allocate.constants import UNKNOWN_CPU_ALLOCATOR
 from titus_isolate.allocate.cpu_allocate_exception import CpuAllocationException
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.constants import REMOTE_ALLOCATOR_URL, MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME
-from titus_isolate.metrics.event_log_manager import EventLogManager
 from titus_isolate.utils import get_config_manager
 
 
@@ -71,7 +70,4 @@ class RemoteCpuAllocator(CpuAllocator):
         pass
 
     def report_metrics(self, tags):
-        pass
-
-    def set_event_log_manager(self, event_log_manager: EventLogManager):
         pass

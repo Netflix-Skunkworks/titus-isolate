@@ -11,6 +11,7 @@ from titus_isolate.allocate.allocate_threads_request import AllocateThreadsReque
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
+from titus_isolate.allocate.naive_cpu_allocator import NaiveCpuAllocator
 from titus_isolate.event.constants import BURST
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import BURST_CORE_COLLOC_USAGE_THRESH
@@ -71,7 +72,8 @@ forecast_ip_alloc_simple = ForecastIPCpuAllocator(
     ConfigManager(TestPropertyProvider({})),
     ThresholdFreeThreadProvider(0.1))
 
-ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
+ALLOCATORS = [NaiveCpuAllocator(), IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
+OVER_ALLOCATORS = [NaiveCpuAllocator()]
 
 set_workload_monitor_manager(TestWorkloadMonitorManager())
 
@@ -99,7 +101,7 @@ class TestCpu(unittest.TestCase):
         """
         Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:0)
         """
-        for allocator in [forecast_ip_alloc_simple]:  # [IntegerProgramCpuAllocator(), forecast_ip_alloc_simple]:
+        for allocator in ALLOCATORS:
             cpu = get_cpu()
             w = get_test_workload(uuid.uuid4(), 2, STATIC)
 
@@ -108,36 +110,56 @@ class TestCpu(unittest.TestCase):
             log.info(cpu)
             self.assertEqual(2, len(cpu.get_claimed_threads()))
 
-            # Expected core and threads
-            core00 = cpu.get_packages()[0].get_cores()[0]
-            core01 = cpu.get_packages()[0].get_cores()[1]
-            thread0 = core00.get_threads()[0]
-            self.assertEqual(0, thread0.get_id())
-            self.assertTrue(thread0.is_claimed())
-            thread1 = core01.get_threads()[0]
-            self.assertEqual(1, thread1.get_id())
-            self.assertTrue(thread1.is_claimed())
+    def test_assign_more_than_available_threads_with_one_workload(self):
+        for allocator in OVER_ALLOCATORS:
+            cpu = get_cpu()
+            w_jumbo = get_test_workload("jumbo", DEFAULT_TOTAL_THREAD_COUNT * 1.5, STATIC)
 
-    def test_assign_two_threads_empty_cpu_greedy(self):
-        """
-        Workload 0: 2 threads --> (p:0 c:0 t:0) (p:0 c:1 t:1)
-        """
-        cpu = get_cpu()
-        allocator = GreedyCpuAllocator()
-        w = get_test_workload(uuid.uuid4(), 2, STATIC)
+            request = AllocateThreadsRequest(
+                cpu,
+                w_jumbo.get_id(),
+                {
+                    w_jumbo.get_id(): w_jumbo
+                },
+                {}, DEFAULT_TEST_REQUEST_METADATA)
+            cpu = allocator.assign_threads(request).get_cpu()
+            log.info(cpu)
 
-        request = AllocateThreadsRequest(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_REQUEST_METADATA)
-        cpu = allocator.assign_threads(request).get_cpu()
-        self.assertEqual(2, len(cpu.get_claimed_threads()))
+            self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_claimed_threads()))
+            self.assertEqual([w_jumbo.get_id()], list(cpu.get_workload_ids_to_thread_ids().keys()))
 
-        # Expected core and threads
-        core00 = cpu.get_packages()[0].get_cores()[0]
-        thread0 = core00.get_threads()[0]
-        self.assertEqual(0, thread0.get_id())
-        self.assertTrue(thread0.is_claimed())
-        thread1 = core00.get_threads()[1]
-        self.assertEqual(8, thread1.get_id())
-        self.assertTrue(thread1.is_claimed())
+    def test_assign_more_than_available_threads_with_two_workloads(self):
+        for allocator in OVER_ALLOCATORS:
+            cpu = get_cpu()
+            w_fill = get_test_workload("fill", DEFAULT_TOTAL_THREAD_COUNT, STATIC)
+            w_extra = get_test_workload("extra", DEFAULT_TOTAL_THREAD_COUNT * 1.5, STATIC)
+
+            request = AllocateThreadsRequest(
+                cpu,
+                w_fill.get_id(),
+                {
+                    w_fill.get_id(): w_fill
+                },
+                {}, DEFAULT_TEST_REQUEST_METADATA)
+            cpu = allocator.assign_threads(request).get_cpu()
+            log.info(cpu)
+            self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_claimed_threads()))
+            self.assertEqual([w_fill.get_id()], list(cpu.get_workload_ids_to_thread_ids().keys()))
+
+            request = AllocateThreadsRequest(
+                cpu,
+                w_extra.get_id(),
+                {
+                    w_fill.get_id(): w_fill,
+                    w_extra.get_id(): w_extra
+                },
+                {}, DEFAULT_TEST_REQUEST_METADATA)
+            cpu = allocator.assign_threads(request).get_cpu()
+            log.info(cpu)
+            self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_claimed_threads()))
+            self.assertEqual(
+                sorted([w_fill.get_id(), w_extra.get_id()]),
+                sorted(list(cpu.get_workload_ids_to_thread_ids().keys())))
 
     def test_assign_two_workloads_empty_cpu_ip(self):
         """
