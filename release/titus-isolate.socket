@@ -4,8 +4,9 @@ PartOf=titus-isolate.service
 
 [Socket]
 ListenStream=127.0.0.1:7500
-Accept=no
 Backlog=64
+Accept=no
+ReusePort=yes
 
 [Install]
 WantedBy=sockets.target
