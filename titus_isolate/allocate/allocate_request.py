@@ -1,6 +1,6 @@
 import copy
 
-from titus_isolate.allocate.constants import CPU, CPU_USAGE, WORKLOADS, METADATA
+from titus_isolate.allocate.constants import CPU, CPU_USAGE, WORKLOADS, METADATA, CPU_ARRAY
 from titus_isolate.allocate.utils import parse_cpu, parse_workloads, parse_cpu_usage
 from titus_isolate.model.processor.cpu import Cpu
 
@@ -36,6 +36,7 @@ class AllocateRequest:
     def to_dict(self):
         return {
             CPU: self.get_cpu().to_dict(),
+            CPU_ARRAY: self.get_cpu().to_array(),
             CPU_USAGE: self.__get_serializable_usage(self.get_cpu_usage()),
             WORKLOADS: self.__get_serializable_workloads(list(self.get_workloads().values())),
             METADATA: self.get_metadata()

@@ -5,6 +5,7 @@ from typing import List
 from titus_isolate.model.processor import utils
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.package import Package
+from titus_isolate.model.processor.thread import Thread
 
 
 class Cpu:
@@ -33,7 +34,7 @@ class Cpu:
     def get_cores(self) -> List[Core]:
         return reduce(list.__add__, [package.get_cores() for package in self.get_packages()])
 
-    def get_threads(self):
+    def get_threads(self) -> List[Thread]:
         return reduce(list.__add__, [package.get_threads() for package in self.get_packages()])
 
     def get_empty_threads(self):
@@ -83,6 +84,19 @@ class Cpu:
         return {
             "packages": packages
         }
+
+    def to_array(self):
+        cpu = []
+        for p in self.get_packages():
+            package = []
+            for c in p.get_cores():
+                core = []
+                for t in c.get_threads():
+                    core.append(t.get_workload_ids())
+                package.append(core)
+            cpu.append(package)
+
+        return cpu
 
     def __str__(self):
         n_packages = len(self.get_packages())

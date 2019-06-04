@@ -1,5 +1,6 @@
 UNKNOWN_CPU_ALLOCATOR = "UNKNOWN_CPU_ALLOCATOR"
 CPU = "cpu"
+CPU_ARRAY = "cpu_array"
 CPU_USAGE = "cpu_usage"
 WORKLOADS = "workloads"
 WORKLOAD_ID = "workload_id"

@@ -3,10 +3,12 @@ import unittest
 import uuid
 
 from tests.utils import config_logs
+from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.package import Package
 from titus_isolate.model.processor.thread import Thread
+from titus_isolate.model.processor.utils import DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT
 
 config_logs(logging.DEBUG)
 
@@ -90,3 +92,28 @@ class TestCpu(unittest.TestCase):
         t_0_0.claim("b")
         t_1_0.claim("b")
         self.assertEqual(cpu_x, cpu_y)
+
+    def test_to_array(self):
+        cpu = get_cpu()
+        self.__assert_array_structure(cpu, 0)
+
+        # Assign 1 workload to each thread
+        for t in cpu.get_threads():
+            t.claim("a")
+        self.__assert_array_structure(cpu, 1)
+
+        # Assign another workload to each thread so there are now 2
+        for t in cpu.get_threads():
+            t.claim("b")
+        self.__assert_array_structure(cpu, 2)
+
+    def __assert_array_structure(self, cpu: Cpu, workloads_per_thread: int):
+        cpu_array = cpu.to_array()
+        self.assertEqual(DEFAULT_PACKAGE_COUNT, len(cpu_array))
+
+        for package in cpu_array:
+            self.assertEqual(DEFAULT_CORE_COUNT, len(package))
+            for core in package:
+                self.assertEqual(DEFAULT_THREAD_COUNT, len(core))
+                for thread in core:
+                    self.assertEqual(workloads_per_thread, len(thread))
