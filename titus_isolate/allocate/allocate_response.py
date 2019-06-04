@@ -1,6 +1,6 @@
 import os
 from titus_isolate.allocate.constants import CPU, METADATA, TITUS_ISOLATE_CELL_HEADER, UNKNOWN_CELL, CELL, \
-    CPU_ALLOCATOR, ALLOCATOR_SERVICE_TASK_ID, UNKNOWN_ALLOCATOR_SERVICE_TASK_ID, TITUS_TASK_ID
+    CPU_ALLOCATOR, ALLOCATOR_SERVICE_TASK_ID, UNKNOWN_ALLOCATOR_SERVICE_TASK_ID, TITUS_TASK_ID, CPU_ARRAY
 from titus_isolate.allocate.utils import parse_cpu
 from titus_isolate.model.processor.cpu import Cpu
 
@@ -24,6 +24,7 @@ class AllocateResponse:
     def to_dict(self):
         return {
             CPU: self.get_cpu().to_dict(),
+            CPU_ARRAY: self.get_cpu().to_array(),
             METADATA: self.get_metadata()
         }
 
