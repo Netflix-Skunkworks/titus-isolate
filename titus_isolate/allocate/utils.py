@@ -142,5 +142,6 @@ def download_latest_cpu_model(path=get_cpu_model_file_path()):
     bucket_name = get_cpu_model_bucket_name()
     key = latest_model['Key']
     s3_client = boto3.client('s3')
+    log.info("Downloading latest cpu prediction model: '{}/{}' to: '{}'".format(bucket_name, key, path))
     s3_client.download_file(bucket_name, key, path)
     log.info("Downloaded latest cpu prediction model: '{}/{}' to: '{}'".format(bucket_name, key, path))
