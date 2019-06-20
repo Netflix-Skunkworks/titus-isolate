@@ -21,4 +21,5 @@ class CpuUsagePredictorManager:
             self.__predictor = CpuUsagePredictor(get_cpu_model_file_path())
 
     def get_predictor(self):
-        return self.__predictor
+        with self.__lock:
+            return self.__predictor
