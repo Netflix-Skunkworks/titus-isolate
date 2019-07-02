@@ -2,9 +2,8 @@ steps:
   - label: Build titus-isolate debian package
     command: ./build.sh
     artifact_paths: "*.deb"
-    build:
-      env:
-        BUILDKITE_CLEAN_CHECKOUT: "true"
+    env:
+      BUILDKITE_CLEAN_CHECKOUT: "true"
   - wait
   - trigger: titus-upload-debs
     async: false
