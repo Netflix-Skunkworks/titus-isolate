@@ -1,6 +1,6 @@
 import calendar
 import collections
-from datetime import datetime as dt, timedelta as td
+from datetime import datetime as dt
 from math import ceil
 from threading import Lock
 
@@ -25,7 +25,9 @@ class WorkloadPerformanceMonitor:
 
     def get_buffers(self):
         with self.__buffer_lock:
-            return calendar.timegm(dt.utcnow().timetuple()), [calendar.timegm(t.timetuple()) for t in self.__timestamps], [list(e) for e in self.__buffers]
+            return calendar.timegm(dt.utcnow().timetuple()), \
+                   np.array([calendar.timegm(t.timetuple()) for t in self.__timestamps], dtype=np.float32), \
+                   [list(e) for e in self.__buffers]
     
     def get_normalized_cpu_usage_last_seconds(self, seconds, agg_granularity_secs=60):
         num_buckets = ceil(seconds / agg_granularity_secs)
