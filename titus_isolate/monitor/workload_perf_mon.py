@@ -26,7 +26,7 @@ class WorkloadPerformanceMonitor:
     def get_buffers(self):
         with self.__buffer_lock:
             return calendar.timegm(dt.utcnow().timetuple()), \
-                   np.array([calendar.timegm(t.timetuple()) for t in self.__timestamps], dtype=np.float32), \
+                   np.array([calendar.timegm(t.timetuple()) for t in self.__timestamps], dtype=np.int32), \
                    [list(e) for e in self.__buffers]
     
     def get_normalized_cpu_usage_last_seconds(self, seconds, agg_granularity_secs=60):
