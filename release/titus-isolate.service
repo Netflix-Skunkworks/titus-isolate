@@ -1,6 +1,7 @@
 [Unit]
 Description=Titus container isolation
 Wants=docker.service
+After=docker.service
 Requires=titus-isolate.socket
 
 [Service]
