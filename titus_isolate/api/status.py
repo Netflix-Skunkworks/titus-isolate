@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 import time
 
 import docker
@@ -111,6 +112,19 @@ def get_cpu_usage(workload_id, seconds, granularity):
     return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
 
 
+def init():
+    # Initialize currently running containers as workloads
+    log.info("Isolating currently running workloads...")
+    for workload in get_current_workloads(docker.from_env()):
+        try:
+            workload_manager.add_workload(workload)
+        except:
+            log.exception("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
+
+    # Start processing events after adding running workloads to avoid processing a die event before we add a workload
+    event_manager.start_processing_events()
+
+
 if __name__ != '__main__' and not is_testing():
     log.info("Configuring logging...")
     gunicorn_logger = logging.getLogger('gunicorn.error')
@@ -180,13 +194,6 @@ if __name__ != '__main__' and not is_testing():
         workload_manager,
         workload_monitor_manager])
 
-    # Initialize currently running containers as workloads
-    log.info("Isolating currently running workloads...")
-    for workload in get_current_workloads(docker.from_env()):
-        try:
-            workload_manager.add_workload(workload)
-        except:
-            log.exception("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
+    threading.Thread(target=init).start()
 
-    # Start processing events after adding running workloads to avoid processing a die event before we add a workload
-    event_manager.start_processing_events()
+
