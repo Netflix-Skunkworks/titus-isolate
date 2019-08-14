@@ -8,3 +8,4 @@ schedule
 titus-optimize==0.5.1
 netflix-spectator-py
 systemd
+kubernetes
