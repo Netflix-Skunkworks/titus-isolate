@@ -11,6 +11,8 @@ from tests.utils import get_test_workload
 from titus_isolate.event.constants import STATIC
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
 from titus_isolate.monitor.cpu_usage import CpuUsage, CpuUsageSnapshot
+from titus_isolate.monitor.mem_usage import MemUsage, MemUsageSnapshot
+from titus_isolate.monitor.utils import normalize_data
 from titus_isolate.monitor.workload_monitor_manager import DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
 
@@ -23,21 +25,27 @@ class TestWorkloadPerfMon(unittest.TestCase):
         perf_mon = WorkloadPerformanceMonitor(metrics_provider, DEFAULT_SAMPLE_FREQUENCY_SEC)
 
         # Initial state should just be an empty timestamps buffer
-        _, timestamps, buffers = perf_mon.get_buffers()
+        _, timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(0, len(buffers))
         self.assertEqual(0, len(timestamps))
 
         # Expect no change because no workload is really running and we haven't started mocking anything
         perf_mon.sample()
+        _, timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(0, len(buffers))
+        self.assertEqual(0, len(timestamps))
 
-        # Mock reporting metrics on a single hardware thread
+        # Mock reporting metrics
         cpu_usage = CpuUsage(pu_id=0, user=100, system=50)
-        snapshot = CpuUsageSnapshot(timestamp=dt.now(), rows=[cpu_usage])
-        metrics_provider.get_cpu_usage = MagicMock(return_value=snapshot)
+        mem_usage = MemUsage(user=1000000)
+        cpu_snapshot = CpuUsageSnapshot(timestamp=dt.now(), rows=[cpu_usage])
+        mem_snapshot = MemUsageSnapshot(timestamp=dt.now(), usage=mem_usage)
+
+        metrics_provider.get_cpu_usage = MagicMock(return_value=cpu_snapshot)
+        metrics_provider.get_mem_usage = MagicMock(return_value=mem_snapshot)
         perf_mon.sample()
 
-        _, timestamps, buffers = perf_mon.get_buffers()
+        _, timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(1, len(buffers))
         self.assertEqual(1, len(timestamps))
 
@@ -48,7 +56,7 @@ class TestWorkloadPerfMon(unittest.TestCase):
     def test_monitor_cpu_usage_normalization(self):
         to_ts = lambda d: calendar.timegm(d.timetuple())
 
-        data = WorkloadPerformanceMonitor.normalize_data(
+        data = normalize_data(
             to_ts(dt(2019, 3, 5, 10, 15, 0)),
             deque(map(to_ts, [dt(2019, 3, 5, 10, 14, 30),
              dt(2019, 3, 5, 10, 14, 11),
@@ -59,7 +67,7 @@ class TestWorkloadPerfMon(unittest.TestCase):
         self.assertEqual(59, np.sum(np.isnan(data).astype(np.int16)))
 
         try:
-            data = WorkloadPerformanceMonitor.normalize_data(
+            normalize_data(
                 to_ts(dt(2019, 3, 5, 10, 15, 0)),
                 deque([]),
                 [deque([]), deque([])])

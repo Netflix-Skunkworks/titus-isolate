@@ -6,6 +6,8 @@ from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload
 
+import numpy as np
+
 
 def get_free_cores(
         threshold: float,
@@ -55,3 +57,44 @@ def is_core_below_threshold(
         log.debug("Core: {} with usage: {} is OVER  threshold: {}".format(core.get_id(), usage, threshold))
 
     return is_free
+
+
+def normalize_data(ts_snapshot, timestamps, buffers, num_buckets=60, bucket_size_secs=60):
+    proc_time = np.full((num_buckets,), np.nan, dtype=np.float32)
+
+    if len(timestamps) == 0:
+        return proc_time
+
+    ts_max = ts_snapshot
+    for i in range(num_buckets):
+        ts_min = ts_max - bucket_size_secs
+
+        # get slice:
+        slice_ts_min = np.searchsorted(timestamps, ts_min)
+        slice_ts_max = np.searchsorted(timestamps, ts_max, 'right')
+        if slice_ts_max == len(timestamps):
+            slice_ts_max -= 1
+
+        ts_max = ts_min
+
+        if slice_ts_min == slice_ts_max:
+            continue
+
+        if slice_ts_min < 0 or slice_ts_min >= len(timestamps):
+            continue
+
+        if slice_ts_max < 0 or slice_ts_max >= len(timestamps):
+            continue
+
+        if timestamps[slice_ts_max] < ts_min - bucket_size_secs:
+            continue
+        # this should be matching Atlas:
+        time_diff_ns = (timestamps[slice_ts_max] - timestamps[slice_ts_min]) * 1000000000
+        s = 0.0
+        for b in buffers: # sum across all cpus
+            s += b[slice_ts_max] - b[slice_ts_min]
+        if time_diff_ns > 0:
+            s /= time_diff_ns
+        proc_time[num_buckets - 1 - i] = s
+
+    return proc_time

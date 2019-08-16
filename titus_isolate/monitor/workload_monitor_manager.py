@@ -28,7 +28,7 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
         with self.__lock:
             cpu_usage = {}
             for workload_id, monitor in self.get_monitors().items():
-                cpu_usage[workload_id] = monitor.get_normalized_cpu_usage_last_seconds(seconds, agg_granularity_secs)
+                cpu_usage[workload_id] = monitor.get_cpu_usage(seconds, agg_granularity_secs)
 
         return cpu_usage
 
@@ -80,7 +80,7 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
             monitors_dict = {}
             for workload_id, monitor in sorted(self.get_monitors().items()):
                 buffers = collections.OrderedDict()
-                _, timestamps, mon_buffers = monitor.get_buffers()
+                _, timestamps, mon_buffers = monitor.get_cpu_buffers()
                 for cpu_ind, buff in enumerate(mon_buffers):
                     buffers[str(cpu_ind)] = [str(i) for i in buff]
                 buffers['timestamps'] = timestamps
