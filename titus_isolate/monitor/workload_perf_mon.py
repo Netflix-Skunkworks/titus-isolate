@@ -35,10 +35,8 @@ class WorkloadPerformanceMonitor:
 
     def _get_cpu_buffers(self):
         with self.__snapshot_lock:
-            ts_snapshot = calendar.timegm(dt.utcnow().timetuple())
-
             if len(self.__snapshots) == 0:
-                return ts_snapshot, [], []
+                return [], []
 
             # The number of threads per sample is constant across all samples
             thread_count = len(self.__snapshots[0].cpu.rows)
@@ -50,8 +48,7 @@ class WorkloadPerformanceMonitor:
                 for row in res_snap.cpu.rows:
                     buffers[row.pu_id].append(int(row.user) + int(row.system))
 
-            return ts_snapshot, \
-                   np.array([calendar.timegm(t.timetuple()) for t in timestamps], dtype=np.int32), \
+            return np.array([calendar.timegm(t.timetuple()) for t in timestamps], dtype=np.int32), \
                    [list(e) for e in buffers]
 
     def get_cpu_usage(self, seconds, agg_granularity_secs=60):
@@ -59,5 +56,5 @@ class WorkloadPerformanceMonitor:
         if num_buckets > self.__max_buffer_size:
             raise Exception("Aggregation buffer too small to satisfy query.")
 
-        ts_snapshot, timestatamps, buffers = self._get_cpu_buffers()
-        return normalize_data(ts_snapshot, timestatamps, buffers, num_buckets, agg_granularity_secs)
+        timestamps, buffers = self._get_cpu_buffers()
+        return normalize_data(timestamps, buffers, num_buckets, agg_granularity_secs)

@@ -56,20 +56,33 @@ class TestWorkloadPerfMon(unittest.TestCase):
     def test_monitor_cpu_usage_normalization(self):
         to_ts = lambda d: calendar.timegm(d.timetuple())
 
+        timestamps = deque(map(to_ts,
+                               [dt(2019, 3, 5, 10, 13, 28),
+                                dt(2019, 3, 5, 10, 14, 11),
+                                dt(2019, 3, 5, 10, 14, 30)]))
+
         data = normalize_data(
-            to_ts(dt(2019, 3, 5, 10, 15, 0)),
-            deque(map(to_ts, [dt(2019, 3, 5, 10, 14, 30),
-             dt(2019, 3, 5, 10, 14, 11),
-             dt(2019, 3, 5, 10, 13, 28)])),
-            [deque([100, 200, 200], 100), deque([50, 300, 360], 100)]
-            )
-        self.assertEqual(360-50+200-100, data[-1])
-        self.assertEqual(59, np.sum(np.isnan(data).astype(np.int16)))
+            timestamps,
+            [deque([100, 200, 200], 100),
+             deque([50, 300, 360], 100)])
+
+        # Last data bucket
+        expected_processing_time = (360-300 + 200-200)
+        expected_duration_ns = (timestamps[-1] - timestamps[-2]) * 1000000000
+        expected_usage = expected_processing_time / expected_duration_ns
+        self.assertAlmostEqual(expected_usage, data[-1])
+
+        # Penultimate bucket
+        expected_processing_time = (300-50 + 200-100)
+        expected_duration_ns = (timestamps[-2] - timestamps[-3]) * 1000000000
+        expected_usage = expected_processing_time / expected_duration_ns
+        self.assertAlmostEqual(expected_usage, data[-2])
+
+        self.assertEqual(58, np.sum(np.isnan(data).astype(np.int16)))
 
         try:
             normalize_data(
-                to_ts(dt(2019, 3, 5, 10, 15, 0)),
                 deque([]),
                 [deque([]), deque([])])
-        except Exception:
+        except:
             self.fail("Should not raise on empty data.")

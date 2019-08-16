@@ -1,4 +1,6 @@
+import calendar
 from typing import Dict, List
+from datetime import datetime as dt
 
 from titus_isolate import log
 from titus_isolate.event.constants import STATIC
@@ -14,7 +16,6 @@ def get_free_cores(
         cpu: Cpu,
         workload_map: Dict[str, Workload],
         cpu_usage: Dict[str, float]) -> List[Core]:
-
     return [c for c in cpu.get_cores() if is_core_below_threshold(threshold, c, cpu_usage, workload_map)]
 
 
@@ -59,13 +60,14 @@ def is_core_below_threshold(
     return is_free
 
 
-def normalize_data(ts_snapshot, timestamps, buffers, num_buckets=60, bucket_size_secs=60):
+def normalize_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60):
     proc_time = np.full((num_buckets,), np.nan, dtype=np.float32)
 
     if len(timestamps) == 0:
         return proc_time
 
-    ts_max = ts_snapshot
+    ts_max = timestamps[-1]
+
     for i in range(num_buckets):
         ts_min = ts_max - bucket_size_secs
 
@@ -91,7 +93,7 @@ def normalize_data(ts_snapshot, timestamps, buffers, num_buckets=60, bucket_size
         # this should be matching Atlas:
         time_diff_ns = (timestamps[slice_ts_max] - timestamps[slice_ts_min]) * 1000000000
         s = 0.0
-        for b in buffers: # sum across all cpus
+        for b in buffers:  # sum across all cpus
             s += b[slice_ts_max] - b[slice_ts_min]
         if time_diff_ns > 0:
             s /= time_diff_ns
