@@ -20,7 +20,7 @@ from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
-from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
+from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_workload_monitor_manager
 
@@ -70,7 +70,7 @@ class TestWorkloadMonitorManager(CpuUsageProvider):
 forecast_ip_alloc_simple = ForecastIPCpuAllocator(
     TestCpuUsagePredictorManager(),
     ConfigManager(TestPropertyProvider({})),
-    ThresholdFreeThreadProvider(0.1))
+    OversubscribeFreeThreadProvider(0.1))
 
 ALLOCATORS = [NaiveCpuAllocator(), IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
 OVER_ALLOCATORS = [NaiveCpuAllocator()]
@@ -541,7 +541,7 @@ class TestCpu(unittest.TestCase):
 
         upm = TestCpuUsagePredictorManager(UsagePredictorWithBurst())
         cm = ConfigManager(TestPropertyProvider({BURST_CORE_COLLOC_USAGE_THRESH: 0.9}))
-        allocator = ForecastIPCpuAllocator(upm, cm, ThresholdFreeThreadProvider(0.1))
+        allocator = ForecastIPCpuAllocator(upm, cm, OversubscribeFreeThreadProvider(0.1))
 
         cpu = get_cpu(package_count=2, cores_per_package=16)
         w_a = get_test_workload("static_a", 14, STATIC)
@@ -582,7 +582,7 @@ class TestCpu(unittest.TestCase):
         allocator = ForecastIPCpuAllocator(
             TestCpuUsagePredictorManager(),
             ConfigManager(TestPropertyProvider({})),
-            ThresholdFreeThreadProvider(0.1))
+            OversubscribeFreeThreadProvider(0.1))
 
         thread_count = DEFAULT_TOTAL_THREAD_COUNT / 2
         cpu = get_cpu()
@@ -618,7 +618,7 @@ class TestCpu(unittest.TestCase):
         allocator = ForecastIPCpuAllocator(
             TestCpuUsagePredictorManager(TestCpuUsagePredictor(10)),
             ConfigManager(TestPropertyProvider({})),
-            ThresholdFreeThreadProvider(0.05))
+            OversubscribeFreeThreadProvider(0.05))
 
         thread_count = DEFAULT_TOTAL_THREAD_COUNT / 4
         cpu = get_cpu()

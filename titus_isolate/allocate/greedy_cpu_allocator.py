@@ -95,7 +95,7 @@ class GreedyCpuAllocator(CpuAllocator):
                 workload_type=workload.get_type()))
 
     def set_registry(self, registry):
-        pass
+        self.__free_thread_provider.set_registry(registry)
 
     def report_metrics(self, tags):
-        pass
+        self.__free_thread_provider.report_metrics(tags)

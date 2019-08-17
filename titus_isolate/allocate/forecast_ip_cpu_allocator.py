@@ -313,7 +313,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
     def set_registry(self, registry):
         self.__reg = registry
+        self.__free_thread_provider.set_registry(registry)
 
     def report_metrics(self, tags):
         self.__reg.gauge(IP_ALLOCATOR_TIMEBOUND_COUNT, tags).set(self.__time_bound_call_count)
         self.__reg.gauge(FORECAST_REBALANCE_FAILURE_COUNT, tags).set(self.__rebalance_failure_count)
+        self.__free_thread_provider.report_metrics(tags)

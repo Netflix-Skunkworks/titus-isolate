@@ -1,6 +1,7 @@
 from typing import Dict, List
 
 from titus_isolate import log
+from titus_isolate.metrics.constants import FREE_THREADS_KEY
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.thread import Thread
 from titus_isolate.model.workload import Workload
@@ -15,6 +16,8 @@ class OversubscribeFreeThreadProvider(FreeThreadProvider):
 
         :param total_threshold: The percentage of usage under which threads are considered to be free.
         """
+        self.__reg = None
+        self.__last_free_thread_count = 0
         self.__threshold = total_threshold
         log.debug("{} created with threshold: '{}'".format(self.__class__.__name__, self.__threshold))
 
@@ -33,4 +36,13 @@ class OversubscribeFreeThreadProvider(FreeThreadProvider):
         for c in get_free_cores(self.__threshold, cpu, workload_map, cpu_usage):
             free_threads += c.get_threads()
 
+        self.__last_free_thread_count = len(free_threads)
         return free_threads
+
+    def set_registry(self, registry):
+        self.__reg = registry
+
+    def report_metrics(self, tags):
+        self.__reg.gauge(FREE_THREADS_KEY, tags).set(self.__last_free_thread_count)
+
+

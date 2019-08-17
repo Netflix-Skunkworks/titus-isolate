@@ -7,13 +7,12 @@ from titus_isolate.allocate.allocate_threads_request import AllocateThreadsReque
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.thread import Thread
-from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 
 
 class NaiveCpuAllocator(CpuAllocator):
 
-    def __init__(self, free_thread_provider: FreeThreadProvider = EmptyFreeThreadProvider()):
+    def __init__(self, free_thread_provider: FreeThreadProvider = None):
         pass
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
@@ -55,7 +54,7 @@ class NaiveCpuAllocator(CpuAllocator):
     def get_name(self) -> str:
         return self.__class__.__name__
 
-    def set_registry(self, registry):
+    def setregistry(self, registry):
         pass
 
     def report_metrics(self, tags):
