@@ -5,7 +5,8 @@ import time
 from titus_isolate import log
 
 from titus_isolate.allocate.allocate_request import AllocateRequest
-from titus_isolate.allocate.constants import CPU_ALLOCATOR
+from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.constants import CPU_ALLOCATOR, FREE_THREAD_IDS
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
@@ -20,7 +21,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
-    UNALLOCATED_SIZE_KEY, REBALANCED_KEY
+    UNALLOCATED_SIZE_KEY, REBALANCED_KEY, FREE_THREADS_KEY
 from titus_isolate.metrics.event_log import report_cpu_event
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
@@ -50,6 +51,7 @@ class WorkloadManager(MetricsReporter):
         self.__cgroup_manager = cgroup_manager
         self.__wmm = get_workload_monitor_manager()
         self.__workloads = {}
+        self.__last_response = None
 
         log.info("Created workload manager")
 
@@ -97,7 +99,7 @@ class WorkloadManager(MetricsReporter):
         request = self.__get_threads_request(workload.get_id(), workload_map, "assign")
         response = self.__cpu_allocator.assign_threads(request)
 
-        self.__update_state(response.get_cpu(), workload_map)
+        self.__update_state(response, workload_map)
         report_cpu_event(request, response)
 
     def __remove_workload(self, workload_id):
@@ -112,18 +114,21 @@ class WorkloadManager(MetricsReporter):
         response = self.__cpu_allocator.free_threads(request)
 
         workload_map.pop(workload_id)
-        self.__update_state(response.get_cpu(), workload_map)
+        self.__update_state(response, workload_map)
         report_cpu_event(request, response)
 
     def __rebalance(self, dummy):
         request = self.__get_rebalance_request()
         response = self.__cpu_allocator.rebalance(request)
 
-        self.__update_state(response.get_cpu(), request.get_workloads())
+        self.__update_state(response, request.get_workloads())
         report_cpu_event(request, response)
 
-    def __update_state(self, new_cpu, new_workloads):
+    def __update_state(self, response: AllocateResponse, new_workloads):
         old_cpu = self.get_cpu_copy()
+        new_cpu = response.get_cpu()
+
+        self.__last_response = response
         self.__apply_cpuset_updates(old_cpu, new_cpu)
         self.__cpu = new_cpu
         self.__workloads = new_workloads
@@ -216,8 +221,17 @@ class WorkloadManager(MetricsReporter):
         self.__cpu_allocator.set_registry(registry)
         self.__cgroup_manager.set_registry(registry)
 
-    def __report_cpu_state(self, old_cpu, new_cpu):
+    @staticmethod
+    def __report_cpu_state(old_cpu, new_cpu):
         log.info(visualize_cpu_comparison(old_cpu, new_cpu))
+
+    @staticmethod
+    def __get_free_thread_count(response: AllocateResponse):
+        if response is None:
+            return 0
+
+        free_thread_ids = response.get_metadata().get(FREE_THREAD_IDS, [])
+        return len(free_thread_ids)
 
     def report_metrics(self, tags):
         cpu = self.get_cpu_copy()
@@ -247,6 +261,7 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(BURST_ALLOCATED_SIZE_KEY, tags).set(get_burst_allocated_size(cpu, workload_map))
         self.__reg.gauge(BURST_REQUESTED_SIZE_KEY, tags).set(get_burst_request_size(list(workload_map.values())))
         self.__reg.gauge(OVERSUBSCRIBED_THREADS_KEY, tags).set(get_oversubscribed_thread_count(cpu, workload_map))
+        self.__reg.gauge(FREE_THREADS_KEY, tags).set(self.__get_free_thread_count(self.__last_response))
 
         # Have the sub-components report metrics
         self.__cpu_allocator.report_metrics(tags)

@@ -15,3 +15,5 @@ UNKNOWN_ALLOCATOR_SERVICE_TASK_ID = 'unknown_alloc_task_id'
 TITUS_TASK_ID = 'TITUS_TASK_ID'
 
 INSTANCE_ID = "instance_id"
+
+FREE_THREAD_IDS = "free_thread_ids"

@@ -1,4 +1,4 @@
-FROM dockerregistry.test.netflix.net:7002/engtools/xenialbase
+FROM dockerregistry.test.netflix.net:7002/engtools/bionicbase
 
 RUN apt update && apt install -y \
     build-essential \
@@ -8,6 +8,8 @@ RUN apt update && apt install -y \
     python3-pip \
     python3-setuptools \
     ssh
+
+RUN python3 --version
 
 RUN pip3 install wheel
 
