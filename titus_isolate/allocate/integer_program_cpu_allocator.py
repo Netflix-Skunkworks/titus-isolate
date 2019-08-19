@@ -34,9 +34,11 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         release_all_threads(cpu, burst_workloads)
         if workloads[workload_id].get_type() == STATIC:
             self.__assign_threads(cpu, workload_id, workloads)
-        update_burst_workloads(cpu, workloads, self.__free_thread_provider)
 
-        return AllocateResponse(cpu, self.get_name())
+        metadata = {}
+        update_burst_workloads(cpu, workloads, self.__free_thread_provider, metadata)
+
+        return AllocateResponse(cpu, self.get_name(), metadata)
 
     def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         cpu = request.get_cpu()
@@ -48,16 +50,18 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         if workloads[workload_id].get_type() == STATIC:
             self.__free_threads(cpu, workload_id, workloads)
         workloads.pop(workload_id)
-        update_burst_workloads(cpu, workloads, self.__free_thread_provider)
+        metadata = {}
+        update_burst_workloads(cpu, workloads, self.__free_thread_provider, metadata)
 
-        return AllocateResponse(cpu, self.get_name())
+        return AllocateResponse(cpu, self.get_name(), metadata)
 
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         cpu = request.get_cpu()
         workloads = request.get_workloads()
 
-        cpu = rebalance(cpu, workloads, self.__free_thread_provider)
-        return AllocateResponse(cpu, self.get_name())
+        metadata = {}
+        cpu = rebalance(cpu, workloads, self.__free_thread_provider, metadata)
+        return AllocateResponse(cpu, self.get_name(), metadata)
 
     def get_name(self) -> str:
         return self.__class__.__name__

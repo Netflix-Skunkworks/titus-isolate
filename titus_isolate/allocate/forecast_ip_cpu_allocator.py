@@ -8,6 +8,7 @@ from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
+from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC, DEFAULT_ALPHA_LLC, ALPHA_L12, \
@@ -127,6 +128,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             for w_id in burst_workload_ids:
                 t.claim(w_id)
 
+        self.__call_meta[FREE_THREAD_IDS] = [t.get_id() for t in free_threads]
         return cpu
 
     def get_name(self) -> str:

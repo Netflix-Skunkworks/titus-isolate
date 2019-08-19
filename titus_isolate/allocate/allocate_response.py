@@ -15,13 +15,13 @@ class AllocateResponse:
             alloc_service_id = os.environ.get(TITUS_TASK_ID, UNKNOWN_ALLOCATOR_SERVICE_TASK_ID)
             self.__metadata[ALLOCATOR_SERVICE_TASK_ID] = alloc_service_id
 
-    def get_cpu(self):
+    def get_cpu(self) -> Cpu:
         return self.__cpu
 
-    def get_metadata(self):
+    def get_metadata(self) -> dict:
         return self.__metadata
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             CPU: self.get_cpu().to_dict(),
             CPU_ARRAY: self.get_cpu().to_array(),

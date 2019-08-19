@@ -32,6 +32,7 @@ STATIC_ALLOCATED_SIZE_KEY = 'titus-isolate.staticAllocatedSize'
 BURST_ALLOCATED_SIZE_KEY = 'titus-isolate.burstAllocatedSize'
 BURST_REQUESTED_SIZE_KEY = 'titus-isolate.burstRequestedSize'
 OVERSUBSCRIBED_THREADS_KEY = 'titus-isolate.oversubscribedThreads'
+FREE_THREADS_KEY = 'titus-isolate.freeThreads'
 
 PRIMARY_ASSIGN_COUNT = 'titus-isolate.assignThreadsPrimaryCount'
 PRIMARY_FREE_COUNT = 'titus-isolate.freeThreadsPrimaryCount'
