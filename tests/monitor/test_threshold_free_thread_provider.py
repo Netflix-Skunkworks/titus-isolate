@@ -10,7 +10,6 @@ from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
-from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
 
 config_logs(logging.DEBUG)
 TEST_WORKLOAD_THREAD_COUNT = 4
@@ -19,23 +18,7 @@ TEST_THRESHOLD_USAGE = DEFAULT_TOTAL_THRESHOLD * TEST_WORKLOAD_THREAD_COUNT
 
 class TestWorkloadManager(unittest.TestCase):
 
-    def test_empty_usage_all_threads_claimed(self):
-        # Assign a workload to a CPU
-        cpu = get_cpu()
-        workload = get_test_workload("a", len(cpu.get_threads()), STATIC)
-        cpu = self.__assign_workload(cpu, workload)
-
-        free_thread_provider = ThresholdFreeThreadProvider(total_threshold=DEFAULT_TOTAL_THRESHOLD)
-        free_threads = free_thread_provider.get_free_threads(cpu, {}, {workload.get_id(): workload})
-        self.assertEqual([], free_threads)
-
     def test_low_static_usage(self):
-        # Threshold
-        free_threads = self.__test_uniform_usage(
-            TEST_THRESHOLD_USAGE,
-            ThresholdFreeThreadProvider(DEFAULT_TOTAL_THRESHOLD))
-        self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - TEST_WORKLOAD_THREAD_COUNT, len(free_threads))
-
         # Oversubscribe
         free_threads = self.__test_uniform_usage(
             TEST_THRESHOLD_USAGE,
@@ -46,7 +29,7 @@ class TestWorkloadManager(unittest.TestCase):
         # Threshold
         free_threads = self.__test_uniform_usage(
             TEST_THRESHOLD_USAGE + 0.001,
-            ThresholdFreeThreadProvider(DEFAULT_TOTAL_THRESHOLD))
+            OversubscribeFreeThreadProvider(DEFAULT_TOTAL_THRESHOLD))
         self.assertEqual(TEST_WORKLOAD_THREAD_COUNT * 2, len(free_threads))
 
         # Oversubscribe
