@@ -623,7 +623,7 @@ class TestCpu(unittest.TestCase):
         thread_count = DEFAULT_TOTAL_THREAD_COUNT / 4
         cpu = get_cpu()
 
-        w0 = get_test_workload(uuid.uuid4(), thread_count, STATIC)
+        w0 = get_test_workload("s", thread_count, STATIC)
         log.info(w0)
 
         request = AllocateThreadsRequest(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
@@ -634,7 +634,7 @@ class TestCpu(unittest.TestCase):
         for c in cpu.get_cores():
             self.assertTrue(len(c.get_empty_threads()) == 1 or len(c.get_empty_threads()) == 2)
 
-        w1 = get_test_workload(uuid.uuid4(), thread_count, BURST)
+        w1 = get_test_workload("b", thread_count, BURST)
         log.info(w1)
         request = AllocateThreadsRequest(
             cpu,
