@@ -26,7 +26,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, UNALLOCATED_SIZE_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
-from titus_isolate.monitor.threshold_free_thread_provider import ThresholdFreeThreadProvider
+from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
 from titus_isolate.utils import set_config_manager, set_workload_monitor_manager
 
 config_logs(logging.DEBUG)
@@ -36,7 +36,7 @@ set_workload_monitor_manager(TestWorkloadMonitorManager())
 forecast_ip_alloc_simple = ForecastIPCpuAllocator(
     TestCpuUsagePredictorManager(),
     ConfigManager(TestPropertyProvider({})),
-    ThresholdFreeThreadProvider(DEFAULT_TOTAL_THRESHOLD))
+    OversubscribeFreeThreadProvider(DEFAULT_TOTAL_THRESHOLD))
 
 ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
 
