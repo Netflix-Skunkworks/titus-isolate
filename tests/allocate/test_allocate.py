@@ -282,7 +282,7 @@ class TestCpu(unittest.TestCase):
         --------------------
         Total:      16 cores
         """
-        for allocator in [ALLOCATORS]:
+        for allocator in ALLOCATORS:
             cpu = get_cpu()
             workloads = [
                 get_test_workload("v", 8, STATIC),
