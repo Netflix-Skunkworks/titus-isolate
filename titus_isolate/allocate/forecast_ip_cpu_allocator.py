@@ -2,7 +2,7 @@ from datetime import datetime as dt
 from collections import defaultdict
 import time
 
-from titus_optimize.compute_v2 import IP_SOLUTION_TIME_BOUND, optimize_ip, IPSolverParameters
+from titus_optimize.compute_v3 import IPSolverParameters, IP_SOLUTION_TIME_BOUND, PlacementSolver
 
 from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
@@ -51,7 +51,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
             alpha_nu=config_manager.get_float(ALPHA_NU, DEFAULT_ALPHA_NU),
             alpha_llc=config_manager.get_float(ALPHA_LLC, DEFAULT_ALPHA_LLC),
             alpha_l12=config_manager.get_float(ALPHA_L12, DEFAULT_ALPHA_L12),
-            alpha_order=config_manager.get_float(ALPHA_ORDER, DEFAULT_ALPHA_ORDER),
             alpha_prev=config_manager.get_float(ALPHA_PREV, DEFAULT_ALPHA_PREV))
 
         self.__solver_max_runtime_secs = config_manager.get_float(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
@@ -260,9 +259,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
             predicted_usage):
 
         num_threads = len(cpu.get_threads())
-        ip_params = self.__ip_solver_params
-        log.info("Using solver: {}".format(self.__solver_name))
-
         num_packages = len(cpu.get_packages())
 
         sparse_prev_alloc = None
@@ -285,19 +281,24 @@ class ForecastIPCpuAllocator(CpuAllocator):
             self.__call_meta['ip_solver_call_args']['use_per_workload'] = use_per_workload
 
         try:
+            placement_solver = PlacementSolver(
+                total_available_cus=num_threads,
+                num_sockets=num_packages,
+                solver_params=self.__ip_solver_params,
+                backend=self.__solver_name)
+
             start_time = time.time()
-            placement, status = optimize_ip(
-                requested_units,
-                num_threads,
-                num_packages,
+
+            placement, status, _, _ = placement_solver.optimize(
+                requested_cus=requested_units,
                 previous_allocation=current_placement,
                 use_per_workload=predicted_usage,
-                solver_params=ip_params,
                 verbose=False,
                 max_runtime_secs=self.__solver_max_runtime_secs,
-                mip_gap=self.__solver_mip_gap,
-                solver=self.__solver_name)
+                mip_gap=self.__solver_mip_gap)
+
             stop_time = time.time()
+
             self.__call_meta['ip_solver_call_dur_secs'] = stop_time - start_time
             self.__call_meta['ip_success'] = 1
 

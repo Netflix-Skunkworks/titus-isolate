@@ -3,6 +3,6 @@ boto3
 flask
 requests
 schedule
-titus-optimize==0.4.4
+titus-optimize==0.5.1
 cvxpy
 tox

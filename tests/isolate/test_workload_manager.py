@@ -38,7 +38,9 @@ forecast_ip_alloc_simple = ForecastIPCpuAllocator(
     ConfigManager(TestPropertyProvider({})),
     OversubscribeFreeThreadProvider(DEFAULT_TOTAL_THRESHOLD))
 
-ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
+LEGACY_ALLOCATORS = [IntegerProgramCpuAllocator(), GreedyCpuAllocator()]
+OVERSUBSCRIBING_ALLOCATORS = [forecast_ip_alloc_simple]
+ALLOCATORS = LEGACY_ALLOCATORS + OVERSUBSCRIBING_ALLOCATORS
 
 
 class TestWorkloadManager(unittest.TestCase):
@@ -230,7 +232,7 @@ class TestWorkloadManager(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, UNALLOCATED_SIZE_KEY, expected_unallocated_size))
 
     def test_assign_to_full_cpu_fails(self):
-        for allocator in ALLOCATORS:
+        for allocator in LEGACY_ALLOCATORS:
             # Fill the CPU
             w0 = get_test_workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
 
