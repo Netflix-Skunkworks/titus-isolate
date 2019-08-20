@@ -22,24 +22,36 @@ def is_core_below_threshold(
         workload_usage: Dict[str, float],
         workload_map: Dict[str, Workload]):
 
+    # Get all workload IDs running on this core
     workload_ids = []
     for t in core.get_threads():
         workload_ids += t.get_workload_ids()
 
-    static_usage = 0
-    static_workload_ids = []
+    # Measure the usage of all _static_ workloads running on this core in proportion to their requested thread count.
+    #
+    # e.g.
+    # w_id  | usage
+    #    a  |    2%
+    #    b  |    3%
+    #    c  |    1%
+    # -------------
+    # total |    6%
+    usage = 0
     for w_id in workload_ids:
         workload = workload_map.get(w_id, None)
         if workload is not None and workload.get_type() == STATIC:
-            static_usage += \
-                workload_usage.get(w_id, workload.get_thread_count()) / workload.get_thread_count()
-            static_workload_ids.append(w_id)
+            usage += workload_usage.get(w_id, workload.get_thread_count()) / workload.get_thread_count()
 
-    is_free = static_usage <= threshold
+    # If we set the threshold to 10% and continue the example above
+    #
+    # e.g.
+    # is_free = 6% <= 10%
+    # is_free = true
+    is_free = usage <= threshold
 
     if is_free:
-        log.info("Core: {} with usage: {} is UNDER threshold: {}".format(core.get_id(), static_usage, threshold))
+        log.debug("Core: {} with usage: {} is UNDER threshold: {}".format(core.get_id(), usage, threshold))
     else:
-        log.info("Core: {} with usage: {} is OVER  threshold: {}".format(core.get_id(), static_usage, threshold))
+        log.debug("Core: {} with usage: {} is OVER  threshold: {}".format(core.get_id(), usage, threshold))
 
     return is_free

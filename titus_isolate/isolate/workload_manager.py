@@ -21,7 +21,7 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
-    UNALLOCATED_SIZE_KEY, REBALANCED_KEY, FREE_THREADS_KEY
+    UNALLOCATED_SIZE_KEY, REBALANCED_KEY, BURSTABLE_THREADS_KEY, OVERSUBSCRIBABLE_THREADS_KEY
 from titus_isolate.metrics.event_log import report_cpu_event
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
@@ -233,6 +233,20 @@ class WorkloadManager(MetricsReporter):
         free_thread_ids = response.get_metadata().get(FREE_THREAD_IDS, [])
         return len(free_thread_ids)
 
+    @staticmethod
+    def __get_oversubscribable_thread_count(response: AllocateResponse):
+        if response is None:
+            return 0
+
+        oversubscribable_thread_count = 0
+        free_thread_ids = response.get_metadata().get(FREE_THREAD_IDS, [])
+
+        for t in response.get_cpu().get_threads():
+            if t.get_id() in free_thread_ids and len(t.get_workload_ids()) > 0:
+                oversubscribable_thread_count += 1
+
+        return oversubscribable_thread_count
+
     def report_metrics(self, tags):
         cpu = self.get_cpu_copy()
         workload_map = self.get_workload_map_copy()
@@ -261,7 +275,8 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(BURST_ALLOCATED_SIZE_KEY, tags).set(get_burst_allocated_size(cpu, workload_map))
         self.__reg.gauge(BURST_REQUESTED_SIZE_KEY, tags).set(get_burst_request_size(list(workload_map.values())))
         self.__reg.gauge(OVERSUBSCRIBED_THREADS_KEY, tags).set(get_oversubscribed_thread_count(cpu, workload_map))
-        self.__reg.gauge(FREE_THREADS_KEY, tags).set(self.__get_free_thread_count(self.__last_response))
+        self.__reg.gauge(BURSTABLE_THREADS_KEY, tags).set(self.__get_free_thread_count(self.__last_response))
+        self.__reg.gauge(OVERSUBSCRIBABLE_THREADS_KEY, tags).set(self.__get_oversubscribable_thread_count(self.__last_response))
 
         # Have the sub-components report metrics
         self.__cpu_allocator.report_metrics(tags)
