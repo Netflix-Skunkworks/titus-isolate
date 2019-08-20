@@ -282,14 +282,14 @@ class TestCpu(unittest.TestCase):
         --------------------
         Total:      16 cores
         """
-        for allocator in ALLOCATORS:
+        for allocator in [ALLOCATORS]:
             cpu = get_cpu()
             workloads = [
-                get_test_workload("a", 8, STATIC),
-                get_test_workload("b", 4, STATIC),
-                get_test_workload("c", 2, STATIC),
-                get_test_workload("d", 1, STATIC),
-                get_test_workload("e", 1, STATIC)]
+                get_test_workload("v", 8, STATIC),
+                get_test_workload("w", 4, STATIC),
+                get_test_workload("x", 2, STATIC),
+                get_test_workload("y", 1, STATIC),
+                get_test_workload("z", 1, STATIC)]
 
             tot_req = 0
             workload_map = {}
@@ -297,7 +297,7 @@ class TestCpu(unittest.TestCase):
                 workload_map[w.get_id()] = w
                 request = AllocateThreadsRequest(cpu, w.get_id(), workload_map, {}, DEFAULT_TEST_REQUEST_METADATA)
                 cpu = allocator.assign_threads(request).get_cpu()
-                log.debug("{}".format(cpu))
+                log.info(cpu)
                 tot_req += w.get_thread_count()
                 self.assertEqual(tot_req, len(cpu.get_claimed_threads()))
 
