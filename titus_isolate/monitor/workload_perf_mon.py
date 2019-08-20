@@ -1,12 +1,13 @@
 import calendar
 import collections
-from datetime import datetime as dt
 from math import ceil
 from threading import Lock
+from typing import List
 
 import numpy as np
 
 from titus_isolate import log
+from titus_isolate.monitor.usage_snapshot import UsageSnapshot
 from titus_isolate.monitor.utils import normalize_data
 
 
@@ -33,28 +34,47 @@ class WorkloadPerformanceMonitor:
             self.__snapshots.append(res_snap)
             log.debug("Took snapshot of metrics for workload: '{}'".format(self.get_workload().get_id()))
 
+    def get_cpu_usage(self, seconds, agg_granularity_secs=60) -> List[float]:
+        num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
+        timestamps, buffers = self._get_cpu_buffers()
+        return normalize_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+
+    def get_mem_usage(self, seconds, agg_granularity_secs=60) -> List[float]:
+        num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
+        timestamps, buffers = self._get_mem_buffers()
+        return normalize_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+
     def _get_cpu_buffers(self):
         with self.__snapshot_lock:
-            if len(self.__snapshots) == 0:
-                return [], []
+            cpu_snapshots = [s.cpu for s in self.__snapshots]
+            return self.__get_buffers(cpu_snapshots, self.__max_buffer_size)
 
-            # The number of threads per sample is constant across all samples
-            thread_count = len(self.__snapshots[0].cpu.rows)
-            buffers = [collections.deque([], self.__max_buffer_size) for _ in range(thread_count)]
-            timestamps = collections.deque([], self.__max_buffer_size)
+    def _get_mem_buffers(self):
+        with self.__snapshot_lock:
+            mem_snapshots = [s.mem for s in self.__snapshots]
+            return self.__get_buffers(mem_snapshots, self.__max_buffer_size)
 
-            for res_snap in self.__snapshots:
-                timestamps.append(res_snap.cpu.timestamp)
-                for row in res_snap.cpu.rows:
-                    buffers[row.pu_id].append(int(row.user) + int(row.system))
-
-            return np.array([calendar.timegm(t.timetuple()) for t in timestamps], dtype=np.int32), \
-                   [list(e) for e in buffers]
-
-    def get_cpu_usage(self, seconds, agg_granularity_secs=60):
+    def __get_num_buckets(self, seconds, agg_granularity_secs=60) -> int:
         num_buckets = ceil(seconds / agg_granularity_secs)
         if num_buckets > self.__max_buffer_size:
             raise Exception("Aggregation buffer too small to satisfy query.")
 
-        timestamps, buffers = self._get_cpu_buffers()
-        return normalize_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+        return num_buckets
+
+    @staticmethod
+    def __get_buffers(snapshots: List[UsageSnapshot], max_buffer_size):
+        if len(snapshots) == 0:
+            return [], []
+
+        _, first_column = snapshots[0].get_column()
+        column_height = len(first_column)
+        buffers = [collections.deque([], max_buffer_size) for _ in range(column_height)]
+        timestamps = collections.deque([], max_buffer_size)
+
+        for s in snapshots:
+            timestamp, column = s.get_column()
+            timestamps.append(timestamp)
+            for i, row in enumerate(column):
+                buffers[i].append(row)
+
+        return np.array(timestamps, dtype=np.int32), [list(e) for e in buffers]

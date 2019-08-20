@@ -7,7 +7,7 @@ from titus_isolate.model.processor.cpu import Cpu
 
 class AllocateThreadsRequest(AllocateRequest):
 
-    def __init__(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, metadata: dict):
+    def __init__(self, cpu: Cpu, workload_id: str, workloads: dict, cpu_usage: dict, mem_usage: dict, metadata: dict):
         """
         A threads request encapsulates all information needed to assign threads to workloads when a workload is being
         added or removed.
@@ -18,7 +18,12 @@ class AllocateThreadsRequest(AllocateRequest):
                           The keys are workload ids, the objects are Workload objects
         :param cpu_usage: A map of cpu usage per workload
         """
-        super().__init__(cpu, workloads, cpu_usage, metadata)
+        super().__init__(
+            cpu=cpu,
+            workloads=workloads,
+            cpu_usage=cpu_usage,
+            mem_usage=mem_usage,
+            metadata=metadata)
         self.__workload_id = copy.deepcopy(workload_id)
 
     def get_workload_id(self):
@@ -34,8 +39,9 @@ def deserialize_allocate_threads_request(serialized_request: dict) -> AllocateTh
     allocate_request = deserialize_allocate_request(serialized_request)
     workload_id = serialized_request[WORKLOAD_ID]
     return AllocateThreadsRequest(
-        allocate_request.get_cpu(),
-        workload_id,
-        allocate_request.get_workloads(),
-        allocate_request.get_cpu_usage(),
-        allocate_request.get_metadata())
+        cpu=allocate_request.get_cpu(),
+        workload_id=workload_id,
+        workloads=allocate_request.get_workloads(),
+        cpu_usage=allocate_request.get_cpu_usage(),
+        mem_usage=allocate_request.get_mem_usage(),
+        metadata=allocate_request.get_metadata())

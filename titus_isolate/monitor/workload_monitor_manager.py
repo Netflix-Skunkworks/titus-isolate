@@ -32,6 +32,14 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
 
         return cpu_usage
 
+    def get_mem_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
+        with self.__lock:
+            mem_usage = {}
+            for workload_id, monitor in self.get_monitors().items():
+                mem_usage[workload_id] = monitor.get_mem_usage(seconds, agg_granularity_secs)
+
+        return mem_usage
+
     def set_registry(self, registry):
         self.__registry = registry
 

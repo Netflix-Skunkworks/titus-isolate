@@ -25,13 +25,13 @@ class TestWorkloadPerfMon(unittest.TestCase):
         perf_mon = WorkloadPerformanceMonitor(metrics_provider, DEFAULT_SAMPLE_FREQUENCY_SEC)
 
         # Initial state should just be an empty timestamps buffer
-        _, timestamps, buffers = perf_mon._get_cpu_buffers()
+        timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(0, len(buffers))
         self.assertEqual(0, len(timestamps))
 
         # Expect no change because no workload is really running and we haven't started mocking anything
         perf_mon.sample()
-        _, timestamps, buffers = perf_mon._get_cpu_buffers()
+        timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(0, len(buffers))
         self.assertEqual(0, len(timestamps))
 
@@ -45,13 +45,24 @@ class TestWorkloadPerfMon(unittest.TestCase):
         metrics_provider.get_mem_usage = MagicMock(return_value=mem_snapshot)
         perf_mon.sample()
 
-        _, timestamps, buffers = perf_mon._get_cpu_buffers()
+        # Check CPU buffers
+        timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(1, len(buffers))
         self.assertEqual(1, len(timestamps))
+        self.assertEqual(150, buffers[0][0])
 
         buffer = buffers[cpu_usage.pu_id]
         self.assertEqual(1, len(buffer))
         self.assertEqual(cpu_usage.user + cpu_usage.system, buffer[0])
+
+        # Check MEM buffers
+        timestamps, buffers = perf_mon._get_mem_buffers()
+        self.assertEqual(1, len(buffers))
+        self.assertEqual(1, len(timestamps))
+
+        buffer = buffers[0]
+        self.assertEqual(1, len(buffer))
+        self.assertEqual(mem_usage.user, buffer[0])
 
     def test_monitor_cpu_usage_normalization(self):
         to_ts = lambda d: calendar.timegm(d.timetuple())
@@ -67,13 +78,13 @@ class TestWorkloadPerfMon(unittest.TestCase):
              deque([50, 300, 360], 100)])
 
         # Last data bucket
-        expected_processing_time = (360-300 + 200-200)
+        expected_processing_time = (360 - 300 + 200 - 200)
         expected_duration_ns = (timestamps[-1] - timestamps[-2]) * 1000000000
         expected_usage = expected_processing_time / expected_duration_ns
         self.assertAlmostEqual(expected_usage, data[-1])
 
         # Penultimate bucket
-        expected_processing_time = (300-50 + 200-100)
+        expected_processing_time = (300 - 50 + 200 - 100)
         expected_duration_ns = (timestamps[-2] - timestamps[-3]) * 1000000000
         expected_usage = expected_processing_time / expected_duration_ns
         self.assertAlmostEqual(expected_usage, data[-2])

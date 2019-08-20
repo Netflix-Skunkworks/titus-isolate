@@ -155,20 +155,25 @@ class WorkloadManager(MetricsReporter):
     def __get_cpu_usage(self) -> dict:
         return self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
 
+    def __get_mem_usage(self) -> dict:
+        return self.__wmm.get_mem_usage(seconds=3600, agg_granularity_secs=60)
+
     def __get_threads_request(self, workload_id, workload_map, request_type):
         return AllocateThreadsRequest(
-            self.get_cpu_copy(),
-            workload_id,
-            workload_map,
-            self.__get_cpu_usage(),
-            self.__get_request_metadata(request_type))
+            cpu=self.get_cpu_copy(),
+            workload_id=workload_id,
+            workloads=workload_map,
+            cpu_usage=self.__get_cpu_usage(),
+            mem_usage=self.__get_mem_usage(),
+            metadata=self.__get_request_metadata(request_type))
 
     def __get_rebalance_request(self):
         return AllocateRequest(
-            self.get_cpu_copy(),
-            self.get_workload_map_copy(),
-            self.__get_cpu_usage(),
-            self.__get_request_metadata("rebalance"))
+            cpu=self.get_cpu_copy(),
+            workloads=self.get_workload_map_copy(),
+            cpu_usage=self.__get_cpu_usage(),
+            mem_usage=self.__get_mem_usage(),
+            metadata=self.__get_request_metadata("rebalance"))
 
     def get_workloads(self):
         return list(self.__workloads.values())

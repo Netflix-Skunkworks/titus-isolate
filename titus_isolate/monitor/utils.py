@@ -60,12 +60,11 @@ def is_core_below_threshold(
     return is_free
 
 
-def normalize_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60):
-    proc_time = np.full((num_buckets,), np.nan, dtype=np.float32)
-
+def normalize_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60) -> List[float]:
     if len(timestamps) == 0:
-        return proc_time
+        return []
 
+    proc_time = np.full((num_buckets,), np.nan, dtype=np.float32)
     ts_max = timestamps[-1]
 
     for i in range(num_buckets):
@@ -99,4 +98,4 @@ def normalize_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60):
             s /= time_diff_ns
         proc_time[num_buckets - 1 - i] = s
 
-    return proc_time
+    return list(proc_time.tolist())

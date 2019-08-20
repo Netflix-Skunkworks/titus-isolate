@@ -9,7 +9,7 @@ from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest, deserialize_allocate_request
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest, deserialize_allocate_threads_request
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_isolate.allocate.utils import parse_workload, parse_cpu, parse_cpu_usage
+from titus_isolate.allocate.utils import parse_workload, parse_cpu, parse_usage
 from titus_isolate.api.testing import is_testing
 from titus_isolate.config.constants import CPU_ALLOCATOR, REMOTE_ASSIGN_ALLOCATOR, REMOTE_FREE_ALLOCATOR, \
     REMOTE_REBALANCE_ALLOCATOR
@@ -105,7 +105,7 @@ def __get_workloads(body):
 
 
 def __get_cpu_usage(body):
-    return parse_cpu_usage(body["cpu_usage"])
+    return parse_usage(body["cpu_usage"])
 
 
 def __get_instance_id(body):
