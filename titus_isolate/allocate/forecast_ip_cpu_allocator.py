@@ -284,7 +284,8 @@ class ForecastIPCpuAllocator(CpuAllocator):
             placement_solver = PlacementSolver(
                 total_available_cus=num_threads,
                 num_sockets=num_packages,
-                solver_params=self.__ip_solver_params)
+                solver_params=self.__ip_solver_params,
+                backend=self.__solver_name)
 
             start_time = time.time()
 
@@ -294,8 +295,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
                 use_per_workload=predicted_usage,
                 verbose=False,
                 max_runtime_secs=self.__solver_max_runtime_secs,
-                mip_gap=self.__solver_mip_gap,
-                solver=self.__solver_name)
+                mip_gap=self.__solver_mip_gap)
 
             stop_time = time.time()
 
