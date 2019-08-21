@@ -90,20 +90,22 @@ def __normalize_data(get_element, timestamps, buffers, num_buckets, bucket_size_
 
 def __get_monotonic_element(timestamps, buffers, min_index, max_index) -> float:
     time_diff_ns = (timestamps[max_index] - timestamps[min_index]) * 1000000000
-    sum = 0.0
+    s = 0.0
     for b in buffers:
-        sum += b[max_index] - b[min_index]
+        s += b[max_index] - b[min_index]
     if time_diff_ns > 0:
-        sum /= time_diff_ns
+        s /= time_diff_ns
 
-    return sum
+    return s
 
 
 def __get_gauge_element(timestamps, buffers, min_index, max_index) -> float:
-    sum = 0.0
+    s = 0.0
+    value_count = max_index - min_index + 1
     for b in buffers:
-        sum += b[max_index] + b[min_index]
-    return sum / (len(buffers) * 2)
+        for i in range(value_count):
+            s += b[min_index + i]
+    return s / value_count
 
 
 def __get_bucket_indices(timestamps, num_buckets, bucket_size_secs) -> Tuple[List[int], List[int]]:
