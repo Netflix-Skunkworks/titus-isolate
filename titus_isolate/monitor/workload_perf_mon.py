@@ -8,7 +8,7 @@ import numpy as np
 
 from titus_isolate import log
 from titus_isolate.monitor.usage_snapshot import UsageSnapshot
-from titus_isolate.monitor.utils import normalize_data
+from titus_isolate.monitor.utils import normalize_monotonic_data, normalize_gauge_data
 
 
 class WorkloadPerformanceMonitor:
@@ -37,12 +37,12 @@ class WorkloadPerformanceMonitor:
     def get_cpu_usage(self, seconds, agg_granularity_secs=60) -> List[float]:
         num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
         timestamps, buffers = self._get_cpu_buffers()
-        return normalize_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+        return normalize_monotonic_data(timestamps, buffers, num_buckets, agg_granularity_secs)
 
     def get_mem_usage(self, seconds, agg_granularity_secs=60) -> List[float]:
         num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
         timestamps, buffers = self._get_mem_buffers()
-        return normalize_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+        return normalize_gauge_data(timestamps, buffers, num_buckets, agg_granularity_secs)
 
     def _get_cpu_buffers(self):
         with self.__snapshot_lock:

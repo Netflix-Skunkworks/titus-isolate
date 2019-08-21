@@ -1,5 +1,6 @@
 import calendar
-from typing import Dict, List
+import math
+from typing import Dict, List, Tuple
 from datetime import datetime as dt
 
 from titus_isolate import log
@@ -60,13 +61,56 @@ def is_core_below_threshold(
     return is_free
 
 
-def normalize_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60) -> List[float]:
+def normalize_monotonic_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60) -> List[float]:
+    return __normalize_data(__get_monotonic_element, timestamps, buffers, num_buckets, bucket_size_secs)
+
+
+def normalize_gauge_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60) -> List[float]:
+    return __normalize_data(__get_gauge_element, timestamps, buffers, num_buckets, bucket_size_secs)
+
+
+def __normalize_data(get_element, timestamps, buffers, num_buckets, bucket_size_secs) -> List[float]:
+    data = np.full((num_buckets,), np.nan, dtype=np.float32)
     if len(timestamps) == 0:
-        return []
+        return list(data.tolist())
 
-    proc_time = np.full((num_buckets,), np.nan, dtype=np.float32)
+    min_indices, max_indices = __get_bucket_indices(timestamps, num_buckets, bucket_size_secs)
+
+    for i in range(len(min_indices)):
+        min_index = min_indices[i]
+        max_index = max_indices[i]
+
+        if min_index < 0 or max_index < 0:
+            continue
+
+        data[i] = get_element(timestamps, buffers, min_index, max_index)
+
+    return list(data.tolist())
+
+
+def __get_monotonic_element(timestamps, buffers, min_index, max_index) -> float:
+    time_diff_ns = (timestamps[max_index] - timestamps[min_index]) * 1000000000
+    sum = 0.0
+    for b in buffers:
+        sum += b[max_index] - b[min_index]
+    if time_diff_ns > 0:
+        sum /= time_diff_ns
+
+    return sum
+
+
+def __get_gauge_element(timestamps, buffers, min_index, max_index) -> float:
+    sum = 0.0
+    for b in buffers:
+        sum += b[max_index] + b[min_index]
+    return sum / (len(buffers) * 2)
+
+
+def __get_bucket_indices(timestamps, num_buckets, bucket_size_secs) -> Tuple[List[int], List[int]]:
+    min_indices = np.full((num_buckets,), np.nan, dtype=np.int32)
+    max_indices = np.full((num_buckets,), np.nan, dtype=np.int32)
+
     ts_max = timestamps[-1]
-
     for i in range(num_buckets):
         ts_min = ts_max - bucket_size_secs
 
@@ -89,13 +133,11 @@ def normalize_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60) -> 
 
         if timestamps[slice_ts_max] < ts_min - bucket_size_secs:
             continue
-        # this should be matching Atlas:
-        time_diff_ns = (timestamps[slice_ts_max] - timestamps[slice_ts_min]) * 1000000000
-        s = 0.0
-        for b in buffers:  # sum across all cpus
-            s += b[slice_ts_max] - b[slice_ts_min]
-        if time_diff_ns > 0:
-            s /= time_diff_ns
-        proc_time[num_buckets - 1 - i] = s
 
-    return list(proc_time.tolist())
+        min_indices[num_buckets - 1 - i] = slice_ts_min
+        max_indices[num_buckets - 1 - i] = slice_ts_max
+
+    min_indices = list(min_indices.tolist())
+    max_indices = list(max_indices.tolist())
+    return min_indices, max_indices
+

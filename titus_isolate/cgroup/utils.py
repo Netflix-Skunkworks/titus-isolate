@@ -96,7 +96,7 @@ def get_usage_path(container_name, resource_key):
     file_path = __get_info_path(container_name)
     cgroup_path = get_cgroup_path_from_file(file_path, resource_key)
     usage_file = USAGE_FILE[resource_key]
-    return "{}/{}{}/usage_file".format(resource_key, ROOT_CGROUP_PATH, cgroup_path, usage_file)
+    return "{}/{}{}/{}".format(ROOT_CGROUP_PATH, resource_key, cgroup_path, usage_file)
 
 
 def set_cpuset(container_name, threads_str):

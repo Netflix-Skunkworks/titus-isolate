@@ -12,7 +12,7 @@ from titus_isolate.event.constants import STATIC
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
 from titus_isolate.monitor.cpu_usage import CpuUsage, CpuUsageSnapshot
 from titus_isolate.monitor.mem_usage import MemUsage, MemUsageSnapshot
-from titus_isolate.monitor.utils import normalize_data
+from titus_isolate.monitor.utils import normalize_monotonic_data, normalize_gauge_data
 from titus_isolate.monitor.workload_monitor_manager import DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
 
@@ -45,7 +45,7 @@ class TestWorkloadPerfMon(unittest.TestCase):
         metrics_provider.get_mem_usage = MagicMock(return_value=mem_snapshot)
         perf_mon.sample()
 
-        # Check CPU buffers
+        # Check CPU
         timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(1, len(buffers))
         self.assertEqual(1, len(timestamps))
@@ -55,7 +55,7 @@ class TestWorkloadPerfMon(unittest.TestCase):
         self.assertEqual(1, len(buffer))
         self.assertEqual(cpu_usage.user + cpu_usage.system, buffer[0])
 
-        # Check MEM buffers
+        # Check MEM
         timestamps, buffers = perf_mon._get_mem_buffers()
         self.assertEqual(1, len(buffers))
         self.assertEqual(1, len(timestamps))
@@ -64,7 +64,7 @@ class TestWorkloadPerfMon(unittest.TestCase):
         self.assertEqual(1, len(buffer))
         self.assertEqual(mem_usage.user, buffer[0])
 
-    def test_monitor_cpu_usage_normalization(self):
+    def test_cpu_usage_normalization(self):
         to_ts = lambda d: calendar.timegm(d.timetuple())
 
         timestamps = deque(map(to_ts,
@@ -72,7 +72,7 @@ class TestWorkloadPerfMon(unittest.TestCase):
                                 dt(2019, 3, 5, 10, 14, 11),
                                 dt(2019, 3, 5, 10, 14, 30)]))
 
-        data = normalize_data(
+        data = normalize_monotonic_data(
             timestamps,
             [deque([100, 200, 200], 100),
              deque([50, 300, 360], 100)])
@@ -92,7 +92,34 @@ class TestWorkloadPerfMon(unittest.TestCase):
         self.assertEqual(58, np.sum(np.isnan(data).astype(np.int16)))
 
         try:
-            normalize_data(
+            normalize_monotonic_data(
+                deque([]),
+                [deque([]), deque([])])
+        except:
+            self.fail("Should not raise on empty data.")
+
+    def test_mem_usage_normalization(self):
+        to_ts = lambda d: calendar.timegm(d.timetuple())
+
+        timestamps = deque(map(to_ts,
+                               [dt(2019, 3, 5, 10, 13, 28),
+                                dt(2019, 3, 5, 10, 14, 11),
+                                dt(2019, 3, 5, 10, 14, 30)]))
+
+        data = normalize_gauge_data(timestamps, [deque([100, 200, 200], 100)])
+
+        # Last data bucket
+        expected_usage = 200
+        self.assertEqual(expected_usage, data[-1])
+
+        # Penultimate bucket
+        expected_usage = (100 + 200) / 2
+        self.assertEqual(expected_usage, data[-2])
+
+        self.assertEqual(58, np.sum(np.isnan(data).astype(np.int16)))
+
+        try:
+            normalize_gauge_data(
                 deque([]),
                 [deque([]), deque([])])
         except:
