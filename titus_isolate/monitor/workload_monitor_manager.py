@@ -60,6 +60,16 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
         self.__registry.gauge(STATIC_POOL_USAGE_KEY, tags).set(static_pool_cpu_usage)
         self.__registry.gauge(BURST_POOL_USAGE_KEY, tags).set(burst_pool_cpu_usage)
 
+    def get_monitors(self):
+        return self.__monitors
+
+    def __sample(self):
+        try:
+            self.__update_monitors()
+            self.__sample_monitors()
+        except:
+            log.exception("Failed to sample performance monitors.")
+
     @staticmethod
     def __get_pool_usage(workload_type, usage):
         wm = get_workload_manager()
@@ -79,29 +89,6 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
                 pool_cpu_usage += usage[len(usage) - 1]
 
         return pool_cpu_usage
-
-    def get_monitors(self):
-        return self.__monitors
-
-    def to_dict(self):
-        with self.__lock:
-            monitors_dict = {}
-            for workload_id, monitor in sorted(self.get_monitors().items()):
-                buffers = collections.OrderedDict()
-                _, timestamps, mon_buffers = monitor.get_cpu_buffers()
-                for cpu_ind, buff in enumerate(mon_buffers):
-                    buffers[str(cpu_ind)] = [str(i) for i in buff]
-                buffers['timestamps'] = timestamps
-                monitors_dict[workload_id] = buffers
-
-            return monitors_dict
-
-    def __sample(self):
-        try:
-            self.__update_monitors()
-            self.__sample_monitors()
-        except:
-            log.exception("Failed to sample performance monitors.")
 
     @staticmethod
     def __get_workloads():
