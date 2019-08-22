@@ -1,7 +1,7 @@
 import calendar
 from typing import Tuple, List
 
-from titus_isolate.monitor.usage_snapshot import UsageSnapshot
+from titus_isolate.monitor.usage.usage_snapshot import UsageSnapshot
 
 
 class MemUsage:

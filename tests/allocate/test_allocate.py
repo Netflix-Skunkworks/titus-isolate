@@ -4,11 +4,8 @@ import unittest
 import uuid
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.utils import config_logs, get_test_workload, get_threads_with_workload, DEFAULT_TEST_REQUEST_METADATA, \
-    get_no_usage_threads_request, get_no_usage_rebalance_request
+from tests.utils import config_logs, get_test_workload, get_threads_with_workload, get_no_usage_threads_request, get_no_usage_rebalance_request
 from titus_isolate import log
-from titus_isolate.allocate.allocate_request import AllocateRequest
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
@@ -20,7 +17,7 @@ from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
-from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
+from titus_isolate.monitor.usage.cpu_usage_provider import CpuUsageProvider
 from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_workload_monitor_manager
