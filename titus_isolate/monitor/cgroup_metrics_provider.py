@@ -64,15 +64,18 @@ class CgroupMetricsProvider:
         recv_index = 1
         trans_index = 9
 
-        with open(net_dev_path, 'r') as f:
-            timestamp = datetime.datetime.utcnow()
-            lines = f.readlines()
-            for line in lines:
-                tokens = line.split()
-                if tokens[0] == eth0_key:
-                    recv_usage = NetUsage(RECV, float(tokens[recv_index]))
-                    trans_usage = NetUsage(TRANS, float(tokens[trans_index]))
-                    return NetUsageSnapshot(timestamp, recv_usage), NetUsageSnapshot(timestamp, trans_usage)
+        try:
+            with open(net_dev_path, 'r') as f:
+                timestamp = datetime.datetime.utcnow()
+                lines = f.readlines()
+                for line in lines:
+                    tokens = line.split()
+                    if tokens[0] == eth0_key:
+                        recv_usage = NetUsage(RECV, float(tokens[recv_index]))
+                        trans_usage = NetUsage(TRANS, float(tokens[trans_index]))
+                        return NetUsageSnapshot(timestamp, recv_usage), NetUsageSnapshot(timestamp, trans_usage)
+        except FileNotFoundError:
+            log.warning("No '{}' path for workload: '{}'".format(net_dev_path, self.__workload.get_id()))
 
         return None, None
 
