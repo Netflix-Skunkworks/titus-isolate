@@ -3,7 +3,7 @@ import time
 from typing import List
 
 from titus_isolate import log
-from titus_isolate.monitor.cpu_usage import CpuUsage
+from titus_isolate.monitor.usage.cpu_usage import CpuUsage
 
 ROOT_CGROUP_PATH = "/sys/fs/cgroup"
 TITUS_INITS_PATH = "/var/lib/titus-inits"
@@ -16,6 +16,8 @@ CPUACCT_USAGE_FILE = "cpuacct.usage_all"
 
 MEMORY = "memory"
 MEMORY_USAGE_FILE = "memory.usage_in_bytes"
+
+NET_RECV = "net_recv"
 
 USAGE_FILE = {
     CPU_CPUACCT: CPUACCT_USAGE_FILE,

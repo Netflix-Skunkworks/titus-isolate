@@ -1,13 +1,14 @@
 import datetime
 import os
-from typing import Union
+from typing import Union, Tuple
 
 from titus_isolate import log
-from titus_isolate.cgroup.utils import parse_cpuacct_usage_all, CPU_CPUACCT, MEMORY, get_usage_path
+from titus_isolate.cgroup.utils import parse_cpuacct_usage_all, CPU_CPUACCT, MEMORY, get_usage_path, NET_RECV
 from titus_isolate.monitor.content import ContentSnapshot
-from titus_isolate.monitor.cpu_usage import CpuUsageSnapshot
-from titus_isolate.monitor.mem_usage import MemUsageSnapshot, MemUsage
-from titus_isolate.monitor.resource_usage import ResourceUsageSnapshot
+from titus_isolate.monitor.usage.cpu_usage import CpuUsageSnapshot
+from titus_isolate.monitor.usage.mem_usage import MemUsageSnapshot, MemUsage
+from titus_isolate.monitor.usage.net_usage import NetUsageSnapshot, NetUsage, RECV, TRANS
+from titus_isolate.monitor.usage.resource_usage import ResourceUsageSnapshot
 
 
 class CgroupMetricsProvider:
@@ -25,11 +26,16 @@ class CgroupMetricsProvider:
     def get_resource_usage(self) -> Union[ResourceUsageSnapshot, None]:
         cpu = self.get_cpu_usage()
         mem = self.get_mem_usage()
+        net_recv, net_trans = self.get_net_usage()
 
-        if cpu is None or mem is None:
+        if None in [cpu, mem, net_recv, net_trans]:
             return None
 
-        return ResourceUsageSnapshot(cpu, mem)
+        return ResourceUsageSnapshot(
+            cpu=cpu,
+            mem=mem,
+            net_recv=net_recv,
+            net_trans=net_trans)
 
     def get_cpu_usage(self) -> Union[CpuUsageSnapshot, None]:
         snapshot = self.__get_content_snapshot(CPU_CPUACCT)
@@ -45,6 +51,30 @@ class CgroupMetricsProvider:
             return None
 
         return MemUsageSnapshot(snapshot.timestamp, MemUsage(int(snapshot.content)))
+
+    def get_net_usage(self) -> Union[Tuple[NetUsageSnapshot, NetUsageSnapshot], Tuple[None, None]]:
+        # Inter-|   Receive                                                |  Transmit
+        #  face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+        # metadataservice:    1146      15    0    0    0     0          0         0     1146      15    0    0    0     0       0          0
+        #     lo:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+        #   eth0:  584261    4785    0    0    0     0          0       508   944760    5666    0    0    0     0       0          0
+
+        net_dev_path = "/var/lib/titus-inits/{}/net/dev".format(self.__workload.get_id)
+        eth0_key = "eth0:"
+        recv_index = 1
+        trans_index = 9
+
+        with open(net_dev_path, 'r') as f:
+            timestamp = datetime.datetime.utcnow()
+            lines = f.readlines()
+            for line in lines:
+                tokens = line.split()
+                if tokens[0] == eth0_key:
+                    recv_usage = NetUsage(RECV, float(tokens[recv_index]))
+                    trans_usage = NetUsage(TRANS, float(tokens[trans_index]))
+                    return NetUsageSnapshot(timestamp, recv_usage), NetUsageSnapshot(timestamp, trans_usage)
+
+        return None, None
 
     def __get_content_snapshot(self, resource_key) -> Union[ContentSnapshot, None]:
         usage_path = self.__get_usage_path(resource_key)

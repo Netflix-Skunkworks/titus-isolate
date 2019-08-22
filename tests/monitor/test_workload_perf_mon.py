@@ -10,8 +10,8 @@ import numpy as np
 from tests.utils import get_test_workload
 from titus_isolate.event.constants import STATIC
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
-from titus_isolate.monitor.cpu_usage import CpuUsage, CpuUsageSnapshot
-from titus_isolate.monitor.mem_usage import MemUsage, MemUsageSnapshot
+from titus_isolate.monitor.usage.cpu_usage import CpuUsage, CpuUsageSnapshot
+from titus_isolate.monitor.usage.mem_usage import MemUsage, MemUsageSnapshot
 from titus_isolate.monitor.utils import normalize_monotonic_data, normalize_gauge_data
 from titus_isolate.monitor.workload_monitor_manager import DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor

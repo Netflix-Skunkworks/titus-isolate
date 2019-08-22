@@ -1,4 +1,3 @@
-import collections
 from threading import Lock, Thread
 
 import schedule
@@ -9,12 +8,11 @@ from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import BURST_POOL_USAGE_KEY, STATIC_POOL_USAGE_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
-from titus_isolate.monitor.cpu_usage_provider import CpuUsageProvider
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
 from titus_isolate.utils import get_workload_manager
 
 
-class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
+class WorkloadMonitorManager(MetricsReporter):
 
     def __init__(self, sample_interval=DEFAULT_SAMPLE_FREQUENCY_SEC):
         self.__sample_interval = sample_interval
@@ -29,7 +27,6 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
             cpu_usage = {}
             for workload_id, monitor in self.get_monitors().items():
                 cpu_usage[workload_id] = monitor.get_cpu_usage(seconds, agg_granularity_secs)
-
         return cpu_usage
 
     def get_mem_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
@@ -37,8 +34,21 @@ class WorkloadMonitorManager(CpuUsageProvider, MetricsReporter):
             mem_usage = {}
             for workload_id, monitor in self.get_monitors().items():
                 mem_usage[workload_id] = monitor.get_mem_usage(seconds, agg_granularity_secs)
-
         return mem_usage
+
+    def get_net_recv_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
+        with self.__lock:
+            net_recv_usage = {}
+            for workload_id, monitor in self.get_monitors().items():
+                net_recv_usage[workload_id] = monitor.get_net_recv_usage(seconds, agg_granularity_secs)
+        return net_recv_usage
+
+    def get_net_trans_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
+        with self.__lock:
+            net_trans_usage = {}
+            for workload_id, monitor in self.get_monitors().items():
+                net_trans_usage[workload_id] = monitor.get_net_trans_usage(seconds, agg_granularity_secs)
+        return net_trans_usage
 
     def set_registry(self, registry):
         self.__registry = registry
