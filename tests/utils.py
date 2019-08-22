@@ -1,9 +1,12 @@
 import logging
 import time
+from typing import List
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from titus_isolate import LOG_FMT_STRING, log
+from titus_isolate.allocate.allocate_request import AllocateRequest
+from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.constants import INSTANCE_ID
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
@@ -12,6 +15,7 @@ from titus_isolate.event.free_event_handler import FreeEventHandler
 from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
+from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.utils import set_config_manager
 
@@ -72,6 +76,32 @@ def get_test_workload(identifier, thread_count, workload_type):
         entrypoint=DEFAULT_TEST_ENTRYPOINT,
         job_type=DEFAULT_TEST_JOB_TYPE,
         workload_type=workload_type)
+
+
+def get_no_usage_threads_request(cpu: Cpu, workloads: List[Workload]):
+    return AllocateThreadsRequest(
+        cpu=cpu,
+        workload_id=workloads[-1].get_id(),
+        workloads=__workloads_list_to_map(workloads),
+        cpu_usage={},
+        mem_usage={},
+        metadata=DEFAULT_TEST_REQUEST_METADATA)
+
+
+def get_no_usage_rebalance_request(cpu: Cpu, workloads: List[Workload]):
+    return AllocateRequest(
+        cpu=cpu,
+        workloads=__workloads_list_to_map(workloads),
+        cpu_usage={},
+        mem_usage={},
+        metadata=DEFAULT_TEST_REQUEST_METADATA)
+
+
+def __workloads_list_to_map(workloads: List[Workload]) -> dict:
+    __workloads = {}
+    for w in workloads:
+        __workloads[w.get_id()] = w
+    return __workloads
 
 
 def config_logs(level):

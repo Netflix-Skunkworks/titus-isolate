@@ -1,7 +1,7 @@
 import unittest
 import uuid
 
-from tests.utils import get_test_workload, DEFAULT_TEST_REQUEST_METADATA
+from tests.utils import get_test_workload, DEFAULT_TEST_REQUEST_METADATA, get_no_usage_threads_request
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.event.constants import STATIC
 from titus_isolate.isolate.balance import has_better_isolation
@@ -22,11 +22,11 @@ class TestBalance(unittest.TestCase):
         new_cpu = get_cpu()
 
         allocator0 = GreedyCpuAllocator()
-        request = AllocateThreadsRequest(cur_cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cur_cpu, [w0])
         cur_cpu = allocator0.assign_threads(request).get_cpu()
 
         allocator1 = GreedyCpuAllocator()
-        request = AllocateThreadsRequest(new_cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(new_cpu, [w0])
         new_cpu = allocator1.assign_threads(request).get_cpu()
 
         self.assertFalse(has_better_isolation(cur_cpu, new_cpu))

@@ -1,7 +1,7 @@
 import unittest
 
 from tests.allocate.crashing_allocators import CrashingAllocator
-from tests.utils import get_test_workload, DEFAULT_TEST_REQUEST_METADATA
+from tests.utils import get_test_workload, DEFAULT_TEST_REQUEST_METADATA, get_no_usage_threads_request
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
@@ -22,30 +22,23 @@ class TestFallbackCpuAllocator(unittest.TestCase):
         cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)
 
         allocator = FallbackCpuAllocator(CrashingAllocator(), IntegerProgramCpuAllocator())
-        workloads = {}
 
-        workloads[w_a.get_id()] = w_a
-        request = AllocateThreadsRequest(cpu, w_a.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_a])
         cpu = allocator.assign_threads(request).get_cpu()
 
-        workloads[w_b.get_id()] = w_b
-        request = AllocateThreadsRequest(cpu, w_b.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_a, w_b])
         cpu = allocator.assign_threads(request).get_cpu()
 
-        request = AllocateThreadsRequest(cpu, "a", workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_b, w_a])
         cpu = allocator.free_threads(request).get_cpu()
-        workloads.pop("a")
 
-        workloads[w_c.get_id()] = w_c
-        request = AllocateThreadsRequest(cpu, w_c.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_b, w_c])
         cpu = allocator.assign_threads(request).get_cpu()
 
-        request = AllocateThreadsRequest(cpu, "b", workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_c, w_b])
         cpu = allocator.free_threads(request).get_cpu()
-        workloads.pop("b")
 
-        workloads[w_d.get_id()] = w_d
-        request = AllocateThreadsRequest(cpu, w_d.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_c, w_d])
         cpu = allocator.assign_threads(request).get_cpu()
 
         self.assertEqual(3, len(cpu.get_claimed_threads()))

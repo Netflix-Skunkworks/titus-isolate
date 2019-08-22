@@ -4,7 +4,8 @@ import unittest
 import uuid
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.utils import config_logs, get_test_workload, get_threads_with_workload, DEFAULT_TEST_REQUEST_METADATA
+from tests.utils import config_logs, get_test_workload, get_threads_with_workload, DEFAULT_TEST_REQUEST_METADATA, \
+    get_no_usage_threads_request, get_no_usage_rebalance_request
 from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
@@ -60,11 +61,15 @@ class TestCpuUsagePredictorManager:
 
 class TestWorkloadMonitorManager(CpuUsageProvider):
 
-    def __init__(self, cpu_usage={}):
+    def __init__(self, cpu_usage={}, mem_usage={}):
         self.__cpu_usage = cpu_usage
+        self.__mem_usage = mem_usage
 
     def get_cpu_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
         return self.__cpu_usage
+
+    def get_mem_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
+        return self.__mem_usage
 
 
 forecast_ip_alloc_simple = ForecastIPCpuAllocator(
@@ -73,7 +78,7 @@ forecast_ip_alloc_simple = ForecastIPCpuAllocator(
     OversubscribeFreeThreadProvider(0.1))
 
 ALLOCATORS = [NaiveCpuAllocator(), IntegerProgramCpuAllocator(), GreedyCpuAllocator(), forecast_ip_alloc_simple]
-OVER_ALLOCATORS = [NaiveCpuAllocator()]
+OVER_ALLOCATORS = [NaiveCpuAllocator(), forecast_ip_alloc_simple]
 
 set_workload_monitor_manager(TestWorkloadMonitorManager())
 
@@ -90,7 +95,7 @@ class TestCpu(unittest.TestCase):
 
             w = get_test_workload(uuid.uuid4(), 1, STATIC)
 
-            request = AllocateThreadsRequest(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w])
             cpu = allocator.assign_threads(request).get_cpu()
             log.info(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 1, len(cpu.get_empty_threads()))
@@ -105,55 +110,24 @@ class TestCpu(unittest.TestCase):
             cpu = get_cpu()
             w = get_test_workload(uuid.uuid4(), 2, STATIC)
 
-            request = AllocateThreadsRequest(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w])
             cpu = allocator.assign_threads(request).get_cpu()
             log.info(cpu)
             self.assertEqual(2, len(cpu.get_claimed_threads()))
-
-    def test_assign_more_than_available_threads_with_one_workload(self):
-        for allocator in OVER_ALLOCATORS:
-            cpu = get_cpu()
-            w_jumbo = get_test_workload("jumbo", DEFAULT_TOTAL_THREAD_COUNT * 1.5, STATIC)
-
-            request = AllocateThreadsRequest(
-                cpu,
-                w_jumbo.get_id(),
-                {
-                    w_jumbo.get_id(): w_jumbo
-                },
-                {}, DEFAULT_TEST_REQUEST_METADATA)
-            cpu = allocator.assign_threads(request).get_cpu()
-            log.info(cpu)
-
-            self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_claimed_threads()))
-            self.assertEqual([w_jumbo.get_id()], list(cpu.get_workload_ids_to_thread_ids().keys()))
 
     def test_assign_more_than_available_threads_with_two_workloads(self):
         for allocator in OVER_ALLOCATORS:
             cpu = get_cpu()
             w_fill = get_test_workload("fill", DEFAULT_TOTAL_THREAD_COUNT, STATIC)
-            w_extra = get_test_workload("extra", DEFAULT_TOTAL_THREAD_COUNT * 1.5, STATIC)
+            w_extra = get_test_workload("extra", DEFAULT_TOTAL_THREAD_COUNT * 1, STATIC)
 
-            request = AllocateThreadsRequest(
-                cpu,
-                w_fill.get_id(),
-                {
-                    w_fill.get_id(): w_fill
-                },
-                {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w_fill])
             cpu = allocator.assign_threads(request).get_cpu()
             log.info(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_claimed_threads()))
             self.assertEqual([w_fill.get_id()], list(cpu.get_workload_ids_to_thread_ids().keys()))
 
-            request = AllocateThreadsRequest(
-                cpu,
-                w_extra.get_id(),
-                {
-                    w_fill.get_id(): w_fill,
-                    w_extra.get_id(): w_extra
-                },
-                {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w_fill, w_extra])
             cpu = allocator.assign_threads(request).get_cpu()
             log.info(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_claimed_threads()))
@@ -171,16 +145,10 @@ class TestCpu(unittest.TestCase):
             w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
             w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
 
-            request0 = AllocateThreadsRequest(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request0 = get_no_usage_threads_request(cpu, [w0])
             cpu = allocator.assign_threads(request0).get_cpu()
 
-            request1 = AllocateThreadsRequest(cpu, w1.get_id(),
-                                              {
-                                                  w0.get_id(): w0,
-                                                  w1.get_id(): w1
-                                              },
-                                              {},
-                                              DEFAULT_TEST_REQUEST_METADATA)
+            request1 = get_no_usage_threads_request(cpu, [w0, w1])
             cpu = allocator.assign_threads(request1).get_cpu()
 
             self.assertEqual(3, len(cpu.get_claimed_threads()))
@@ -212,16 +180,10 @@ class TestCpu(unittest.TestCase):
         w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
         w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
 
-        request0 = AllocateThreadsRequest(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request0 = get_no_usage_threads_request(cpu, [w0])
         cpu = allocator.assign_threads(request0).get_cpu()
 
-        request1 = AllocateThreadsRequest(cpu, w1.get_id(),
-                                          {
-                                              w0.get_id(): w0,
-                                              w1.get_id(): w1
-                                          },
-                                          {},
-                                          DEFAULT_TEST_REQUEST_METADATA)
+        request1 = get_no_usage_threads_request(cpu, [w0, w1])
         cpu = allocator.assign_threads(request1).get_cpu()
 
         self.assertEqual(3, len(cpu.get_claimed_threads()))
@@ -256,7 +218,7 @@ class TestCpu(unittest.TestCase):
             cpu = get_cpu()
             w = get_test_workload(uuid.uuid4(), 10, STATIC)
 
-            request = AllocateThreadsRequest(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w])
             cpu = allocator.assign_threads(request).get_cpu()
             self.assertEqual(10, len(cpu.get_claimed_threads()))
 
@@ -292,10 +254,10 @@ class TestCpu(unittest.TestCase):
                 get_test_workload("z", 1, STATIC)]
 
             tot_req = 0
-            workload_map = {}
+            __workloads = []
             for w in workloads:
-                workload_map[w.get_id()] = w
-                request = AllocateThreadsRequest(cpu, w.get_id(), workload_map, {}, DEFAULT_TEST_REQUEST_METADATA)
+                __workloads.append(w)
+                request = get_no_usage_threads_request(cpu, __workloads)
                 cpu = allocator.assign_threads(request).get_cpu()
                 log.info(cpu)
                 tot_req += w.get_thread_count()
@@ -341,9 +303,11 @@ class TestCpu(unittest.TestCase):
             wa.get_id(): wa
         }
         workloads = [w0, w1, w2, w3]
+        __workloads = [wa]
         for w in workloads:
+            __workloads.append(w)
             workload_map[w.get_id()] = w
-            request = AllocateThreadsRequest(cpu, w.get_id(), workload_map, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, __workloads)
             cpu = allocator.assign_threads(request).get_cpu()
 
         self.assertEqual(0, len(cpu.get_empty_threads()))
@@ -361,10 +325,7 @@ class TestCpu(unittest.TestCase):
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
             w = get_test_workload(uuid.uuid4(), 3, STATIC)
-            workloads = {
-                w.get_id(): w
-            }
-            request = AllocateThreadsRequest(cpu, w.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w])
             cpu = allocator.assign_threads(request).get_cpu()
             self.assertEqual(
                 DEFAULT_TOTAL_THREAD_COUNT - w.get_thread_count(),
@@ -383,20 +344,17 @@ class TestCpu(unittest.TestCase):
             w1 = get_test_workload(456, 2, STATIC)
             w2 = get_test_workload(789, 4, STATIC)
 
-            workloads[w0.get_id()] = w0
-            request = AllocateThreadsRequest(cpu, w0.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w0])
             cpu = allocator.assign_threads(request).get_cpu()
 
-            workloads[w1.get_id()] = w1
-            request = AllocateThreadsRequest(cpu, w1.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w0, w1])
             cpu = allocator.assign_threads(request).get_cpu()
 
-            workloads[w2.get_id()] = w2
-            request = AllocateThreadsRequest(cpu, w2.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w0, w1, w2])
             cpu = allocator.assign_threads(request).get_cpu()
             self.assertEqual(3 + 4 + 2, len(cpu.get_claimed_threads()))
 
-            request = AllocateThreadsRequest(cpu, w1.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_threads_request(cpu, [w0, w2, w1])
             cpu = allocator.free_threads(request).get_cpu()
             self.assertEqual(3 + 4, len(cpu.get_claimed_threads()))
 
@@ -420,57 +378,56 @@ class TestCpu(unittest.TestCase):
         """
         cpu = get_cpu()
         allocator = IntegerProgramCpuAllocator()
-        workloads = {}
 
-        workload = get_test_workload("a", 2, STATIC)
-        workloads[workload.get_id()] = workload
-        request = AllocateThreadsRequest(cpu, workload.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        w_a = get_test_workload("a", 2, STATIC)
+        w_b = get_test_workload("b", 2, STATIC)
+        w_c = get_test_workload("c", 2, STATIC)
+        w_d = get_test_workload("d", 2, STATIC)
+
+        workloads = [w_a]
+        request = get_no_usage_threads_request(cpu, workloads)
         cpu = allocator.assign_threads(request).get_cpu()
         self.assertEqual(1, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        workload = get_test_workload("b", 2, STATIC)
-        workloads[workload.get_id()] = workload
-        request = AllocateThreadsRequest(cpu, workload.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
-        cpu = allocator.assign_threads(request).get_cpu()
+        workloads = [w_a, w_b]
+        request = get_no_usage_threads_request(cpu, workloads)
+        allocator.assign_threads(request).get_cpu()
         self.assertEqual(2, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        request = AllocateThreadsRequest(cpu, "b", workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
         cpu = allocator.free_threads(request).get_cpu()
         self.assertEqual(3, len(allocator._IntegerProgramCpuAllocator__cache))
-        workloads.pop("b")
 
-        workload = get_test_workload("c", 2, STATIC)
-        workloads[workload.get_id()] = workload
-        request = AllocateThreadsRequest(cpu, workload.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        workloads = [w_a, w_c]
+        request = get_no_usage_threads_request(cpu, workloads)
         cpu = allocator.assign_threads(request).get_cpu()
         self.assertEqual(3, len(allocator._IntegerProgramCpuAllocator__cache))
 
-        request = AllocateThreadsRequest(cpu, "a", workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        workloads = [w_c, w_a]
+        request = get_no_usage_threads_request(cpu, workloads)
         cpu = allocator.free_threads(request).get_cpu()
         self.assertEqual(4, len(allocator._IntegerProgramCpuAllocator__cache))
-        workloads.pop("a")
 
-        workload = get_test_workload("d", 2, STATIC)
-        workloads[workload.get_id()] = workload
-        request = AllocateThreadsRequest(cpu, workload.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        workloads = [w_c, w_d]
+        request = get_no_usage_threads_request(cpu, workloads)
         allocator.assign_threads(request).get_cpu()
         self.assertEqual(5, len(allocator._IntegerProgramCpuAllocator__cache))
 
     def test_balance_forecast_ip(self):
+        allocator = forecast_ip_alloc_simple
         cpu = get_cpu()
 
-        w1 = get_test_workload("a", 2, STATIC)
-        w2 = get_test_workload("b", 4, BURST)
+        w_a = get_test_workload("a", 2, STATIC)
+        w_b = get_test_workload("b", 4, BURST)
 
-        allocator = forecast_ip_alloc_simple
-
-        request = AllocateThreadsRequest(cpu, "a", {"a": w1}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        workloads = [w_a]
+        request = get_no_usage_threads_request(cpu, workloads)
         cpu = allocator.assign_threads(request).get_cpu()
 
-        request = AllocateThreadsRequest(cpu, "b", {"a": w1, "b": w2}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        workloads = [w_a, w_b]
+        request = get_no_usage_threads_request(cpu, workloads)
         cpu = allocator.assign_threads(request).get_cpu()
 
-        request = AllocateRequest(cpu, {"a": w1, "b": w2}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_rebalance_request(cpu, workloads)
         cpu = allocator.rebalance(request).get_cpu()
 
         self.assertLessEqual(2 + 4, len(cpu.get_claimed_threads()))
@@ -480,7 +437,7 @@ class TestCpu(unittest.TestCase):
         self.assertLessEqual(4, len(w2t["b"]))  # burst got at least 4
 
         for _ in range(20):
-            request = AllocateRequest(cpu, {"a": w1, "b": w2}, {}, DEFAULT_TEST_REQUEST_METADATA)
+            request = get_no_usage_rebalance_request(cpu, workloads)
             cpu = allocator.rebalance(request).get_cpu()
 
         w2t = cpu.get_workload_ids_to_thread_ids()
@@ -491,20 +448,20 @@ class TestCpu(unittest.TestCase):
         cpu = get_cpu()
         allocator = forecast_ip_alloc_simple
 
-        w = get_test_workload("a", 1, BURST)
+        w_a = get_test_workload("a", 1, BURST)
+        w_b = get_test_workload("b", 3, STATIC)
 
-        request = AllocateThreadsRequest(cpu, "a", {"a": w}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_a])
         cpu = allocator.assign_threads(request).get_cpu()
 
         original_burst_claim_sz = len(cpu.get_claimed_threads())
         # should at least consume all the cores:
         self.assertLessEqual(len(cpu.get_threads()) / 2, original_burst_claim_sz)
 
-        w2 = get_test_workload("b", 3, STATIC)
-        request = AllocateThreadsRequest(cpu, "b", {"a": w, "b": w2}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_a, w_b])
         cpu = allocator.assign_threads(request).get_cpu()
 
-        new_burst_claim_sz = len(get_threads_with_workload(cpu, w2.get_id()))
+        new_burst_claim_sz = len(get_threads_with_workload(cpu, w_b.get_id()))
         self.assertLess(new_burst_claim_sz, original_burst_claim_sz)
 
         total_claim_sz = len(cpu.get_claimed_threads())
@@ -516,10 +473,10 @@ class TestCpu(unittest.TestCase):
             for c in p.get_cores():
                 self.assertLess(0, sum(t.is_claimed() for t in c.get_threads()))
 
-        request = AllocateThreadsRequest(cpu, "b", {"a": w, "b": w2}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_a, w_b])
         cpu = allocator.free_threads(request).get_cpu()
 
-        request = AllocateRequest(cpu,  {"a": w}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_a])
         cpu = allocator.rebalance(request).get_cpu()
         self.assertEqual(original_burst_claim_sz, len(cpu.get_claimed_threads()))
 
@@ -548,19 +505,19 @@ class TestCpu(unittest.TestCase):
         w_b = get_test_workload("static_b", 14, STATIC)
         w_c = get_test_workload("burst_c", 2, BURST)
 
-        request = AllocateThreadsRequest(cpu, "static_a", {"static_a": w_a}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_a])
         cpu = allocator.assign_threads(request).get_cpu()
 
-        request = AllocateThreadsRequest(cpu, "burst_c", {"static_a": w_a, "burst_c": w_c}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_a, w_c])
         cpu = allocator.assign_threads(request).get_cpu()
         # with an aggressive burst pool expansion, burst should be collocated with static on cores:
         self.assertLess(40, len(cpu.get_claimed_threads()))
-        num_burst_1 = len(cpu.get_workload_ids_to_thread_ids()["burst_c"])
+        num_burst_1 = len(cpu.get_workload_ids_to_thread_ids()[w_c.get_id()])
 
-        request = AllocateThreadsRequest(cpu, "static_b", {"static_a": w_a, "static_b": w_b, "burst_c": w_c}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w_a, w_c, w_b])
         cpu = allocator.assign_threads(request).get_cpu()
         # burst should retract, and prefer collocation with b over a:
-        num_burst_2 = len(cpu.get_workload_ids_to_thread_ids()["burst_c"])
+        num_burst_2 = len(cpu.get_workload_ids_to_thread_ids()[w_c.get_id()])
         self.assertLessEqual(num_burst_2, num_burst_1)
 
         colloc_a = 0
@@ -572,9 +529,9 @@ class TestCpu(unittest.TestCase):
                 if t1.is_claimed() and t2.is_claimed():
                     wt1 = t1.get_workload_ids()[0]
                     wt2 = t2.get_workload_ids()[0]
-                    if (wt1 == 'static_a' and wt2 == 'burst_c') or (wt1 == 'burst_c' and wt2 == 'static_a'):
+                    if (wt1 == w_a.get_id() and wt2 == w_c.get_id()) or (wt1 == w_c.get_id() and wt2 == w_a.get_id()):
                         colloc_a += 1
-                    elif (wt1 == 'static_b' and wt2 == 'burst_c') or (wt1 == 'burst_c' and wt2 == 'static_b'):
+                    elif (wt1 == w_b.get_id() and wt2 == w_c.get_id()) or (wt1 == w_c.get_id() and wt2 == w_b.get_id()):
                         colloc_b += 1
         self.assertLessEqual(colloc_a, colloc_b)
 
@@ -589,7 +546,7 @@ class TestCpu(unittest.TestCase):
 
         w0 = get_test_workload(uuid.uuid4(), thread_count, STATIC)
 
-        request = AllocateThreadsRequest(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w0])
         cpu = allocator.assign_threads(request).get_cpu()
         log.info(cpu)
 
@@ -598,15 +555,7 @@ class TestCpu(unittest.TestCase):
             self.assertEqual(1, len(c.get_empty_threads()))
 
         w1 = get_test_workload(uuid.uuid4(), thread_count, BURST)
-        request = AllocateThreadsRequest(
-            cpu,
-            w1.get_id(),
-            {
-                w0.get_id(): w0,
-                w1.get_id(): w1
-            },
-            {},
-            DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w0, w1])
         cpu = allocator.assign_threads(request).get_cpu()
         log.info(cpu)
 
@@ -626,7 +575,7 @@ class TestCpu(unittest.TestCase):
         w0 = get_test_workload("s", thread_count, STATIC)
         log.info(w0)
 
-        request = AllocateThreadsRequest(cpu, w0.get_id(), {w0.get_id(): w0}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w0])
         cpu = allocator.assign_threads(request).get_cpu()
         log.info(cpu)
 
@@ -636,15 +585,7 @@ class TestCpu(unittest.TestCase):
 
         w1 = get_test_workload("b", thread_count, BURST)
         log.info(w1)
-        request = AllocateThreadsRequest(
-            cpu,
-            w1.get_id(),
-            {
-                w0.get_id(): w0,
-                w1.get_id(): w1
-            },
-            {},
-            DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w0, w1])
         cpu = allocator.assign_threads(request).get_cpu()
         log.info(cpu)
 

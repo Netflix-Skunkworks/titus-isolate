@@ -6,7 +6,7 @@ from titus_isolate import log
 
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse
-from titus_isolate.allocate.constants import CPU_ALLOCATOR, FREE_THREAD_IDS
+from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
