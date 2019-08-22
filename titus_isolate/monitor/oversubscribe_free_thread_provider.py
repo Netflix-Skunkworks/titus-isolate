@@ -26,7 +26,7 @@ class OversubscribeFreeThreadProvider(FreeThreadProvider):
             cpu_usage: Dict[str, float] = None) -> List[Thread]:
 
         if cpu_usage is None:
-            log.error("CPU usage is required, defaulting to EMPTY threads being free.")
+            log.warning("CPU usage is required, defaulting to EMPTY threads being free.")
             return cpu.get_empty_threads()
 
         free_threads = []

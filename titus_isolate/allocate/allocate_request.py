@@ -1,13 +1,18 @@
 import copy
 
-from titus_isolate.allocate.constants import CPU, CPU_USAGE, WORKLOADS, METADATA, CPU_ARRAY
-from titus_isolate.allocate.utils import parse_cpu, parse_workloads, parse_cpu_usage
+from titus_isolate.allocate.constants import CPU, CPU_USAGE, WORKLOADS, METADATA, CPU_ARRAY, MEM_USAGE
+from titus_isolate.allocate.utils import parse_cpu, parse_workloads, parse_usage
 from titus_isolate.model.processor.cpu import Cpu
 
 
 class AllocateRequest:
 
-    def __init__(self, cpu: Cpu, workloads: dict, cpu_usage: dict, metadata: dict):
+    def __init__(self,
+                 cpu: Cpu,
+                 workloads: dict,
+                 cpu_usage: dict,
+                 mem_usage: dict,
+                 metadata: dict):
         """
         A rebalance request encapsulates all information needed to rebalance the assignment of threads to workloads.
 
@@ -19,6 +24,7 @@ class AllocateRequest:
         self.__cpu = copy.deepcopy(cpu)
         self.__workloads = copy.deepcopy(workloads)
         self.__cpu_usage = copy.deepcopy(cpu_usage)
+        self.__mem_usage = copy.deepcopy(mem_usage)
         self.__metadata = copy.deepcopy(metadata)
 
     def get_cpu(self):
@@ -26,6 +32,9 @@ class AllocateRequest:
 
     def get_cpu_usage(self):
         return self.__cpu_usage
+
+    def get_mem_usage(self):
+        return self.__mem_usage
 
     def get_workloads(self):
         return self.__workloads
@@ -38,6 +47,7 @@ class AllocateRequest:
             CPU: self.get_cpu().to_dict(),
             CPU_ARRAY: self.get_cpu().to_array(),
             CPU_USAGE: self.__get_serializable_usage(self.get_cpu_usage()),
+            MEM_USAGE: self.__get_serializable_usage(self.get_mem_usage()),
             WORKLOADS: self.__get_serializable_workloads(list(self.get_workloads().values())),
             METADATA: self.get_metadata()
         }
@@ -61,6 +71,12 @@ class AllocateRequest:
 def deserialize_allocate_request(serialized_request: dict) -> AllocateRequest:
     cpu = parse_cpu(serialized_request[CPU])
     workloads = parse_workloads(serialized_request[WORKLOADS])
-    cpu_usage = parse_cpu_usage(serialized_request[CPU_USAGE])
+    cpu_usage = parse_usage(serialized_request.get(CPU_USAGE, {}))
+    mem_usage = parse_usage(serialized_request.get(MEM_USAGE, {}))
     metadata = serialized_request[METADATA]
-    return AllocateRequest(cpu, workloads, cpu_usage, metadata)
+    return AllocateRequest(
+        cpu=cpu,
+        workloads=workloads,
+        cpu_usage=cpu_usage,
+        mem_usage=mem_usage,
+        metadata=metadata)

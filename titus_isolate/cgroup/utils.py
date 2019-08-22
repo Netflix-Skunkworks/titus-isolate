@@ -10,7 +10,17 @@ TITUS_INITS_PATH = "/var/lib/titus-inits"
 TITUS_ENVIRONMENTS_PATH = "/var/lib/titus-environments"
 
 CPUSET = "cpuset"
+
 CPU_CPUACCT = "cpu,cpuacct"
+CPUACCT_USAGE_FILE = "cpuacct.usage_all"
+
+MEMORY = "memory"
+MEMORY_USAGE_FILE = "memory.usage_in_bytes"
+
+USAGE_FILE = {
+    CPU_CPUACCT: CPUACCT_USAGE_FILE,
+    MEMORY: MEMORY_USAGE_FILE
+}
 
 
 def __get_info_path(container_name):
@@ -82,10 +92,11 @@ def get_quota_path(container_name):
     return "{}/cpu,cpuacct{}/cpu.cfs_quota_us".format(ROOT_CGROUP_PATH, cgroup_path)
 
 
-def get_usage_all_path(container_name):
+def get_usage_path(container_name, resource_key):
     file_path = __get_info_path(container_name)
-    cgroup_path = get_cgroup_path_from_file(file_path, CPU_CPUACCT)
-    return "{}/cpu,cpuacct{}/cpuacct.usage_all".format(ROOT_CGROUP_PATH, cgroup_path)
+    cgroup_path = get_cgroup_path_from_file(file_path, resource_key)
+    usage_file = USAGE_FILE[resource_key]
+    return "{}/{}{}/{}".format(ROOT_CGROUP_PATH, resource_key, cgroup_path, usage_file)
 
 
 def set_cpuset(container_name, threads_str):

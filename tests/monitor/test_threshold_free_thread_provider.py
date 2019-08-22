@@ -1,9 +1,8 @@
 import logging
 import unittest
 
-from tests.utils import config_logs, get_test_workload, DEFAULT_TEST_REQUEST_METADATA
+from tests.utils import config_logs, get_test_workload, DEFAULT_TEST_REQUEST_METADATA, get_no_usage_threads_request
 from titus_isolate import log
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.config.constants import DEFAULT_TOTAL_THRESHOLD
 from titus_isolate.event.constants import STATIC
@@ -54,5 +53,5 @@ class TestWorkloadManager(unittest.TestCase):
 
     @staticmethod
     def __assign_workload(cpu, workload):
-        request = AllocateThreadsRequest(cpu, workload.get_id(), {workload.get_id(): workload}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [workload])
         return IntegerProgramCpuAllocator().assign_threads(request).get_cpu()

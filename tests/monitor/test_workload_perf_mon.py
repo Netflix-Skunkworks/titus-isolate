@@ -11,6 +11,8 @@ from tests.utils import get_test_workload
 from titus_isolate.event.constants import STATIC
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
 from titus_isolate.monitor.cpu_usage import CpuUsage, CpuUsageSnapshot
+from titus_isolate.monitor.mem_usage import MemUsage, MemUsageSnapshot
+from titus_isolate.monitor.utils import normalize_monotonic_data, normalize_gauge_data
 from titus_isolate.monitor.workload_monitor_manager import DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
 
@@ -23,45 +25,102 @@ class TestWorkloadPerfMon(unittest.TestCase):
         perf_mon = WorkloadPerformanceMonitor(metrics_provider, DEFAULT_SAMPLE_FREQUENCY_SEC)
 
         # Initial state should just be an empty timestamps buffer
-        _, timestamps, buffers = perf_mon.get_buffers()
+        timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(0, len(buffers))
         self.assertEqual(0, len(timestamps))
 
         # Expect no change because no workload is really running and we haven't started mocking anything
         perf_mon.sample()
+        timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(0, len(buffers))
+        self.assertEqual(0, len(timestamps))
 
-        # Mock reporting metrics on a single hardware thread
+        # Mock reporting metrics
         cpu_usage = CpuUsage(pu_id=0, user=100, system=50)
-        snapshot = CpuUsageSnapshot(timestamp=dt.now(), rows=[cpu_usage])
-        metrics_provider.get_cpu_usage = MagicMock(return_value=snapshot)
+        mem_usage = MemUsage(user=1000000)
+        cpu_snapshot = CpuUsageSnapshot(timestamp=dt.now(), rows=[cpu_usage])
+        mem_snapshot = MemUsageSnapshot(timestamp=dt.now(), usage=mem_usage)
+
+        metrics_provider.get_cpu_usage = MagicMock(return_value=cpu_snapshot)
+        metrics_provider.get_mem_usage = MagicMock(return_value=mem_snapshot)
         perf_mon.sample()
 
-        _, timestamps, buffers = perf_mon.get_buffers()
+        # Check CPU
+        timestamps, buffers = perf_mon._get_cpu_buffers()
         self.assertEqual(1, len(buffers))
         self.assertEqual(1, len(timestamps))
+        self.assertEqual(150, buffers[0][0])
 
         buffer = buffers[cpu_usage.pu_id]
         self.assertEqual(1, len(buffer))
         self.assertEqual(cpu_usage.user + cpu_usage.system, buffer[0])
 
-    def test_monitor_cpu_usage_normalization(self):
+        # Check MEM
+        timestamps, buffers = perf_mon._get_mem_buffers()
+        self.assertEqual(1, len(buffers))
+        self.assertEqual(1, len(timestamps))
+
+        buffer = buffers[0]
+        self.assertEqual(1, len(buffer))
+        self.assertEqual(mem_usage.user, buffer[0])
+
+    def test_cpu_usage_normalization(self):
         to_ts = lambda d: calendar.timegm(d.timetuple())
 
-        data = WorkloadPerformanceMonitor.normalize_data(
-            to_ts(dt(2019, 3, 5, 10, 15, 0)),
-            deque(map(to_ts, [dt(2019, 3, 5, 10, 14, 30),
-             dt(2019, 3, 5, 10, 14, 11),
-             dt(2019, 3, 5, 10, 13, 28)])),
-            [deque([100, 200, 200], 100), deque([50, 300, 360], 100)]
-            )
-        self.assertEqual(360-50+200-100, data[-1])
-        self.assertEqual(59, np.sum(np.isnan(data).astype(np.int16)))
+        timestamps = deque(map(to_ts,
+                               [dt(2019, 3, 5, 10, 13, 28),
+                                dt(2019, 3, 5, 10, 14, 11),
+                                dt(2019, 3, 5, 10, 14, 30)]))
+
+        data = normalize_monotonic_data(
+            timestamps,
+            [deque([100, 200, 200], 100),
+             deque([50, 300, 360], 100)])
+
+        # Last data bucket
+        expected_processing_time = (360 - 300 + 200 - 200)
+        expected_duration_ns = (timestamps[-1] - timestamps[-2]) * 1000000000
+        expected_usage = expected_processing_time / expected_duration_ns
+        self.assertAlmostEqual(expected_usage, data[-1])
+
+        # Penultimate bucket
+        expected_processing_time = (300 - 50 + 200 - 100)
+        expected_duration_ns = (timestamps[-2] - timestamps[-3]) * 1000000000
+        expected_usage = expected_processing_time / expected_duration_ns
+        self.assertAlmostEqual(expected_usage, data[-2])
+
+        self.assertEqual(58, np.sum(np.isnan(data).astype(np.int16)))
 
         try:
-            data = WorkloadPerformanceMonitor.normalize_data(
-                to_ts(dt(2019, 3, 5, 10, 15, 0)),
+            normalize_monotonic_data(
                 deque([]),
                 [deque([]), deque([])])
-        except Exception:
+        except:
+            self.fail("Should not raise on empty data.")
+
+    def test_mem_usage_normalization(self):
+        to_ts = lambda d: calendar.timegm(d.timetuple())
+
+        timestamps = deque(map(to_ts,
+                               [dt(2019, 3, 5, 10, 13, 28),
+                                dt(2019, 3, 5, 10, 14, 11),
+                                dt(2019, 3, 5, 10, 14, 30)]))
+
+        data = normalize_gauge_data(timestamps, [deque([100, 200, 200], 100)])
+
+        # Last data bucket
+        expected_usage = 200
+        self.assertEqual(expected_usage, data[-1])
+
+        # Penultimate bucket
+        expected_usage = (100 + 200) / 2
+        self.assertEqual(expected_usage, data[-2])
+
+        self.assertEqual(58, np.sum(np.isnan(data).astype(np.int16)))
+
+        try:
+            normalize_gauge_data(
+                deque([]),
+                [deque([]), deque([])])
+        except:
             self.fail("Should not raise on empty data.")
