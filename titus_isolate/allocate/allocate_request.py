@@ -71,8 +71,8 @@ class AllocateRequest:
 def deserialize_allocate_request(serialized_request: dict) -> AllocateRequest:
     cpu = parse_cpu(serialized_request[CPU])
     workloads = parse_workloads(serialized_request[WORKLOADS])
-    cpu_usage = parse_usage(serialized_request[CPU_USAGE])
-    mem_usage = parse_usage(serialized_request[MEM_USAGE])
+    cpu_usage = parse_usage(serialized_request.get(CPU_USAGE, {}))
+    mem_usage = parse_usage(serialized_request.get(MEM_USAGE, {}))
     metadata = serialized_request[METADATA]
     return AllocateRequest(
         cpu=cpu,
