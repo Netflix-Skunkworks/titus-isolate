@@ -31,6 +31,7 @@ DEFAULT_TEST_ENTRYPOINT = 'test_entrypoint'
 DEFAULT_TEST_JOB_TYPE = 'SERVICE'
 DEFAULT_TEST_INSTANCE_ID = 'test_instance_id'
 DEFAULT_TEST_REQUEST_METADATA = {INSTANCE_ID: DEFAULT_TEST_INSTANCE_ID}
+DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT = 0
 
 set_config_manager(ConfigManager(TestPropertyProvider({})))
 
@@ -75,7 +76,8 @@ def get_test_workload(identifier, thread_count, workload_type):
         command=DEFAULT_TEST_CMD,
         entrypoint=DEFAULT_TEST_ENTRYPOINT,
         job_type=DEFAULT_TEST_JOB_TYPE,
-        workload_type=workload_type)
+        workload_type=workload_type,
+        opportunistic_thread_count=DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT)
 
 
 def get_no_usage_threads_request(cpu: Cpu, workloads: List[Workload]):

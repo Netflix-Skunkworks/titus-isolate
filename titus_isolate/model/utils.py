@@ -3,7 +3,7 @@ from typing import Dict
 from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.event.utils import get_container_name, get_cpu, get_mem, get_disk, get_network, get_workload_type, \
-    get_image, get_app_name, get_job_type, get_owner_email, get_command, get_entrypoint
+    get_image, get_app_name, get_job_type, get_owner_email, get_command, get_entrypoint, get_opportunistic_cpu
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.package import Package
@@ -25,6 +25,7 @@ def get_workload_from_event(event):
     entrypoint = get_entrypoint(event)
     job_type = get_job_type(event)
     workload_type = get_workload_type(event)
+    opportunistic_cpus = get_opportunistic_cpu(event)
 
     return Workload(
         identifier=identifier,
@@ -38,7 +39,8 @@ def get_workload_from_event(event):
         command=command,
         entrypoint=entrypoint,
         job_type=job_type,
-        workload_type=workload_type)
+        workload_type=workload_type,
+        opportunistic_thread_count=opportunistic_cpus)
 
 
 def get_burst_workloads(workloads):

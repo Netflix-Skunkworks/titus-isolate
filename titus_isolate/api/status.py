@@ -16,6 +16,7 @@ from titus_isolate.event.event_manager import EventManager
 from titus_isolate.event.free_event_handler import FreeEventHandler
 from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.event.reconcile_event_handler import ReconcileEventHandler
+from titus_isolate.event.oversubscribe_event_handler import OversubscribeEventHandler
 from titus_isolate.event.utils import get_current_workloads
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.reconciler import Reconciler
@@ -159,7 +160,9 @@ if __name__ != '__main__' and not is_testing():
     rebalance_event_handler = RebalanceEventHandler(workload_manager)
     reconciler = Reconciler(cgroup_manager, RealExitHandler())
     reconcile_event_handler = ReconcileEventHandler(reconciler)
-    event_handlers = [create_event_handler, free_event_handler, rebalance_event_handler, reconcile_event_handler]
+    oversubscribe_event_handler = OversubscribeEventHandler(workload_manager)
+    event_handlers = [create_event_handler, free_event_handler, rebalance_event_handler, reconcile_event_handler,
+                      oversubscribe_event_handler]
 
     # Start event processing
     log.info("Starting Docker event handling...")
@@ -174,7 +177,8 @@ if __name__ != '__main__' and not is_testing():
         event_manager,
         reconciler,
         workload_manager,
-        workload_monitor_manager])
+        workload_monitor_manager,
+        oversubscribe_event_handler])
 
     threading.Thread(target=init).start()
 

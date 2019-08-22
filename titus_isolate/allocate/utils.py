@@ -52,7 +52,8 @@ def parse_workload(workload_dict: dict) -> Workload:
         command=workload_dict['command'],
         entrypoint=workload_dict['entrypoint'],
         job_type=workload_dict['job_type'],
-        workload_type=workload_dict['type'])
+        workload_type=workload_dict['type'],
+        opportunistic_thread_count=workload_dict['opportunistic_thread_count'])
 
     # Input example:  "2019-03-23 18:03:50.668041"
     creation_time = datetime.datetime.strptime(workload_dict["creation_time"], '%Y-%m-%d %H:%M:%S.%f')
