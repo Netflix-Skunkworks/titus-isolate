@@ -10,13 +10,12 @@ from tests.event.mock_docker import get_container_create_event, MockEventProvide
 from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals, DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, \
     DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE, DEFAULT_TEST_APP_NAME, DEFAULT_TEST_JOB_TYPE, DEFAULT_TEST_OWNER_EMAIL
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.event.constants import CONTAINER, CREATE, STATIC, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, NAME, \
-    REBALANCE_EVENT, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, \
-    APP_NAME_LABEL_KEY, JOB_TYPE_LABEL_KEY, OWNER_EMAIL_LABEL_KEY
+from titus_isolate.event.constants import CONTAINER, CREATE, STATIC, NAME, REBALANCE_EVENT
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.utils import set_config_manager, set_workload_monitor_manager
+from tests.event.mock_titus_environment import MOCK_TITUS_ENVIRONMENT
 
 DEFAULT_CPU_COUNT = 2
 
@@ -116,37 +115,7 @@ class TestEvents(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, 1))
 
-    def test_absent_cpu_label(self):
-        registry = Registry()
-        test_context = TestContext()
-        unknown_event = get_event(
-            CONTAINER,
-            CREATE,
-            "unknown",
-            {
-                WORKLOAD_TYPE_LABEL_KEY: STATIC,
-                NAME: str(uuid.uuid4())
-            })
-        event_iterable = MockEventProvider([unknown_event])
-        manager = EventManager(
-            event_iterable,
-            test_context.get_event_handlers(),
-            DEFAULT_TEST_EVENT_TIMEOUT_SECS)
-        manager.set_registry(registry)
-        manager.start_processing_events()
-
-        wait_until(lambda: test_context.get_create_event_handler().get_ignored_event_count() == 1)
-        self.assertEqual(0, manager.get_queue_depth())
-
-        manager.stop_processing_events()
-
-        manager.report_metrics({})
-        self.assertTrue(gauge_value_equals(registry, QUEUE_DEPTH_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, len(test_context.get_event_handlers())))
-        self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, 1))
-
-    def test_absent_workload_type_label(self):
+    def test_absent_name_label(self):
         registry = Registry()
         test_context = TestContext()
         name = str(uuid.uuid4())
@@ -154,10 +123,7 @@ class TestEvents(unittest.TestCase):
             CONTAINER,
             CREATE,
             name,
-            {
-                CPU_LABEL_KEY: "1",
-                NAME: name
-            })
+            {})
         event_handlers = test_context.get_event_handlers()
         event_iterable = MockEventProvider([unknown_event])
         manager = EventManager(event_iterable, event_handlers, DEFAULT_TEST_EVENT_TIMEOUT_SECS)
@@ -174,46 +140,6 @@ class TestEvents(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, len(test_context.get_event_handlers())))
         self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, 1))
-
-    def test_unknown_workload_type_label(self):
-        registry = Registry()
-        test_context = TestContext()
-        unknown_event = get_event(
-            CONTAINER,
-            CREATE,
-            uuid.uuid4(),
-            {
-                NAME: "container-name",
-                APP_NAME_LABEL_KEY: DEFAULT_TEST_APP_NAME,
-                CPU_LABEL_KEY: "1",
-                MEM_LABEL_KEY: str(DEFAULT_TEST_MEM),
-                DISK_LABEL_KEY: str(DEFAULT_TEST_DISK),
-                NETWORK_LABEL_KEY: str(DEFAULT_TEST_NETWORK),
-                JOB_TYPE_LABEL_KEY: DEFAULT_TEST_JOB_TYPE,
-                WORKLOAD_TYPE_LABEL_KEY: "unknown",
-                OWNER_EMAIL_LABEL_KEY: DEFAULT_TEST_OWNER_EMAIL,
-                IMAGE_LABEL_KEY: DEFAULT_TEST_IMAGE,
-            })
-        valid_event = get_container_create_event(1)
-        event_iterable = MockEventProvider([unknown_event, valid_event])
-        manager = EventManager(
-            event_iterable,
-            test_context.get_event_handlers(),
-            DEFAULT_TEST_EVENT_TIMEOUT_SECS)
-        manager.set_registry(registry)
-        manager.start_processing_events()
-
-        wait_until(lambda: manager.get_error_count() == 1)
-        wait_until(lambda: manager.get_processed_count() == 2)
-        self.assertEqual(0, manager.get_queue_depth())
-
-        manager.stop_processing_events()
-
-        manager.report_metrics({})
-        self.assertTrue(gauge_value_equals(registry, QUEUE_DEPTH_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, 5))
-        self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 1))
-        self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, 2))
 
     def test_rebalance(self):
         registry = Registry()

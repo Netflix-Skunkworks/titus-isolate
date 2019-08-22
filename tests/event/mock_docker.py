@@ -2,12 +2,14 @@ import json
 import time
 import uuid
 
+from tests.event.mock_titus_environment import MOCK_TITUS_ENVIRONMENT
 from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE, \
-    DEFAULT_TEST_APP_NAME, DEFAULT_TEST_JOB_TYPE, DEFAULT_TEST_OWNER_EMAIL
+    DEFAULT_TEST_APP_NAME, DEFAULT_TEST_JOB_TYPE, DEFAULT_TEST_OWNER_EMAIL, DEFAULT_TEST_CMD, DEFAULT_TEST_ENTRYPOINT, \
+    DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT
 from titus_isolate import log
-from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, CPU_LABEL_KEY, CREATE, ID, \
-    LOWERCASE_ID, NAME, TIME, TYPE, DIE, WORKLOAD_TYPE_LABEL_KEY, STATIC, MEM_LABEL_KEY, DISK_LABEL_KEY, \
-    NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, REPO_DIGESTS, APP_NAME_LABEL_KEY, JOB_TYPE_LABEL_KEY, OWNER_EMAIL_LABEL_KEY
+from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, CREATE, ID, \
+    LOWERCASE_ID, NAME, TIME, TYPE, DIE, STATIC, REPO_DIGESTS
+from titus_isolate.model.workload import Workload
 
 
 class MockEventProvider:
@@ -41,21 +43,11 @@ class MockImage:
 class MockContainer:
     def __init__(self, workload):
         self.name = workload.get_id()
-        self.labels = {
-            APP_NAME_LABEL_KEY: workload.get_app_name(),
-            CPU_LABEL_KEY: str(workload.get_thread_count()),
-            MEM_LABEL_KEY: str(workload.get_mem()),
-            DISK_LABEL_KEY: str(workload.get_disk()),
-            NETWORK_LABEL_KEY: str(workload.get_network()),
-            JOB_TYPE_LABEL_KEY: workload.get_job_type(),
-            IMAGE_LABEL_KEY: workload.get_image(),
-            WORKLOAD_TYPE_LABEL_KEY: workload.get_type(),
-            OWNER_EMAIL_LABEL_KEY: workload.get_owner_email()
-        }
+        self.labels = {}
         self.update_calls = []
         repo_digests = ["registry:7002/name@sha256:digest"]
         attrs = {
-           REPO_DIGESTS: repo_digests
+            REPO_DIGESTS: repo_digests
         }
         self.image = MockImage(attrs)
 
@@ -92,16 +84,21 @@ class MockDockerClient:
 def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()).replace("-", ""), id=str(uuid.uuid4()).replace("-", "")):
     attributes = {
         NAME: name,
-        APP_NAME_LABEL_KEY: DEFAULT_TEST_APP_NAME,
-        CPU_LABEL_KEY: str(cpus),
-        MEM_LABEL_KEY: DEFAULT_TEST_MEM,
-        DISK_LABEL_KEY: DEFAULT_TEST_DISK,
-        NETWORK_LABEL_KEY: DEFAULT_TEST_NETWORK,
-        JOB_TYPE_LABEL_KEY: DEFAULT_TEST_JOB_TYPE,
-        WORKLOAD_TYPE_LABEL_KEY: workload_type,
-        OWNER_EMAIL_LABEL_KEY: DEFAULT_TEST_OWNER_EMAIL,
-        IMAGE_LABEL_KEY: DEFAULT_TEST_IMAGE,
     }
+    MOCK_TITUS_ENVIRONMENT.add_workload(Workload(
+        identifier=name,
+        thread_count=cpus,
+        mem=DEFAULT_TEST_MEM,
+        disk=DEFAULT_TEST_DISK,
+        network=DEFAULT_TEST_NETWORK,
+        app_name=DEFAULT_TEST_APP_NAME,
+        owner_email=DEFAULT_TEST_OWNER_EMAIL,
+        image=DEFAULT_TEST_IMAGE,
+        command=DEFAULT_TEST_CMD,
+        entrypoint=DEFAULT_TEST_ENTRYPOINT,
+        job_type=DEFAULT_TEST_JOB_TYPE,
+        workload_type=workload_type,
+        opportunistic_thread_count=DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT))
 
     return get_event(CONTAINER, CREATE, id, attributes)
 

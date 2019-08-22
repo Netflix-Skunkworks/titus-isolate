@@ -1,31 +1,45 @@
+import json
+import re
+
 from typing import Dict
 
 from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.event.constants import BURST, STATIC
-from titus_isolate.event.utils import get_container_name, get_cpu, get_mem, get_disk, get_network, get_workload_type, \
-    get_image, get_app_name, get_job_type, get_owner_email, get_command, get_entrypoint, get_opportunistic_cpu
-from titus_isolate.model.processor.core import Core
+from titus_isolate.model.constants import WORKLOAD_JSON_FORMAT, WORKLOAD_ENV_FORMAT, WORKLOAD_ENV_LINE_REGEXP, \
+    WORKLOAD_ENV_CPU_KEY, WORKLOAD_ENV_MEM_KEY, WORKLOAD_ENV_DISK_KEY, WORKLOAD_ENV_NETWORK_KEY, \
+    WORKLOAD_JSON_APP_NAME_KEY, WORKLOAD_JSON_PASSTHROUGH_KEY, WORKLOAD_JSON_OWNER_KEY, WORKLOAD_JSON_IMAGE_KEY, \
+    WORKLOAD_JSON_IMAGE_DIGEST_KEY, WORKLOAD_JSON_PROCESS_KEY, WORKLOAD_JSON_COMMAND_KEY, \
+    WORKLOAD_JSON_ENTRYPOINT_KEY, WORKLOAD_JSON_JOB_TYPE_KEY, WORKLOAD_JSON_CPU_BURST_KEY, \
+    WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.processor.package import Package
-from titus_isolate.model.processor.thread import Thread
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 
 
-def get_workload_from_event(event):
-    identifier = get_container_name(event)
-    cpus = get_cpu(event)
-    mem = get_mem(event)
-    disk = get_disk(event)
-    network = get_network(event)
-    app_name = get_app_name(event)
-    owner_email = get_owner_email(event)
-    image = get_image(event)
-    command = get_command(event)
-    entrypoint = get_entrypoint(event)
-    job_type = get_job_type(event)
-    workload_type = get_workload_type(event)
-    opportunistic_cpus = get_opportunistic_cpu(event)
+def get_workload_from_disk(identifier):
+    json_data = __get_workload_json(identifier)
+    env_data = __get_workload_env(identifier) # note that this is string -> string
+
+    cpus = int(env_data[WORKLOAD_ENV_CPU_KEY])
+    mem = int(env_data[WORKLOAD_ENV_MEM_KEY])
+    disk = int(env_data[WORKLOAD_ENV_DISK_KEY])
+    network = int(env_data[WORKLOAD_ENV_NETWORK_KEY])
+    app_name = json_data[WORKLOAD_JSON_APP_NAME_KEY]
+    owner_email = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY][WORKLOAD_JSON_OWNER_KEY]
+    image = '{}@{}'.format(json_data[WORKLOAD_JSON_IMAGE_KEY], json_data[WORKLOAD_JSON_IMAGE_DIGEST_KEY])
+    command = None
+    if WORKLOAD_JSON_COMMAND_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
+        command = json_data[WORKLOAD_JSON_PROCESS_KEY][WORKLOAD_JSON_COMMAND_KEY]
+    entrypoint = None
+    if WORKLOAD_JSON_ENTRYPOINT_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
+        entrypoint = json_data[WORKLOAD_JSON_PROCESS_KEY][WORKLOAD_JSON_ENTRYPOINT_KEY]
+    job_type = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY][WORKLOAD_JSON_JOB_TYPE_KEY]
+    workload_type = STATIC
+    if json_data[WORKLOAD_JSON_CPU_BURST_KEY]:
+        workload_type = BURST
+    opportunistic_cpus = -1
+    if WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
+        opportunistic_cpus = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY][WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY]
 
     return Workload(
         identifier=identifier,
@@ -41,6 +55,24 @@ def get_workload_from_event(event):
         job_type=job_type,
         workload_type=workload_type,
         opportunistic_thread_count=opportunistic_cpus)
+
+
+def __get_workload_json(identifier):
+    with open(WORKLOAD_JSON_FORMAT.format(identifier)) as json_file:
+        return json.load(json_file)
+
+
+def __get_workload_env(identifier):
+    env = {}
+    with open(WORKLOAD_ENV_FORMAT.format(identifier)) as env_file:
+        line = env_file.readline()
+        while line:
+            match = re.match(WORKLOAD_ENV_LINE_REGEXP, line)
+            if match is None:
+                continue
+            env[match.group(1)] = match.group(2)
+            line = env_file.readline()
+    return env
 
 
 def get_burst_workloads(workloads):
