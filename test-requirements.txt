@@ -7,3 +7,4 @@ schedule
 cvxpy
 titus-optimize==0.5.1
 netflix-spectator-py
+kubernetes

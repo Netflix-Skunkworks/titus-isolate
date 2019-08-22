@@ -6,8 +6,9 @@ import schedule
 
 from titus_isolate import log
 from titus_isolate.config.constants import REBALANCE_FREQUENCY_KEY, DEFAULT_REBALANCE_FREQUENCY, \
-    RECONCILE_FREQUENCY_KEY, DEFAULT_RECONCILE_FREQUENCY
-from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT
+    RECONCILE_FREQUENCY_KEY, DEFAULT_RECONCILE_FREQUENCY, \
+    OVERSUBSCRIBE_FREQUENCY_KEY, DEFAULT_OVERSUBSCRIBE_FREQUENCY
+from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT, OVERSUBSCRIBE_EVENT
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.utils import get_config_manager
@@ -46,6 +47,11 @@ class EventManager(MetricsReporter):
         if reconcile_frequency > 0:
             schedule.every(reconcile_frequency).seconds.do(self.__reconcile)
 
+        oversubscribe_frequency = config_manager.get_float(OVERSUBSCRIBE_FREQUENCY_KEY,
+                                                           DEFAULT_OVERSUBSCRIBE_FREQUENCY)
+        if oversubscribe_frequency > 0:
+            schedule.every(oversubscribe_frequency).seconds.do(self.__oversubscribe)
+
     def join(self):
         self.__pulling_thread.join()
         self.__processing_thread.join()
@@ -83,6 +89,9 @@ class EventManager(MetricsReporter):
     def __reconcile(self):
         if self.__q.empty():
             self.__q.put(RECONCILE_EVENT)
+
+    def __oversubscribe(self):
+        self.__q.put(OVERSUBSCRIBE_EVENT)
 
     def __pull_events(self):
         for event in self.__events:

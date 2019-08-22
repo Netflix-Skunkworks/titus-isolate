@@ -1,7 +1,8 @@
 from titus_isolate import log
 from titus_isolate.event.constants import ACTOR, ATTRIBUTES, NAME, CPU_LABEL_KEY, WORKLOAD_TYPE_LABEL_KEY, \
     REQUIRED_LABELS, MEM_LABEL_KEY, DISK_LABEL_KEY, NETWORK_LABEL_KEY, IMAGE_LABEL_KEY, REPO_DIGESTS, \
-    JOB_TYPE_LABEL_KEY, OWNER_EMAIL_LABEL_KEY, APP_NAME_LABEL_KEY, ENTRYPOINT_LABEL_KEY, COMMAND_LABEL_KEY
+    JOB_TYPE_LABEL_KEY, OWNER_EMAIL_LABEL_KEY, APP_NAME_LABEL_KEY, ENTRYPOINT_LABEL_KEY, COMMAND_LABEL_KEY, \
+    OPPORTUNISTIC_CPU_LABEL_KEY
 from titus_isolate.model.workload import Workload
 
 
@@ -45,6 +46,10 @@ def get_workload_type(create_event):
     return __get_attribute(create_event, WORKLOAD_TYPE_LABEL_KEY)
 
 
+def get_opportunistic_cpu(create_event):
+    return __get_attribute(create_event, OPPORTUNISTIC_CPU_LABEL_KEY)
+
+
 def get_command(create_event):
     return __get_attribute(create_event, COMMAND_LABEL_KEY)
 
@@ -83,6 +88,7 @@ def get_current_workloads(docker_client):
                 entrypoint = __get_value(labels, ENTRYPOINT_LABEL_KEY)
                 job_type = __get_value(labels, JOB_TYPE_LABEL_KEY)
                 workload_type = __get_value(labels, WORKLOAD_TYPE_LABEL_KEY)
+                opportunistic_thread_count = int(__get_value(labels, OPPORTUNISTIC_CPU_LABEL_KEY, -1))
                 image = __get_image(container)
 
                 workloads.append(
@@ -98,7 +104,9 @@ def get_current_workloads(docker_client):
                         command=command,
                         entrypoint=entrypoint,
                         job_type=job_type,
-                        workload_type=workload_type))
+                        workload_type=workload_type,
+                        opportunistic_thread_count=opportunistic_thread_count
+                    ))
                 log.info("Found running workload: '{}'".format(workload_id))
             except:
                 log.exception("Failed to parse labels for container: '{}'".format(container.name))

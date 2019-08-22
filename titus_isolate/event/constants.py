@@ -15,6 +15,7 @@ CREATE = "create"
 DIE = "die"
 REBALANCE = "rebalance"
 RECONCILE = "reconcile"
+OVERSUBSCRIBE = "oversubscribe"
 
 APP_NAME_LABEL_KEY = "com.netflix.titus.appName"
 CPU_LABEL_KEY = "com.netflix.titus.cpu"
@@ -26,6 +27,7 @@ WORKLOAD_TYPE_LABEL_KEY = "com.netflix.titus.workload.type"
 OWNER_EMAIL_LABEL_KEY = "com.netflix.titus.owner.email"
 COMMAND_LABEL_KEY = "com.netflix.titus.command"
 ENTRYPOINT_LABEL_KEY = "com.netflix.titus.entrypoint"
+OPPORTUNISTIC_CPU_LABEL_KEY = "com.netflix.titus.opportunisticCpu"
 IMAGE_LABEL_KEY = "image"
 
 REQUIRED_LABELS = [
@@ -39,5 +41,9 @@ STATIC = "static"
 BURST = "burst"
 WORKLOAD_TYPES = [STATIC, BURST]
 
+SERVICE = "SERVICE"
+BATCH = "BATCH"
+
 REBALANCE_EVENT = json.dumps({ACTION: REBALANCE}).encode("utf-8")
 RECONCILE_EVENT = json.dumps({ACTION: RECONCILE}).encode("utf-8")
+OVERSUBSCRIBE_EVENT = json.dumps({ACTION: OVERSUBSCRIBE}).encode("utf-8")

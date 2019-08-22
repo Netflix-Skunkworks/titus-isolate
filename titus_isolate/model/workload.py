@@ -1,7 +1,7 @@
 import datetime
 import json
 
-from titus_isolate.event.constants import WORKLOAD_TYPES, BURST
+from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE
 
 
 class Workload:
@@ -18,7 +18,8 @@ class Workload:
             command,
             entrypoint,
             job_type,
-            workload_type):
+            workload_type,
+            opportunistic_thread_count):
 
         self.__creation_time = datetime.datetime.utcnow()
 
@@ -34,6 +35,7 @@ class Workload:
         self.__entrypoint = entrypoint
         self.__job_type = job_type
         self.__type = workload_type.lower()
+        self.__opportunistic_thread_count = opportunistic_thread_count
 
         if self.__thread_count < 0:
             raise ValueError("A workload must request at least 0 threads.")
@@ -81,11 +83,23 @@ class Workload:
     def get_job_type(self):
         return self.__job_type
 
+    def is_batch(self) -> bool:
+        return self.__job_type == BATCH
+
+    def is_service(self) -> bool:
+        return self.__job_type == SERVICE
+
     def get_creation_time(self):
         return self.__creation_time
 
     def set_creation_time(self, creation_time):
         self.__creation_time = creation_time
+
+    def is_opportunistic(self):
+        return self.__opportunistic_thread_count > 0
+
+    def get_opportunistic_thread_count(self):
+        return self.__opportunistic_thread_count
 
     def to_dict(self):
         return {
@@ -102,6 +116,7 @@ class Workload:
             "entrypoint": self.get_entrypoint(),
             "job_type": self.get_job_type(),
             "type": self.get_type(),
+            "opportunistic_thread_count": self.get_opportunistic_thread_count()
         }
 
     def __str__(self):
