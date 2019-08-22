@@ -17,7 +17,6 @@ from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload import Workload
-from titus_isolate.monitor.usage.cpu_usage_provider import CpuUsageProvider
 from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_workload_monitor_manager
@@ -56,17 +55,23 @@ class TestCpuUsagePredictorManager:
         self.__predictor = predictor
 
 
-class TestWorkloadMonitorManager(CpuUsageProvider):
+class TestWorkloadMonitorManager:
 
-    def __init__(self, cpu_usage={}, mem_usage={}):
-        self.__cpu_usage = cpu_usage
-        self.__mem_usage = mem_usage
+    @staticmethod
+    def get_cpu_usage(seconds: int, agg_granularity_secs: int) -> dict:
+        return {}
 
-    def get_cpu_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
-        return self.__cpu_usage
+    @staticmethod
+    def get_mem_usage(seconds: int, agg_granularity_secs: int) -> dict:
+        return {}
 
-    def get_mem_usage(self, seconds: int, agg_granularity_secs: int) -> dict:
-        return self.__mem_usage
+    @staticmethod
+    def get_net_recv_usage(seconds: int, agg_granularity_secs: int) -> dict:
+        return {}
+
+    @staticmethod
+    def get_net_trans_usage(seconds: int, agg_granularity_secs: int) -> dict:
+        return {}
 
 
 forecast_ip_alloc_simple = ForecastIPCpuAllocator(
