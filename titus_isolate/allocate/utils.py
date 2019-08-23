@@ -31,7 +31,7 @@ def parse_cpu(cpu_dict: dict) -> Cpu:
     return Cpu(packages)
 
 
-def parse_workloads(workloads: dict) -> list:
+def parse_workloads(workloads: dict) -> dict:
     __workloads = {}
     for w_id, workload in workloads.items():
         __workloads[w_id] = parse_workload(workload)
@@ -61,12 +61,13 @@ def parse_workload(workload_dict: dict) -> Workload:
     return workload
 
 
-def parse_cpu_usage(cpu_usage: dict) -> dict:
+def parse_usage(usage: dict) -> dict:
     parsed_cpu_usage = {}
-    for k, v in cpu_usage.items():
+    for k, v in usage.items():
         parsed_cpu_usage[k] = [float(val) for val in v]
 
     return parsed_cpu_usage
+
 
 def get_cpu_model_bucket_name():
     format_str = get_required_property(MODEL_BUCKET_FORMAT_STR)

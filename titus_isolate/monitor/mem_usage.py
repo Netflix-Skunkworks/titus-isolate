@@ -4,21 +4,19 @@ from typing import Tuple, List
 from titus_isolate.monitor.usage_snapshot import UsageSnapshot
 
 
-class CpuUsage:
+class MemUsage:
 
-    def __init__(self, pu_id, user, system):
-        self.pu_id = pu_id
+    def __init__(self, user: int):
         self.user = user
-        self.system = system
 
 
-class CpuUsageSnapshot(UsageSnapshot):
+class MemUsageSnapshot(UsageSnapshot):
 
-    def __init__(self, timestamp, rows):
+    def __init__(self, timestamp, usage: MemUsage):
         self.timestamp = timestamp
-        self.rows = rows
+        self.usage = usage
 
     def get_column(self) -> Tuple[float, List[float]]:
         timestamp = calendar.timegm(self.timestamp.timetuple())
-        column = [int(r.user) + int(r.system) for r in self.rows]
+        column = [self.usage.user]
         return timestamp, column

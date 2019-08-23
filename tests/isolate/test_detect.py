@@ -2,7 +2,7 @@ import logging
 import unittest
 import uuid
 
-from tests.utils import config_logs, get_test_workload, DEFAULT_TEST_REQUEST_METADATA
+from tests.utils import config_logs, get_test_workload, DEFAULT_TEST_REQUEST_METADATA, get_no_usage_threads_request
 from titus_isolate import log
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
@@ -24,7 +24,7 @@ class TestDetect(unittest.TestCase):
         violations = get_cross_package_violations(cpu)
         self.assertEqual(0, len(violations))
 
-        request = AllocateThreadsRequest(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w])
         cpu = allocator.assign_threads(request).get_cpu()
         violations = get_cross_package_violations(cpu)
         self.assertEqual(0, len(violations))
@@ -34,7 +34,7 @@ class TestDetect(unittest.TestCase):
         allocator = IntegerProgramCpuAllocator()
         w = get_test_workload(uuid.uuid4(), 9, STATIC)
 
-        request = AllocateThreadsRequest(cpu, w.get_id(), {w.get_id(): w}, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w])
         cpu = allocator.assign_threads(request).get_cpu()
         violations = get_cross_package_violations(cpu)
         self.assertEqual(1, len(violations))
@@ -44,11 +44,8 @@ class TestDetect(unittest.TestCase):
 
         # Claim all thread but one
         cpu = get_cpu()
-        w = get_test_workload(uuid.uuid4(), len(cpu.get_threads()) - 1, STATIC)
-        workloads = {
-            w.get_id(): w
-        }
-        request = AllocateThreadsRequest(cpu, w.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        w_0 = get_test_workload(uuid.uuid4(), len(cpu.get_threads()) - 1, STATIC)
+        request = get_no_usage_threads_request(cpu, [w_0])
         cpu = allocator.assign_threads(request).get_cpu()
         log.info("{}".format(cpu))
         violations = get_shared_core_violations(cpu)
@@ -56,9 +53,8 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(0, len(violations))
 
         # Assign another workload which will force core sharing
-        w = get_test_workload(uuid.uuid4(), 1, STATIC)
-        workloads[w.get_id()] = w
-        request = AllocateThreadsRequest(cpu, w.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        w_1 = get_test_workload(uuid.uuid4(), 1, STATIC)
+        request = get_no_usage_threads_request(cpu, [w_0, w_1])
         cpu = allocator.assign_threads(request).get_cpu()
         log.info("{}".format(cpu))
         violations = get_shared_core_violations(cpu)
@@ -84,10 +80,7 @@ class TestDetect(unittest.TestCase):
         # Assign another workload which will force core sharing
         allocator = GreedyCpuAllocator()
         w = get_test_workload(uuid.uuid4(), 2, STATIC)
-        workloads = {
-            w.get_id(): w
-        }
-        request = AllocateThreadsRequest(cpu, w.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu, [w])
         cpu = allocator.assign_threads(request).get_cpu()
         violations = get_shared_core_violations(cpu)
         log.info("shared core violations: {}".format(violations))

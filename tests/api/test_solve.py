@@ -8,16 +8,16 @@ import unittest
 import pytest
 
 from titus_isolate.allocate.allocate_response import deserialize_response
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
+from titus_isolate.allocate.utils import parse_workload, parse_cpu
 from titus_isolate.api.testing import set_testing
 
 set_testing()
 
 from tests.allocate.crashing_allocators import CrashingAllocator
-from tests.utils import get_test_workload, config_logs, DEFAULT_TEST_REQUEST_METADATA
+from tests.utils import get_test_workload, config_logs, get_no_usage_threads_request
 from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
-from titus_isolate.api.solve import parse_workload, parse_cpu, app, set_cpu_allocators
+from titus_isolate.api.solve import app, set_cpu_allocators
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 
@@ -78,9 +78,6 @@ class TestStatus(unittest.TestCase):
     def test_assign_free_threads(self):
         cpu = get_cpu()
         workload = get_test_workload("a", 2, STATIC)
-        workloads = {
-            workload.get_id(): workload
-        }
 
         cpu_allocator = GreedyCpuAllocator()
         self.__set_cpu_allocator(cpu_allocator)
@@ -88,14 +85,14 @@ class TestStatus(unittest.TestCase):
         # Assign threads
         log.info("Assign threads")
         cpu_in_0 = copy.deepcopy(cpu)
-        request = AllocateThreadsRequest(cpu_in_0, workload.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu_in_0, [workload])
         cpu_out_0 = cpu_allocator.assign_threads(request).get_cpu()
 
         cpu_in_1 = copy.deepcopy(cpu)
-        body = AllocateThreadsRequest(cpu_in_1, workload.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA).to_dict()
+        request = get_no_usage_threads_request(cpu_in_1, [workload])
         cpu_out_1 = self.client.put(
             "/assign_threads",
-            data=json.dumps(body),
+            data=json.dumps(request.to_dict()),
             content_type='application/json')
         cpu_out_1 = deserialize_response(cpu_out_1.headers, cpu_out_1.json).get_cpu()
 
@@ -106,14 +103,14 @@ class TestStatus(unittest.TestCase):
         # Free threads
         log.info("Free threads")
         cpu_in_0 = copy.deepcopy(cpu_out_0)
-        request = AllocateThreadsRequest(cpu_in_0, workload.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA)
+        request = get_no_usage_threads_request(cpu_in_0, [workload])
         cpu_out_0 = cpu_allocator.free_threads(request).get_cpu()
 
         cpu_in_1 = copy.deepcopy(cpu_out_1)
-        body = AllocateThreadsRequest(cpu_in_1, workload.get_id(), workloads, {}, DEFAULT_TEST_REQUEST_METADATA).to_dict()
+        request = get_no_usage_threads_request(cpu_in_1, [workload])
         cpu_out_1 = self.client.put(
             "/free_threads",
-            data=json.dumps(body),
+            data=json.dumps(request.to_dict()),
             content_type='application/json')
         cpu_out_1 = deserialize_response(cpu_out_1.headers, cpu_out_1.json).get_cpu()
 
