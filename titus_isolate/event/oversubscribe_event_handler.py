@@ -4,9 +4,7 @@ from dateutil.parser import parse
 import kubernetes.client
 import kubernetes.config
 from kubernetes.client.rest import ApiException
-from kubernetes.client.models import V1beta1CustomResourceDefinition, V1beta1CustomResourceDefinitionNames, \
-                                     V1beta1CustomResourceDefinitionSpec, V1beta1CustomResourceDefinitionVersion, \
-                                     V1DeleteOptions, V1ObjectMeta, V1OwnerReference
+from kubernetes.client.models import V1DeleteOptions, V1ObjectMeta, V1OwnerReference
 
 from titus_isolate import log
 from titus_isolate.config.constants import EC2_LOCAL_IPV4, TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
@@ -21,11 +19,11 @@ from titus_isolate.metrics.constants import OVERSUBSCRIBE_FAIL_COUNT, OVERSUBSCR
                                             OVERSUBSCRIBE_CONSUMED_CPU_COUNT
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.opportunistic_resource import OpportunisticResource, OPPORTUNISTIC_RESOURCE_GROUP, \
-                                                       OPPORTUNISTIC_RESOURCE_VERSION, OPPORTUNISTIC_RESOURCE_KIND, \
+                                                       OPPORTUNISTIC_RESOURCE_VERSION, \
                                                        OPPORTUNISTIC_RESOURCE_NAMESPACE, \
-                                                       OPPORTUNISTIC_RESOURCE_SINGULAR, OPPORTUNISTIC_RESOURCE_PLURAL, \
-                                                       OPPORTUNISTIC_RESOURCE_NAME, \
-                                                       OPPORTUNISTIC_RESOURCE_FIELD_SELECTOR
+                                                       OPPORTUNISTIC_RESOURCE_PLURAL, \
+                                                       OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY, \
+                                                       OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY
 from titus_isolate.model.opportunistic_resource_capacity import OpportunisticResourceCapacity
 from titus_isolate.model.opportunistic_resource_spec import OpportunisticResourceSpec
 from titus_isolate.model.opportunistic_resource_window import OpportunisticResourceWindow
@@ -227,10 +225,13 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
     def __is_window_active(self):
         try:
+            label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
+                                            self.__node_name)
             oppo_list = self.__custom_api.list_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
                                                                         group=OPPORTUNISTIC_RESOURCE_GROUP,
                                                                         plural=OPPORTUNISTIC_RESOURCE_PLURAL,
-                                                                        namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE)
+                                                                        namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
+                                                                        label_selector=label_selector)
             log.debug('is active: oppo list: %s', json.dumps(oppo_list))
             for item in oppo_list['items']:
                 log.debug('checking for window: %s', json.dumps(item))
@@ -252,8 +253,8 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             oppo_meta = V1ObjectMeta(namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
                                      name="{}-{}-{}".format(node.metadata.name, start.timestamp(), end.timestamp()),
                                      labels={
-                                         'node_name': node.metadata.name,
-                                         'node_uid': node.metadata.uid
+                                         OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY: node.metadata.name,
+                                         OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY: node.metadata.uid
                                      },
                                      owner_references=[
                                          V1OwnerReference(api_version=node.api_version,
