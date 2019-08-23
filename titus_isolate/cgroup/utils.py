@@ -27,18 +27,23 @@ def __get_info_path(container_name):
     return "{}/{}/cgroup".format(TITUS_INITS_PATH, container_name)
 
 
-def __get_json_path(container_name):
+def get_json_path(container_name):
     return "{}/{}.json".format(TITUS_ENVIRONMENTS_PATH, container_name)
+
+
+def get_env_path(container_name):
+    return "{}/{}.env".format(TITUS_ENVIRONMENTS_PATH, container_name)
 
 
 def __noop():
     pass
 
 
-def _wait_for_file_to_exist(path, timeout, check_func=__noop):
-    start_time = time.time()
+def wait_for_file_to_exist(path, timeout, check_func=__noop, start_time=None):
+    if start_time is None:
+        start_time = time.time()
 
-    log.info("Waiting '{}' seconds for file to exist: '{}'".format(timeout, path))
+    log.info("Waiting '{}' seconds from {} for file to exist: '{}'".format(timeout, start_time, path))
     while not os.path.exists(path):
         time.sleep(0.1)
 
@@ -52,13 +57,13 @@ def _wait_for_file_to_exist(path, timeout, check_func=__noop):
 
 def wait_for_files(container_name, cgroup_timeout, json_timeout):
     info_file_path = __get_info_path(container_name)
-    json_file_path = __get_json_path(container_name)
+    json_file_path = get_json_path(container_name)
 
     def __raise_if_json_file_gone():
         if not os.path.exists(json_file_path):
             raise RuntimeError("JSON file: '{}' disappeared, meaning the task exited.".format(json_file_path))
 
-    _wait_for_file_to_exist(info_file_path, cgroup_timeout, __raise_if_json_file_gone)
+    wait_for_file_to_exist(info_file_path, cgroup_timeout, __raise_if_json_file_gone)
 
 
 def _get_cgroup_path_from_list(cgroups_list, cgroup_name):
