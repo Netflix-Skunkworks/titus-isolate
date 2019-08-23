@@ -1,6 +1,7 @@
 boto3
 flask
 gunicorn
+kubernetes
 netflix-spectator-py
 netflix-spectator-pyconf
 requests
