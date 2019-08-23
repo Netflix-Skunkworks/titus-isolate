@@ -1,6 +1,7 @@
 --extra-index-url https://pypi.python.org/simple
 boto3
 flask
+kubernetes
 requests
 schedule
 titus-optimize==0.5.1
