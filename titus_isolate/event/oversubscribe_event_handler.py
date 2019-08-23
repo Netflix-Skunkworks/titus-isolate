@@ -67,8 +67,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         kubeconfig = get_kubeconfig_path()
         self.__core_api = kubernetes.client.CoreV1Api(
             kubernetes.config.new_client_from_config(config_file=kubeconfig))
-        self.__ext_api = kubernetes.client.ApiextensionsV1beta1Api(
-            kubernetes.config.new_client_from_config(config_file=kubeconfig))
+        # NOTE[jigish]:  This API depends on the OpportunisticResource CRD. See the readme for how to create it.
         self.__custom_api = kubernetes.client.CustomObjectsApi(
             kubernetes.config.new_client_from_config(config_file=kubeconfig))
 
@@ -276,95 +275,3 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             log.error('Exception when calling CustomObjectsApi->create_namespaced_custom_object: %s', e)
             self.__fail_count += 1
             raise e
-
-    # NOTE: this creates the CRD. should not be run and only really exists for testing purposes. example CRD:
-    # {
-    #     "apiVersion": "apiextensions.k8s.io/v1beta1",
-    #     "kind": "CustomResourceDefinition",
-    #     "metadata": {
-    #         "creationTimestamp": "2019-08-13T23:23:00Z",
-    #         "generation": 1,
-    #         "name": "opportunistic-resources.titus.netflix.com",
-    #         "resourceVersion": "472028",
-    #         "selfLink": "/apis/apiextensions.k8s.io/v1beta1/customresourcedefinitions/opportunistic-resources.titus.netflix.com",
-    #         "uid": "4a4afa45-be21-11e9-b347-120874de55a6"
-    #     },
-    #     "spec": {
-    #         "conversion": {
-    #             "strategy": "None"
-    #         },
-    #         "group": "titus.netflix.com",
-    #         "names": {
-    #             "kind": "OpportunisticResource",
-    #             "listKind": "OpportunisticResourceList",
-    #             "plural": "opportunistic-resources",
-    #             "singular": "opportunistic-resource"
-    #         },
-    #         "scope": "Namespaced",
-    #         "version": "v1",
-    #         "versions": [
-    #             {
-    #                 "name": "v1",
-    #                 "served": true,
-    #                 "storage": true
-    #             }
-    #         ]
-    #     },
-    #     "status": {
-    #         "acceptedNames": {
-    #             "kind": "OpportunisticResource",
-    #             "listKind": "OpportunisticResourceList",
-    #             "plural": "opportunistic-resources",
-    #             "singular": "opportunistic-resource"
-    #         },
-    #         "conditions": [
-    #             {
-    #                 "lastTransitionTime": "2019-08-13T23:23:00Z",
-    #                 "message": "no conflicts found",
-    #                 "reason": "NoConflicts",
-    #                 "status": "True",
-    #                 "type": "NamesAccepted"
-    #             },
-    #             {
-    #                 "lastTransitionTime": null,
-    #                 "message": "the initial names have been accepted",
-    #                 "reason": "InitialNamesAccepted",
-    #                 "status": "True",
-    #                 "type": "Established"
-    #             }
-    #         ],
-    #         "storedVersions": [
-    #             "v1"
-    #         ]
-    #     }
-    # }
-    def __bootstrap(self):
-        try:
-            crd_list = self.__ext_api.list_custom_resource_definition(
-                field_selector=OPPORTUNISTIC_RESOURCE_FIELD_SELECTOR)
-            for item in crd_list.items:
-                log.debug('CRD already exists: %s', item.to_str())
-                return
-        except ApiException as e:
-            log.error('Exception when calling ApiextensionsV1beta1Api->list_custom_resource_definition: %s', e)
-
-        crd_version = V1beta1CustomResourceDefinitionVersion(name=OPPORTUNISTIC_RESOURCE_VERSION,
-                                                             served=True,
-                                                             storage=True)
-        crd_meta = V1ObjectMeta(name=OPPORTUNISTIC_RESOURCE_NAME)
-        crd_spec_names = V1beta1CustomResourceDefinitionNames(kind=OPPORTUNISTIC_RESOURCE_KIND,
-                                                              singular=OPPORTUNISTIC_RESOURCE_SINGULAR,
-                                                              plural=OPPORTUNISTIC_RESOURCE_PLURAL)
-        crd_spec = V1beta1CustomResourceDefinitionSpec(versions=[crd_version],
-                                                       group=OPPORTUNISTIC_RESOURCE_GROUP,
-                                                       names=crd_spec_names,
-                                                       scope='Namespaced')
-        crd = V1beta1CustomResourceDefinition(api_version=CRD_VERSION,
-                                              kind=CRD_KIND,
-                                              metadata=crd_meta,
-                                              spec=crd_spec)
-        try:
-            crd_resp = self.__ext_api.create_custom_resource_definition(crd)
-            log.debug('created CRD: %s', crd_resp.to_str())
-        except ApiException as e:
-            log.error('Exception when calling ApiextensionsV1beta1Api->create_custom_resource_definition: %s', e)
