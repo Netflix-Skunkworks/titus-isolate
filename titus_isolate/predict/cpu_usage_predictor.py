@@ -38,8 +38,6 @@ class CpuUsagePredictor:
                 valid_digest = True
                 image_name = m.groups(0)[0]
                 entry_point = workload.get_entrypoint()[:1000]
-                if entry_point is None:
-                    entry_point = ""
                 filter_key = "%s@%s" % (tokens[-1], entry_point)
         if self.__use_whitelist and valid_digest and (filter_key not in self.__model.filter):
             # not in whitelist, predict without context features

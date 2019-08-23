@@ -67,8 +67,9 @@ class CgroupMetricsProvider:
             log.warning("No '{}' path for workload: '{}'".format(resource_key, self.__workload.get_id()))
             return None
 
+        usage_path = self.__usage_path[resource_key]
         if not os.path.isfile(usage_path):
             log.warning("{} usage path does not exist: {}".format(resource_key, usage_path))
             return None
 
-        return self.__usage_path[resource_key]
+        return usage_path
