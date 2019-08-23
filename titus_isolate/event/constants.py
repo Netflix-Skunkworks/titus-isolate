@@ -17,7 +17,8 @@ REBALANCE = "rebalance"
 RECONCILE = "reconcile"
 OVERSUBSCRIBE = "oversubscribe"
 
-REQUIRED_LABELS = [NAME]
+WORKLOAD_TYPE_LABEL_KEY = "com.netflix.titus.workload.type"
+REQUIRED_LABELS = [NAME, WORKLOAD_TYPE_LABEL_KEY]
 
 STATIC = "static"
 BURST = "burst"

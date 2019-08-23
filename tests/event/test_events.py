@@ -141,6 +141,32 @@ class TestEvents(unittest.TestCase):
         self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, 1))
 
+    def test_absent_workload_type_label(self):
+        registry = Registry()
+        test_context = TestContext()
+        name = str(uuid.uuid4())
+        unknown_event = get_event(
+            CONTAINER,
+            CREATE,
+            name,
+            {NAME: name})
+        event_handlers = test_context.get_event_handlers()
+        event_iterable = MockEventProvider([unknown_event])
+        manager = EventManager(event_iterable, event_handlers, DEFAULT_TEST_EVENT_TIMEOUT_SECS)
+        manager.set_registry(registry)
+        manager.start_processing_events()
+
+        wait_until(lambda: test_context.get_create_event_handler().get_ignored_event_count() == 1)
+        self.assertEqual(0, manager.get_queue_depth())
+
+        manager.stop_processing_events()
+
+        manager.report_metrics({})
+        self.assertTrue(gauge_value_equals(registry, QUEUE_DEPTH_KEY, 0))
+        self.assertTrue(gauge_value_equals(registry, EVENT_SUCCEEDED_KEY, len(test_context.get_event_handlers())))
+        self.assertTrue(gauge_value_equals(registry, EVENT_FAILED_KEY, 0))
+        self.assertTrue(gauge_value_equals(registry, EVENT_PROCESSED_KEY, 1))
+
     def test_rebalance(self):
         registry = Registry()
 
