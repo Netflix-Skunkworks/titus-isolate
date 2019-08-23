@@ -17,25 +17,7 @@ REBALANCE = "rebalance"
 RECONCILE = "reconcile"
 OVERSUBSCRIBE = "oversubscribe"
 
-APP_NAME_LABEL_KEY = "com.netflix.titus.appName"
-CPU_LABEL_KEY = "com.netflix.titus.cpu"
-MEM_LABEL_KEY = "com.netflix.titus.mem"
-DISK_LABEL_KEY = "com.netflix.titus.disk"
-NETWORK_LABEL_KEY = "com.netflix.titus.network"
-JOB_TYPE_LABEL_KEY = "com.netflix.titus.job.type"
-WORKLOAD_TYPE_LABEL_KEY = "com.netflix.titus.workload.type"
-OWNER_EMAIL_LABEL_KEY = "com.netflix.titus.owner.email"
-COMMAND_LABEL_KEY = "com.netflix.titus.command"
-ENTRYPOINT_LABEL_KEY = "com.netflix.titus.entrypoint"
-OPPORTUNISTIC_CPU_LABEL_KEY = "com.netflix.titus.opportunisticCpu"
-IMAGE_LABEL_KEY = "image"
-
-REQUIRED_LABELS = [
-    CPU_LABEL_KEY,
-    MEM_LABEL_KEY,
-    DISK_LABEL_KEY,
-    NETWORK_LABEL_KEY,
-    WORKLOAD_TYPE_LABEL_KEY]
+REQUIRED_LABELS = [NAME]
 
 STATIC = "static"
 BURST = "burst"

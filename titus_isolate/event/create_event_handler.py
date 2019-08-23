@@ -1,6 +1,7 @@
 from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CREATE, REQUIRED_LABELS
 from titus_isolate.event.event_handler import EventHandler
-from titus_isolate.model.utils import get_workload_from_event
+from titus_isolate.event.utils import get_container_name
+import titus_isolate.model.utils
 
 
 class CreateEventHandler(EventHandler):
@@ -11,7 +12,7 @@ class CreateEventHandler(EventHandler):
         if not self.__relevant(event):
             return
 
-        workload = get_workload_from_event(event)
+        workload = titus_isolate.model.utils.get_workload_from_disk(get_container_name(event))
 
         self.handling_event(event, "adding workload: '{}'".format(workload.get_id()))
         self.workload_manager.add_workload(workload)
