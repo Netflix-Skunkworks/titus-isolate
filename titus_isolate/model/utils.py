@@ -1,22 +1,32 @@
 import json
 import re
+import time
 
 from typing import Dict
 
 from titus_isolate.allocate.constants import FREE_THREAD_IDS
+from titus_isolate.cgroup.utils import get_json_path, get_env_path, wait_for_file_to_exist
 from titus_isolate.event.constants import BURST, STATIC
-from titus_isolate.model.constants import WORKLOAD_JSON_FORMAT, WORKLOAD_ENV_FORMAT, WORKLOAD_ENV_LINE_REGEXP, \
-    WORKLOAD_ENV_CPU_KEY, WORKLOAD_ENV_MEM_KEY, WORKLOAD_ENV_DISK_KEY, WORKLOAD_ENV_NETWORK_KEY, \
-    WORKLOAD_JSON_APP_NAME_KEY, WORKLOAD_JSON_PASSTHROUGH_KEY, WORKLOAD_JSON_OWNER_KEY, WORKLOAD_JSON_IMAGE_KEY, \
-    WORKLOAD_JSON_IMAGE_DIGEST_KEY, WORKLOAD_JSON_PROCESS_KEY, WORKLOAD_JSON_COMMAND_KEY, \
-    WORKLOAD_JSON_ENTRYPOINT_KEY, WORKLOAD_JSON_JOB_TYPE_KEY, WORKLOAD_JSON_CPU_BURST_KEY, \
-    WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY
+from titus_isolate.model.constants import WORKLOAD_ENV_LINE_REGEXP, WORKLOAD_ENV_CPU_KEY, WORKLOAD_ENV_MEM_KEY, \
+    WORKLOAD_ENV_DISK_KEY, WORKLOAD_ENV_NETWORK_KEY, WORKLOAD_JSON_APP_NAME_KEY, WORKLOAD_JSON_PASSTHROUGH_KEY, \
+    WORKLOAD_JSON_OWNER_KEY, WORKLOAD_JSON_IMAGE_KEY, WORKLOAD_JSON_IMAGE_DIGEST_KEY, WORKLOAD_JSON_PROCESS_KEY, \
+    WORKLOAD_JSON_COMMAND_KEY, WORKLOAD_JSON_ENTRYPOINT_KEY, WORKLOAD_JSON_JOB_TYPE_KEY, WORKLOAD_JSON_CPU_BURST_KEY, \
+    WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, WORKLOAD_ENV_WAIT_TIMEOUT_SECONDS, WORKLOAD_JSON_WAIT_TIMEOUT_SECONDS
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 
+def _wait_for_workload_files(identifier):
+    start_time = time.time()
+    wait_for_file_to_exist(get_env_path(identifier), WORKLOAD_ENV_WAIT_TIMEOUT_SECONDS, start_time=start_time)
+    wait_for_file_to_exist(get_json_path(identifier), WORKLOAD_JSON_WAIT_TIMEOUT_SECONDS, start_time=start_time)
+
 
 def get_workload_from_disk(identifier):
+    _wait_for_workload_files(identifier)
+
+    # in theory these files could go away if the task dies. that is ok. a failure here will only result in the workload
+    # not being created which is fine because it is dead anyways.
     json_data = __get_workload_json(identifier)
     env_data = __get_workload_env(identifier) # note that this is string -> string
 
@@ -58,13 +68,13 @@ def get_workload_from_disk(identifier):
 
 
 def __get_workload_json(identifier):
-    with open(WORKLOAD_JSON_FORMAT.format(identifier)) as json_file:
+    with open(get_json_path(identifier)) as json_file:
         return json.load(json_file)
 
 
 def __get_workload_env(identifier):
     env = {}
-    with open(WORKLOAD_ENV_FORMAT.format(identifier)) as env_file:
+    with open(get_env_path(identifier)) as env_file:
         line = env_file.readline()
         while line:
             match = re.match(WORKLOAD_ENV_LINE_REGEXP, line)

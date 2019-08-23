@@ -31,8 +31,14 @@ class Workload:
         self.__app_name = app_name
         self.__owner_email = owner_email
         self.__image = image
-        self.__command = command
-        self.__entrypoint = entrypoint
+        if command is None:
+            self.__command = ""
+        else:
+            self.__command = command
+        if entrypoint is None:
+            self.__entrypoint = ""
+        else:
+            self.__entrypoint = entrypoint
         self.__job_type = job_type
         self.__type = workload_type.lower()
         self.__opportunistic_thread_count = opportunistic_thread_count
