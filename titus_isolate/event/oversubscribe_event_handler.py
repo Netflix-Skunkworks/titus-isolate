@@ -131,10 +131,12 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         end = start + timedelta(minutes=self.__config_manager.get_int(OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY,
                                                                       DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES))
         for workload in self.workload_manager.get_workloads():
-            log.debug('workload:%s job_type:%s cpu:%d', workload.get_app_name(), workload.get_job_type(),
+            log.info('workload:%s job_type:%s cpu:%d', workload.get_app_name(), workload.get_job_type(),
                       workload.get_thread_count())
 
-            if not self.__is_oversubscribable(workload, cpu_usage, pred_env):
+            is_oversubscribable = self.__is_oversubscribable(workload, cpu_usage, pred_env)
+            log.info("Workload: {} is oversubscribable: {}".format(workload.get_id(), is_oversubscribable))
+            if not is_oversubscribable:
                 continue
 
             if workload.is_opportunistic():
@@ -204,10 +206,12 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         if workload.is_batch():
             return False
 
+        threshold = self.__config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
         pred = self.__cpu_usage_predictor_manager.get_predictor().predict(workload,
                                                                           cpu_usage.get(workload.get_id(), None),
                                                                           pred_env)
-        if pred > self.__config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD):
+        log.info("Testing oversubscribability of workload: {}, threshold: {}, prediction: {}".format(workload.get_id(), threshold, pred))
+        if pred > threshold:
             return False
 
         log.debug(' --> low utilization (%f), oversubscribing', pred)
