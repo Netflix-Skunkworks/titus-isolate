@@ -17,8 +17,6 @@ CPUACCT_USAGE_FILE = "cpuacct.usage_all"
 MEMORY = "memory"
 MEMORY_USAGE_FILE = "memory.usage_in_bytes"
 
-NET_RECV = "net_recv"
-
 USAGE_FILE = {
     CPU_CPUACCT: CPUACCT_USAGE_FILE,
     MEMORY: MEMORY_USAGE_FILE

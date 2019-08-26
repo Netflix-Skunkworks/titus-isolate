@@ -3,7 +3,7 @@ import os
 from typing import Union, Tuple
 
 from titus_isolate import log
-from titus_isolate.cgroup.utils import parse_cpuacct_usage_all, CPU_CPUACCT, MEMORY, get_usage_path, NET_RECV
+from titus_isolate.cgroup.utils import parse_cpuacct_usage_all, CPU_CPUACCT, MEMORY, get_usage_path
 from titus_isolate.monitor.content import ContentSnapshot
 from titus_isolate.monitor.usage.cpu_usage import CpuUsageSnapshot
 from titus_isolate.monitor.usage.mem_usage import MemUsageSnapshot, MemUsage
