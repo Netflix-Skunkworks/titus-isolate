@@ -65,8 +65,12 @@ def get_threads_with_workload(cpu, workload_id):
     return [t for t in cpu.get_threads() if workload_id in t.get_workload_ids()]
 
 
-def get_test_workload(identifier, thread_count, workload_type):
+def get_test_workload(identifier, thread_count, workload_type, creation_time=None):
+    if creation_time is None:
+        creation_time = int(time.time())
+
     return Workload(
+        creation_time=int(creation_time),
         identifier=identifier,
         thread_count=thread_count,
         mem=DEFAULT_TEST_MEM,
@@ -79,7 +83,8 @@ def get_test_workload(identifier, thread_count, workload_type):
         entrypoint=DEFAULT_TEST_ENTRYPOINT,
         job_type=DEFAULT_TEST_JOB_TYPE,
         workload_type=workload_type,
-        opportunistic_thread_count=DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT)
+        opportunistic_thread_count=DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT,
+        predicted_duration_sec=-1)
 
 
 def get_no_usage_threads_request(cpu: Cpu, workloads: List[Workload]):

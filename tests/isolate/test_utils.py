@@ -25,9 +25,9 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(NoopCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_get_sorted_workloads(self):
-        w_a = get_test_workload('a', 1, STATIC)
-        w_b = get_test_workload('b', 1, STATIC)
-        w_c = get_test_workload('c', 1, STATIC)
+        w_a = get_test_workload('a', 1, STATIC, 100)
+        w_b = get_test_workload('b', 1, STATIC, 101)
+        w_c = get_test_workload('c', 1, STATIC, 102)
         expected_ids = ['a', 'b', 'c']
 
         scrambled_workloads = [w_b, w_a, w_c]

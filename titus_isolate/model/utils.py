@@ -13,10 +13,12 @@ from titus_isolate.model.constants import WORKLOAD_ENV_LINE_REGEXP, WORKLOAD_ENV
     WORKLOAD_JSON_OWNER_KEY, WORKLOAD_JSON_IMAGE_KEY, WORKLOAD_JSON_IMAGE_DIGEST_KEY, WORKLOAD_JSON_PROCESS_KEY, \
     WORKLOAD_JSON_COMMAND_KEY, WORKLOAD_JSON_ENTRYPOINT_KEY, WORKLOAD_JSON_JOB_TYPE_KEY, WORKLOAD_JSON_CPU_BURST_KEY, \
     WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, WORKLOAD_ENV_WAIT_TIMEOUT_SECONDS, WORKLOAD_JSON_WAIT_TIMEOUT_SECONDS, \
-    WORKLOAD_JSON_READ_ATTEMPTS, WORKLOAD_JSON_READ_SLEEP_SECONDS
+    WORKLOAD_JSON_READ_ATTEMPTS, WORKLOAD_JSON_READ_SLEEP_SECONDS, WORKLOAD_JSON_RUNSTATE_KEY, \
+    WORKLOAD_JSON_LAUNCH_TIME_KEY, WORKLOAD_JSON_DURATION_KEY
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
+
 
 def _wait_for_workload_files(identifier):
     start_time = time.time()
@@ -30,7 +32,10 @@ def get_workload_from_disk(identifier):
     # in theory these files could go away if the task dies. that is ok. a failure here will only result in the workload
     # not being created which is fine because it is dead anyways.
     json_data = __get_workload_json(identifier)
-    env_data = __get_workload_env(identifier) # note that this is string -> string
+    env_data = __get_workload_env(identifier)  # note that this is string -> string
+
+    creation_time = int(json_data[WORKLOAD_JSON_RUNSTATE_KEY][WORKLOAD_JSON_LAUNCH_TIME_KEY])
+    duration_sec = float(json_data[WORKLOAD_JSON_PASSTHROUGH_KEY].get(WORKLOAD_JSON_DURATION_KEY, -1))
 
     cpus = int(env_data[WORKLOAD_ENV_CPU_KEY])
     mem = int(env_data[WORKLOAD_ENV_MEM_KEY])
@@ -54,6 +59,7 @@ def get_workload_from_disk(identifier):
         opportunistic_cpus = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY][WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY]
 
     return Workload(
+        creation_time=creation_time,
         identifier=identifier,
         thread_count=cpus,
         mem=mem,
@@ -66,7 +72,8 @@ def get_workload_from_disk(identifier):
         entrypoint=entrypoint,
         job_type=job_type,
         workload_type=workload_type,
-        opportunistic_thread_count=opportunistic_cpus)
+        opportunistic_thread_count=opportunistic_cpus,
+        predicted_duration_sec=duration_sec)
 
 
 def __get_workload_json(identifier):
@@ -129,7 +136,6 @@ def update_burst_workloads(
         workload_map: Dict[str, Workload],
         free_thread_provider: FreeThreadProvider,
         metadata: dict):
-
     free_threads = free_thread_provider.get_free_threads(cpu, workload_map)
     metadata[FREE_THREAD_IDS] = [t.get_id() for t in free_threads]
 

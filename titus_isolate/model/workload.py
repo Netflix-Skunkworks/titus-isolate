@@ -7,6 +7,7 @@ from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE
 class Workload:
     def __init__(
             self,
+            creation_time,  # unix seconds
             identifier,
             thread_count,
             mem,
@@ -19,9 +20,10 @@ class Workload:
             entrypoint,
             job_type,
             workload_type,
-            opportunistic_thread_count):
+            opportunistic_thread_count,
+            predicted_duration_sec):
 
-        self.__creation_time = datetime.datetime.utcnow()
+        self.__creation_time = creation_time
 
         self.__identifier = identifier
         self.__thread_count = int(thread_count)
@@ -42,6 +44,7 @@ class Workload:
         self.__job_type = job_type
         self.__type = workload_type.lower()
         self.__opportunistic_thread_count = opportunistic_thread_count
+        self.__predicted_duration_sec = predicted_duration_sec
 
         if self.__thread_count < 0:
             raise ValueError("A workload must request at least 0 threads.")
@@ -95,7 +98,7 @@ class Workload:
     def is_service(self) -> bool:
         return self.__job_type == SERVICE
 
-    def get_creation_time(self):
+    def get_creation_time(self) -> int:
         return self.__creation_time
 
     def set_creation_time(self, creation_time):
@@ -106,6 +109,9 @@ class Workload:
 
     def get_opportunistic_thread_count(self):
         return self.__opportunistic_thread_count
+
+    def get_predicted_duration_sec(self) -> int:
+        return self.__predicted_duration_sec
 
     def to_dict(self):
         return {
@@ -122,7 +128,8 @@ class Workload:
             "entrypoint": self.get_entrypoint(),
             "job_type": self.get_job_type(),
             "type": self.get_type(),
-            "opportunistic_thread_count": self.get_opportunistic_thread_count()
+            "opportunistic_thread_count": self.get_opportunistic_thread_count(),
+            "predicted_duration_sec": self.get_predicted_duration_sec(),
         }
 
     def __str__(self):

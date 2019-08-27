@@ -1,5 +1,3 @@
-import datetime
-
 import boto3 as boto3
 
 from titus_isolate import log
@@ -41,6 +39,7 @@ def parse_workloads(workloads: dict) -> dict:
 def parse_workload(workload_dict: dict) -> Workload:
 
     workload = Workload(
+        creation_time=int(workload_dict.get('creation_time', -1)),
         identifier=workload_dict['id'],
         thread_count=workload_dict['thread_count'],
         mem=workload_dict['mem'],
@@ -53,11 +52,9 @@ def parse_workload(workload_dict: dict) -> Workload:
         entrypoint=workload_dict['entrypoint'],
         job_type=workload_dict['job_type'],
         workload_type=workload_dict['type'],
-        opportunistic_thread_count=workload_dict.get('opportunistic_thread_count', -1))
+        opportunistic_thread_count=int(workload_dict.get('opportunistic_thread_count', -1)),
+        predicted_duration_sec=int(workload_dict.get('predicted_duration_sec', -1)))
 
-    # Input example:  "2019-03-23 18:03:50.668041"
-    creation_time = datetime.datetime.strptime(workload_dict["creation_time"], '%Y-%m-%d %H:%M:%S.%f')
-    workload.set_creation_time(creation_time)
     return workload
 
 
