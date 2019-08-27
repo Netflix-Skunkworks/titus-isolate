@@ -1,4 +1,3 @@
-import datetime
 import json
 
 from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE
@@ -101,9 +100,6 @@ class Workload:
     def get_creation_time(self) -> int:
         return self.__creation_time
 
-    def set_creation_time(self, creation_time):
-        self.__creation_time = creation_time
-
     def is_opportunistic(self):
         return self.__opportunistic_thread_count > 0
 
@@ -112,6 +108,9 @@ class Workload:
 
     def get_predicted_duration_sec(self) -> int:
         return self.__predicted_duration_sec
+
+    def get_predicted_completion_time(self) -> int:
+        return self.get_creation_time() + self.get_predicted_duration_sec()
 
     def to_dict(self):
         return {

@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 import kubernetes.client
@@ -116,12 +117,10 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             consumed_cpu_count += workload.get_opportunistic_thread_count()
         self.__consumed_cpu_count = consumed_cpu_count
 
-
         if self.__is_window_active():
             self.__skip_count += 1
             self.handled_event(event, 'skipping oversubscribe - a window is currently active')
             return
-
 
         workload_count = 0
         underutilized_cpu_count = 0
@@ -134,7 +133,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             log.info('workload:%s job_type:%s cpu:%d', workload.get_app_name(), workload.get_job_type(),
                       workload.get_thread_count())
 
-            is_oversubscribable = self.__is_oversubscribable(workload, cpu_usage, pred_env)
+            is_oversubscribable = self.__is_oversubscribable(workload, cpu_usage, pred_env, end)
             log.info("Workload: {} is oversubscribable: {}".format(workload.get_id(), is_oversubscribable))
             if not is_oversubscribable:
                 continue
@@ -200,10 +199,12 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             self.__fail_count += 1
             raise e
 
-    def __is_oversubscribable(self, workload, cpu_usage, pred_env) -> bool:
-        # as of right now we're only oversubscribing services
-        # TODO expand to batch by checking predicted duration >>> 10m
-        if workload.is_batch():
+    def __is_oversubscribable(self, workload, cpu_usage, pred_env, end) -> bool:
+        end_unix_time = time.mktime(end.timetuple())
+
+        # If the end of the window is after the completion of the job we can't include those resources as available
+        # for opportunistic scheduling.
+        if workload.is_batch() and end_unix_time > workload.get_predicted_completion_time():
             return False
 
         threshold = self.__config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
