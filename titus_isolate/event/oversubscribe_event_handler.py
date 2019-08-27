@@ -18,10 +18,12 @@ from titus_isolate.metrics.constants import OVERSUBSCRIBE_FAIL_COUNT, OVERSUBSCR
                                             OVERSUBSCRIBE_SUCCESS_COUNT, OVERSUBSCRIBE_RECLAIMED_CPU_COUNT, \
                                             OVERSUBSCRIBE_CONSUMED_CPU_COUNT
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
+from titus_isolate.model.constants import KUBE_ANNOTATION_NODE_ID_ATTRIBUTE
 from titus_isolate.model.opportunistic_resource import OpportunisticResource, OPPORTUNISTIC_RESOURCE_GROUP, \
                                                        OPPORTUNISTIC_RESOURCE_VERSION, \
                                                        OPPORTUNISTIC_RESOURCE_NAMESPACE, \
                                                        OPPORTUNISTIC_RESOURCE_PLURAL, \
+                                                       OPPORTUNISTIC_RESOURCE_NODE_ID_LABEL_KEY, \
                                                        OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY, \
                                                        OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY
 from titus_isolate.model.opportunistic_resource_capacity import OpportunisticResourceCapacity
@@ -258,6 +260,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
                                      name="{}-{}-{}".format(node.metadata.name, start.timestamp(), end.timestamp()),
                                      labels={
                                          OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY: node.metadata.name,
+                                         OPPORTUNISTIC_RESOURCE_NODE_ID_LABEL_KEY: node.metadata.annotations[KUBE_ANNOTATION_NODE_ID_ATTRIBUTE],
                                          OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY: node.metadata.uid
                                      },
                                      owner_references=[

@@ -11,6 +11,7 @@ test-reports/
 venv/
 env/
 
+.vscode/
 .idea/
 *.swp
 *.deb
