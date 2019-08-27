@@ -119,6 +119,7 @@ class WorkloadManager(MetricsReporter):
 
     def __rebalance(self, dummy):
         request = self.__get_rebalance_request()
+        log.info("rebalance request: {}".format(request.to_dict()))
         response = self.__cpu_allocator.rebalance(request)
 
         self.__update_state(response, request.get_workloads())

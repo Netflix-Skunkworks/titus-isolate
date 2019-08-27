@@ -59,7 +59,7 @@ class CgroupMetricsProvider:
         #     lo:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
         #   eth0:  584261    4785    0    0    0     0          0       508   944760    5666    0    0    0     0       0          0
 
-        net_dev_path = "/var/lib/titus-inits/{}/net/dev".format(self.__workload.get_id)
+        net_dev_path = "/var/lib/titus-inits/{}/net/dev".format(self.__workload.get_id())
         eth0_key = "eth0:"
         recv_index = 1
         trans_index = 9
@@ -73,6 +73,7 @@ class CgroupMetricsProvider:
                     if tokens[0] == eth0_key:
                         recv_usage = NetUsage(RECV, float(tokens[recv_index]))
                         trans_usage = NetUsage(TRANS, float(tokens[trans_index]))
+                        log.info("recv_usage: {}, trans_usage: {}".format(recv_usage.bytes, trans_usage.bytes))
                         return NetUsageSnapshot(timestamp, recv_usage), NetUsageSnapshot(timestamp, trans_usage)
         except FileNotFoundError:
             log.warning("No '{}' path for workload: '{}'".format(net_dev_path, self.__workload.get_id()))
