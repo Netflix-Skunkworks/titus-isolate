@@ -30,7 +30,7 @@ from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorM
 from titus_isolate.real_exit_handler import RealExitHandler
 from titus_isolate.utils import get_config_manager, get_workload_manager, get_event_manager, \
     get_workload_monitor_manager, set_event_log_manager, start_periodic_scheduling, set_cpu_usage_predictor_manager, \
-    set_workload_monitor_manager, set_workload_manager, set_event_manager
+    set_workload_monitor_manager, set_workload_manager, set_event_manager, is_kubernetes
 
 app = Flask(__name__)
 
@@ -154,15 +154,21 @@ if __name__ != '__main__' and not is_testing():
     set_workload_manager(workload_manager)
 
     # Setup the event handlers
-    log.info("Setting up the Docker event handlers...")
+    log.info("Setting up event handlers...")
+    reconciler = Reconciler(cgroup_manager, RealExitHandler())
     create_event_handler = CreateEventHandler(workload_manager)
     free_event_handler = FreeEventHandler(workload_manager)
     rebalance_event_handler = RebalanceEventHandler(workload_manager)
-    reconciler = Reconciler(cgroup_manager, RealExitHandler())
     reconcile_event_handler = ReconcileEventHandler(reconciler)
-    oversubscribe_event_handler = OversubscribeEventHandler(workload_manager)
-    event_handlers = [create_event_handler, free_event_handler, rebalance_event_handler, reconcile_event_handler,
-                      oversubscribe_event_handler]
+    oversub_event_handler = None
+    if is_kubernetes():
+        oversub_event_handler = OversubscribeEventHandler(workload_manager)
+
+    event_handlers = [h for h in [create_event_handler,
+                                  free_event_handler,
+                                  rebalance_event_handler,
+                                  reconcile_event_handler,
+                                  oversub_event_handler] if h is not None]
 
     # Start event processing
     log.info("Starting Docker event handling...")
@@ -171,14 +177,15 @@ if __name__ != '__main__' and not is_testing():
 
     # Report metrics
     log.info("Starting metrics reporting...")
-    MetricsManager([
-        cgroup_manager,
-        event_log_manager,
-        event_manager,
-        reconciler,
-        workload_manager,
-        workload_monitor_manager,
-        oversubscribe_event_handler])
+    metrics_reporters = [m for m in [cgroup_manager,
+                                     event_log_manager,
+                                     event_manager,
+                                     reconciler,
+                                     workload_manager,
+                                     workload_monitor_manager,
+                                     oversub_event_handler] if m is not None]
+
+    MetricsManager(metrics_reporters)
 
     threading.Thread(target=init).start()
 

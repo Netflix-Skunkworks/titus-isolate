@@ -9,6 +9,7 @@ from titus_isolate.allocate.constants import TITUS_ISOLATE_CELL_HEADER, UNKNOWN_
 from titus_isolate.config.agent_property_provider import AgentPropertyProvider
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import REMOTE_ALLOCATOR_URL
+from titus_isolate.constants import KUBERNETES_BACKEND_KEY
 
 SCHEDULING_SLEEP_INTERVAL = 1.0
 
@@ -156,6 +157,10 @@ def start_periodic_scheduling():
         worker_thread.daemon = True
         worker_thread.start()
         scheduling_started = True
+
+
+def is_kubernetes() -> bool:
+    return get_config_manager().get_bool(KUBERNETES_BACKEND_KEY, True)
 
 
 def __schedule_loop():

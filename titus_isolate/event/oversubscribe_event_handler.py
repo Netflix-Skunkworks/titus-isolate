@@ -46,6 +46,7 @@ def get_kubeconfig_path():
             line = file.readline()
     return DEFAULT_KUBECONFIG_PATH
 
+
 class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
     def __init__(self, workload_manager):

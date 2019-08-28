@@ -20,7 +20,7 @@ class ConfigManager:
     def get_int(self, key, default=None):
         return int(self.get_str(key, default))
 
-    def get_bool(self, key, default= None):
+    def get_bool(self, key, default=None):
         return bool(self.get_str(key, default))
 
     def get_region(self):
