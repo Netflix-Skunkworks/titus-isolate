@@ -217,7 +217,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         if pred_usage > threshold:
             return False
 
-        log.debug(' --> low utilization (%f), oversubscribing', pred)
+        log.debug(' --> low utilization (%f), oversubscribing', pred_usage)
         return True
 
     def __get_node(self):
