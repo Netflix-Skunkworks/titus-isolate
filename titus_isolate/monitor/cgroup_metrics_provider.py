@@ -73,7 +73,6 @@ class CgroupMetricsProvider:
                     if tokens[0] == eth0_key:
                         recv_usage = NetUsage(RECV, float(tokens[recv_index]))
                         trans_usage = NetUsage(TRANS, float(tokens[trans_index]))
-                        log.info("recv_usage: {}, trans_usage: {}".format(recv_usage.bytes, trans_usage.bytes))
                         return NetUsageSnapshot(timestamp, recv_usage), NetUsageSnapshot(timestamp, trans_usage)
         except FileNotFoundError:
             log.warning("No '{}' path for workload: '{}'".format(net_dev_path, self.__workload.get_id()))
