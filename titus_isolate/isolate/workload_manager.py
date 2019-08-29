@@ -119,6 +119,7 @@ class WorkloadManager(MetricsReporter):
 
     def __rebalance(self, dummy):
         request = self.__get_rebalance_request()
+        log.info("rebalance request: {}".format(request.to_dict()))
         response = self.__cpu_allocator.rebalance(request)
 
         self.__update_state(response, request.get_workloads())
@@ -158,6 +159,12 @@ class WorkloadManager(MetricsReporter):
     def __get_mem_usage(self) -> dict:
         return self.__wmm.get_mem_usage(seconds=3600, agg_granularity_secs=60)
 
+    def __get_net_recv_usage(self) -> dict:
+        return self.__wmm.get_net_recv_usage(seconds=3600, agg_granularity_secs=60)
+
+    def __get_net_trans_usage(self) -> dict:
+        return self.__wmm.get_net_trans_usage(seconds=3600, agg_granularity_secs=60)
+
     def __get_threads_request(self, workload_id, workload_map, request_type):
         return AllocateThreadsRequest(
             cpu=self.get_cpu_copy(),
@@ -165,6 +172,8 @@ class WorkloadManager(MetricsReporter):
             workloads=workload_map,
             cpu_usage=self.__get_cpu_usage(),
             mem_usage=self.__get_mem_usage(),
+            net_recv_usage=self.__get_net_recv_usage(),
+            net_trans_usage=self.__get_net_trans_usage(),
             metadata=self.__get_request_metadata(request_type))
 
     def __get_rebalance_request(self):
@@ -173,6 +182,8 @@ class WorkloadManager(MetricsReporter):
             workloads=self.get_workload_map_copy(),
             cpu_usage=self.__get_cpu_usage(),
             mem_usage=self.__get_mem_usage(),
+            net_recv_usage=self.__get_net_recv_usage(),
+            net_trans_usage=self.__get_net_trans_usage(),
             metadata=self.__get_request_metadata("rebalance"))
 
     def get_workloads(self):

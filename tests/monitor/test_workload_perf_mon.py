@@ -10,8 +10,9 @@ import numpy as np
 from tests.utils import get_test_workload
 from titus_isolate.event.constants import STATIC
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
-from titus_isolate.monitor.cpu_usage import CpuUsage, CpuUsageSnapshot
-from titus_isolate.monitor.mem_usage import MemUsage, MemUsageSnapshot
+from titus_isolate.monitor.usage.cpu_usage import CpuUsage, CpuUsageSnapshot
+from titus_isolate.monitor.usage.mem_usage import MemUsage, MemUsageSnapshot
+from titus_isolate.monitor.usage.net_usage import NetUsageSnapshot, NetUsage, RECV, TRANS
 from titus_isolate.monitor.utils import normalize_monotonic_data, normalize_gauge_data
 from titus_isolate.monitor.workload_monitor_manager import DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
@@ -38,11 +39,16 @@ class TestWorkloadPerfMon(unittest.TestCase):
         # Mock reporting metrics
         cpu_usage = CpuUsage(pu_id=0, user=100, system=50)
         mem_usage = MemUsage(user=1000000)
+        net_recv_usage = NetUsage(RECV, 111)
+        net_trans_usage = NetUsage(TRANS, 222)
         cpu_snapshot = CpuUsageSnapshot(timestamp=dt.now(), rows=[cpu_usage])
         mem_snapshot = MemUsageSnapshot(timestamp=dt.now(), usage=mem_usage)
+        net_recv_snapshot = NetUsageSnapshot(timestamp=dt.now(), usage=net_recv_usage)
+        net_trans_snapshot = NetUsageSnapshot(timestamp=dt.now(), usage=net_trans_usage)
 
         metrics_provider.get_cpu_usage = MagicMock(return_value=cpu_snapshot)
         metrics_provider.get_mem_usage = MagicMock(return_value=mem_snapshot)
+        metrics_provider.get_net_usage = MagicMock(return_value=(net_recv_snapshot, net_trans_snapshot))
         perf_mon.sample()
 
         # Check CPU
@@ -64,6 +70,23 @@ class TestWorkloadPerfMon(unittest.TestCase):
         self.assertEqual(1, len(buffer))
         self.assertEqual(mem_usage.user, buffer[0])
 
+        # Check NETWORK
+        timestamps, buffers = perf_mon._get_net_recv_buffers()
+        self.assertEqual(1, len(buffers))
+        self.assertEqual(1, len(timestamps))
+
+        buffer = buffers[0]
+        self.assertEqual(1, len(buffer))
+        self.assertEqual(net_recv_usage.bytes, buffer[0])
+
+        timestamps, buffers = perf_mon._get_net_trans_buffers()
+        self.assertEqual(1, len(buffers))
+        self.assertEqual(1, len(timestamps))
+
+        buffer = buffers[0]
+        self.assertEqual(1, len(buffer))
+        self.assertEqual(net_trans_usage.bytes, buffer[0])
+
     def test_cpu_usage_normalization(self):
         to_ts = lambda d: calendar.timegm(d.timetuple())
 
@@ -75,7 +98,8 @@ class TestWorkloadPerfMon(unittest.TestCase):
         data = normalize_monotonic_data(
             timestamps,
             [deque([100, 200, 200], 100),
-             deque([50, 300, 360], 100)])
+             deque([50, 300, 360], 100)],
+            1000000000)
 
         # Last data bucket
         expected_processing_time = (360 - 300 + 200 - 200)
@@ -94,7 +118,8 @@ class TestWorkloadPerfMon(unittest.TestCase):
         try:
             normalize_monotonic_data(
                 deque([]),
-                [deque([]), deque([])])
+                [deque([]), deque([])],
+                1000000000)
         except:
             self.fail("Should not raise on empty data.")
 

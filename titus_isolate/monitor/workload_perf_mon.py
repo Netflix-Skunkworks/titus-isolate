@@ -1,4 +1,3 @@
-import calendar
 import collections
 from math import ceil
 from threading import Lock
@@ -7,7 +6,7 @@ from typing import List
 import numpy as np
 
 from titus_isolate import log
-from titus_isolate.monitor.usage_snapshot import UsageSnapshot
+from titus_isolate.monitor.usage.usage_snapshot import UsageSnapshot
 from titus_isolate.monitor.utils import normalize_monotonic_data, normalize_gauge_data
 
 
@@ -37,12 +36,22 @@ class WorkloadPerformanceMonitor:
     def get_cpu_usage(self, seconds, agg_granularity_secs=60) -> List[float]:
         num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
         timestamps, buffers = self._get_cpu_buffers()
-        return normalize_monotonic_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+        return normalize_monotonic_data(timestamps, buffers, 1000000000, num_buckets, agg_granularity_secs)
 
     def get_mem_usage(self, seconds, agg_granularity_secs=60) -> List[float]:
         num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
         timestamps, buffers = self._get_mem_buffers()
         return normalize_gauge_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+
+    def get_net_recv_usage(self, seconds, agg_granularity_secs=60) -> [float]:
+        num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
+        timestamps, buffers = self._get_net_recv_buffers()
+        return normalize_monotonic_data(timestamps, buffers, 1, num_buckets, agg_granularity_secs)
+
+    def get_net_trans_usage(self, seconds, agg_granularity_secs=60) -> [float]:
+        num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
+        timestamps, buffers = self._get_net_trans_buffers()
+        return normalize_monotonic_data(timestamps, buffers, 1, num_buckets, agg_granularity_secs)
 
     def _get_cpu_buffers(self):
         with self.__snapshot_lock:
@@ -53,6 +62,16 @@ class WorkloadPerformanceMonitor:
         with self.__snapshot_lock:
             mem_snapshots = [s.mem for s in self.__snapshots]
             return self.__get_buffers(mem_snapshots, self.__max_buffer_size)
+
+    def _get_net_recv_buffers(self):
+        with self.__snapshot_lock:
+            net_recv_snapshots = [s.net_recv for s in self.__snapshots]
+            return self.__get_buffers(net_recv_snapshots, self.__max_buffer_size)
+
+    def _get_net_trans_buffers(self):
+        with self.__snapshot_lock:
+            net_trans_snapshots = [s.net_trans for s in self.__snapshots]
+            return self.__get_buffers(net_trans_snapshots, self.__max_buffer_size)
 
     def __get_num_buckets(self, seconds, agg_granularity_secs=60) -> int:
         num_buckets = ceil(seconds / agg_granularity_secs)

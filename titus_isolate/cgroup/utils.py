@@ -3,7 +3,7 @@ import time
 from typing import List
 
 from titus_isolate import log
-from titus_isolate.monitor.cpu_usage import CpuUsage
+from titus_isolate.monitor.usage.cpu_usage import CpuUsage
 
 ROOT_CGROUP_PATH = "/sys/fs/cgroup"
 TITUS_INITS_PATH = "/var/lib/titus-inits"
