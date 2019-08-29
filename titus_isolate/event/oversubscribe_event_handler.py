@@ -208,11 +208,13 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             return False
 
         threshold = self.__config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
-        pred = self.__cpu_usage_predictor_manager.get_predictor().predict(workload,
+        pred_cpus = self.__cpu_usage_predictor_manager.get_predictor().predict(workload,
                                                                           cpu_usage.get(workload.get_id(), None),
                                                                           pred_env)
-        log.info("Testing oversubscribability of workload: {}, threshold: {}, prediction: {}".format(workload.get_id(), threshold, pred))
-        if pred > threshold:
+        pred_usage = pred_cpus / workload.get_thread_count()
+
+        log.info("Testing oversubscribability of workload: {}, threshold: {}, prediction: {}".format(workload.get_id(), threshold, pred_usage))
+        if pred_usage > threshold:
             return False
 
         log.debug(' --> low utilization (%f), oversubscribing', pred)

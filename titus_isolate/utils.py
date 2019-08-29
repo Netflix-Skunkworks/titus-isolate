@@ -8,7 +8,7 @@ from titus_isolate import log
 from titus_isolate.allocate.constants import TITUS_ISOLATE_CELL_HEADER, UNKNOWN_CELL
 from titus_isolate.config.agent_property_provider import AgentPropertyProvider
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.config.constants import REMOTE_ALLOCATOR_URL
+from titus_isolate.config.constants import REMOTE_ALLOCATOR_URL, MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME
 from titus_isolate.constants import KUBERNETES_BACKEND_KEY
 
 SCHEDULING_SLEEP_INTERVAL = 1.0
@@ -133,8 +133,10 @@ def get_cell_name():
         log.warning("No remote solver URL specified.")
         return UNKNOWN_CELL
 
+    timeout = config_manager.get_int(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
+
     try:
-        response = requests.get(url, timeout=1)
+        response = requests.get(url, timeout=timeout)
         cell_name = response.headers.get(TITUS_ISOLATE_CELL_HEADER, None)
         if cell_name is None:
             log.warning("Titus isolation cell header is not set.")
