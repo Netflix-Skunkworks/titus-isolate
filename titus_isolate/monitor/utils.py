@@ -61,15 +61,15 @@ def is_core_below_threshold(
     return is_free
 
 
-def normalize_monotonic_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60) -> List[float]:
-    return __normalize_data(__get_monotonic_element, timestamps, buffers, num_buckets, bucket_size_secs)
+def normalize_monotonic_data(timestamps, buffers, time_scale, num_buckets=60, bucket_size_secs=60) -> List[float]:
+    return __normalize_data(__get_monotonic_element, timestamps, buffers, time_scale, num_buckets, bucket_size_secs)
 
 
 def normalize_gauge_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60) -> List[float]:
-    return __normalize_data(__get_gauge_element, timestamps, buffers, num_buckets, bucket_size_secs)
+    return __normalize_data(__get_gauge_element, timestamps, buffers, None, num_buckets, bucket_size_secs)
 
 
-def __normalize_data(get_element, timestamps, buffers, num_buckets, bucket_size_secs) -> List[float]:
+def __normalize_data(get_element, timestamps, buffers, time_scale, num_buckets, bucket_size_secs) -> List[float]:
     data = np.full((num_buckets,), np.nan, dtype=np.float32)
     if len(timestamps) == 0:
         return list(data.tolist())
@@ -83,13 +83,13 @@ def __normalize_data(get_element, timestamps, buffers, num_buckets, bucket_size_
         if min_index < 0 or max_index < 0:
             continue
 
-        data[i] = get_element(timestamps, buffers, min_index, max_index)
+        data[i] = get_element(timestamps, buffers, time_scale, min_index, max_index)
 
     return list(data.tolist())
 
 
-def __get_monotonic_element(timestamps, buffers, min_index, max_index) -> float:
-    time_diff_ns = (timestamps[max_index] - timestamps[min_index]) * 1000000000
+def __get_monotonic_element(timestamps, buffers, time_scale, min_index, max_index) -> float:
+    time_diff_ns = (timestamps[max_index] - timestamps[min_index]) * time_scale
     s = 0.0
     for b in buffers:
         s += b[max_index] - b[min_index]
@@ -99,7 +99,7 @@ def __get_monotonic_element(timestamps, buffers, min_index, max_index) -> float:
     return s
 
 
-def __get_gauge_element(timestamps, buffers, min_index, max_index) -> float:
+def __get_gauge_element(timestamps, buffers, time_scale, min_index, max_index) -> float:
     s = 0.0
     value_count = max_index - min_index + 1
     for b in buffers:

@@ -36,7 +36,7 @@ class WorkloadPerformanceMonitor:
     def get_cpu_usage(self, seconds, agg_granularity_secs=60) -> List[float]:
         num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
         timestamps, buffers = self._get_cpu_buffers()
-        return normalize_monotonic_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+        return normalize_monotonic_data(timestamps, buffers, 1000000000, num_buckets, agg_granularity_secs)
 
     def get_mem_usage(self, seconds, agg_granularity_secs=60) -> List[float]:
         num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
@@ -46,12 +46,12 @@ class WorkloadPerformanceMonitor:
     def get_net_recv_usage(self, seconds, agg_granularity_secs=60) -> [float]:
         num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
         timestamps, buffers = self._get_net_recv_buffers()
-        return normalize_monotonic_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+        return normalize_monotonic_data(timestamps, buffers, 1, num_buckets, agg_granularity_secs)
 
     def get_net_trans_usage(self, seconds, agg_granularity_secs=60) -> [float]:
         num_buckets = self.__get_num_buckets(seconds, agg_granularity_secs)
         timestamps, buffers = self._get_net_trans_buffers()
-        return normalize_monotonic_data(timestamps, buffers, num_buckets, agg_granularity_secs)
+        return normalize_monotonic_data(timestamps, buffers, 1, num_buckets, agg_granularity_secs)
 
     def _get_cpu_buffers(self):
         with self.__snapshot_lock:

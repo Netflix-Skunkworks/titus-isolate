@@ -98,7 +98,8 @@ class TestWorkloadPerfMon(unittest.TestCase):
         data = normalize_monotonic_data(
             timestamps,
             [deque([100, 200, 200], 100),
-             deque([50, 300, 360], 100)])
+             deque([50, 300, 360], 100)],
+            1000000000)
 
         # Last data bucket
         expected_processing_time = (360 - 300 + 200 - 200)
@@ -117,7 +118,8 @@ class TestWorkloadPerfMon(unittest.TestCase):
         try:
             normalize_monotonic_data(
                 deque([]),
-                [deque([]), deque([])])
+                [deque([]), deque([])],
+                1000000000)
         except:
             self.fail("Should not raise on empty data.")
 
