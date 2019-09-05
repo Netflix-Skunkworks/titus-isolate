@@ -39,8 +39,8 @@ def parse_workloads(workloads: dict) -> dict:
 
 
 def parse_workload(workload_dict: dict) -> Workload:
-
     workload = Workload(
+        launch_time=workload_dict.get('launch_time', None),
         identifier=workload_dict['id'],
         thread_count=workload_dict['thread_count'],
         mem=workload_dict['mem'],

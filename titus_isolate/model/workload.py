@@ -1,5 +1,6 @@
 import datetime
 import json
+from typing import Union
 
 from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE
 
@@ -7,6 +8,7 @@ from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE
 class Workload:
     def __init__(
             self,
+            launch_time,
             identifier,
             thread_count,
             mem,
@@ -22,6 +24,7 @@ class Workload:
             opportunistic_thread_count):
 
         self.__creation_time = datetime.datetime.utcnow()
+        self.__launch_time = launch_time
 
         self.__identifier = identifier
         self.__thread_count = int(thread_count)
@@ -95,9 +98,17 @@ class Workload:
     def is_service(self) -> bool:
         return self.__job_type == SERVICE
 
+    def get_launch_time(self) -> Union[int, None]:
+        """
+        Launch time of workload in UTC unix seconds
+        """
+        return self.__launch_time
+
+    # TODO: Remove
     def get_creation_time(self):
         return self.__creation_time
 
+    # TODO: Remove
     def set_creation_time(self, creation_time):
         self.__creation_time = creation_time
 
@@ -109,7 +120,8 @@ class Workload:
 
     def to_dict(self):
         return {
-            "creation_time": str(self.__creation_time),
+            "creation_time": str(self.get_creation_time()),
+            "launch_time": self.get_launch_time(),
             "id": str(self.get_id()),
             "thread_count": self.get_thread_count(),
             "mem": self.get_mem(),
