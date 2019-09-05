@@ -30,6 +30,7 @@ def get_workload_from_disk(identifier):
     # in theory these files could go away if the task dies. that is ok. a failure here will only result in the workload
     # not being created which is fine because it is dead anyways.
     json_data = __get_workload_json(identifier)
+    passthrough_data = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY]
     env_data = __get_workload_env(identifier) # note that this is string -> string
 
     cpus = int(env_data[WORKLOAD_ENV_CPU_KEY])
@@ -37,7 +38,7 @@ def get_workload_from_disk(identifier):
     disk = int(env_data[WORKLOAD_ENV_DISK_KEY])
     network = int(env_data[WORKLOAD_ENV_NETWORK_KEY])
     app_name = json_data[WORKLOAD_JSON_APP_NAME_KEY]
-    owner_email = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY][WORKLOAD_JSON_OWNER_KEY]
+    owner_email = passthrough_data[WORKLOAD_JSON_OWNER_KEY]
     image = '{}@{}'.format(json_data[WORKLOAD_JSON_IMAGE_KEY], json_data[WORKLOAD_JSON_IMAGE_DIGEST_KEY])
     command = None
     if WORKLOAD_JSON_COMMAND_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
@@ -45,13 +46,13 @@ def get_workload_from_disk(identifier):
     entrypoint = None
     if WORKLOAD_JSON_ENTRYPOINT_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
         entrypoint = json_data[WORKLOAD_JSON_PROCESS_KEY][WORKLOAD_JSON_ENTRYPOINT_KEY]
-    job_type = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY][WORKLOAD_JSON_JOB_TYPE_KEY]
+    job_type = passthrough_data[WORKLOAD_JSON_JOB_TYPE_KEY]
     workload_type = STATIC
     if json_data[WORKLOAD_JSON_CPU_BURST_KEY]:
         workload_type = BURST
     opportunistic_cpus = -1
-    if WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
-        opportunistic_cpus = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY][WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY]
+    if WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in passthrough_data:
+        opportunistic_cpus = passthrough_data[WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY]
 
     return Workload(
         identifier=identifier,
