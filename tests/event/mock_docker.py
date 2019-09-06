@@ -87,6 +87,7 @@ def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()
         WORKLOAD_TYPE_LABEL_KEY: workload_type
     }
     MOCK_TITUS_ENVIRONMENT.add_workload(Workload(
+        launch_time=int(time.time()),
         identifier=name,
         thread_count=cpus,
         mem=DEFAULT_TEST_MEM,

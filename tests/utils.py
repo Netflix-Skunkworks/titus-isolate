@@ -67,6 +67,7 @@ def get_threads_with_workload(cpu, workload_id):
 
 def get_test_workload(identifier, thread_count, workload_type):
     return Workload(
+        launch_time=int(time.time()),
         identifier=identifier,
         thread_count=thread_count,
         mem=DEFAULT_TEST_MEM,

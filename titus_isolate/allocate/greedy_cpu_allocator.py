@@ -85,6 +85,7 @@ class GreedyCpuAllocator(CpuAllocator):
         return claimed_threads + self.__assign_threads(
             cpu,
             Workload(
+                launch_time=workload.get_launch_time(),
                 identifier=workload.get_id(),
                 thread_count=thread_count,
                 mem=workload.get_mem(),
