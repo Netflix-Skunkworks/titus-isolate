@@ -56,7 +56,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         self.__fail_count = 0
         self.__skip_count = 0
         self.__success_count = 0
-        self.__reclaimed_cpu_count = 0
+        self.__reclaimed_cpu_count = None
 
         self.__config_manager = get_config_manager()
         self.__workload_monitor_manager = get_workload_monitor_manager()
@@ -77,7 +77,8 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         self.__reg.gauge(OVERSUBSCRIBE_FAIL_COUNT, tags).set(self.get_fail_count())
         self.__reg.gauge(OVERSUBSCRIBE_SKIP_COUNT, tags).set(self.get_skip_count())
         self.__reg.gauge(OVERSUBSCRIBE_SUCCESS_COUNT, tags).set(self.get_success_count())
-        self.__reg.gauge(OVERSUBSCRIBE_RECLAIMED_CPU_COUNT, tags).set(self.get_reclaimed_cpu_count())
+        if self.get_reclaimed_cpu_count() is not None:
+            self.__reg.gauge(OVERSUBSCRIBE_RECLAIMED_CPU_COUNT, tags).set(self.get_reclaimed_cpu_count())
 
     def get_fail_count(self):
         return self.__fail_count
