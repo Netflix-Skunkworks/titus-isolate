@@ -2,7 +2,7 @@ import datetime
 import json
 from typing import Union
 
-from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE
+from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE, STATIC
 
 
 class Workload:
@@ -88,6 +88,12 @@ class Workload:
 
     def get_type(self):
         return self.__type
+
+    def is_burst(self):
+        return self.get_type() == BURST
+
+    def is_static(self):
+        return self.get_type() == STATIC
 
     def get_job_type(self):
         return self.__job_type

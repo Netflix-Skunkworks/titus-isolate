@@ -4,7 +4,6 @@ import uuid
 
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.utils import config_logs, get_test_workload, DEFAULT_TEST_REQUEST_METADATA, get_no_usage_threads_request
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
@@ -12,7 +11,7 @@ from titus_isolate.model.processor.config import get_cpu
 config_logs(logging.DEBUG)
 
 
-class TestCpu(unittest.TestCase):
+class TestNoopResetAllocator(unittest.TestCase):
 
     def test_assign_threads(self):
         cpu = get_cpu()

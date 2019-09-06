@@ -83,6 +83,24 @@ def get_test_workload(identifier, thread_count, workload_type):
         opportunistic_thread_count=DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT)
 
 
+def get_test_opportunistic_workload(identifier, thread_count, opportunistic_thread_count, workload_type):
+    return Workload(
+        launch_time=int(time.time()),
+        identifier=identifier,
+        thread_count=thread_count,
+        mem=DEFAULT_TEST_MEM,
+        disk=DEFAULT_TEST_DISK,
+        network=DEFAULT_TEST_NETWORK,
+        app_name=DEFAULT_TEST_APP_NAME,
+        owner_email=DEFAULT_TEST_OWNER_EMAIL,
+        image=DEFAULT_TEST_IMAGE,
+        command=DEFAULT_TEST_CMD,
+        entrypoint=DEFAULT_TEST_ENTRYPOINT,
+        job_type=DEFAULT_TEST_JOB_TYPE,
+        workload_type=workload_type,
+        opportunistic_thread_count=opportunistic_thread_count)
+
+
 def get_no_usage_threads_request(cpu: Cpu, workloads: List[Workload]):
     return AllocateThreadsRequest(
         cpu=cpu,
