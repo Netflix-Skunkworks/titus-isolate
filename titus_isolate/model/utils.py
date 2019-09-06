@@ -13,10 +13,12 @@ from titus_isolate.model.constants import WORKLOAD_ENV_LINE_REGEXP, WORKLOAD_ENV
     WORKLOAD_JSON_OWNER_KEY, WORKLOAD_JSON_IMAGE_KEY, WORKLOAD_JSON_IMAGE_DIGEST_KEY, WORKLOAD_JSON_PROCESS_KEY, \
     WORKLOAD_JSON_COMMAND_KEY, WORKLOAD_JSON_ENTRYPOINT_KEY, WORKLOAD_JSON_JOB_TYPE_KEY, WORKLOAD_JSON_CPU_BURST_KEY, \
     WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, WORKLOAD_ENV_WAIT_TIMEOUT_SECONDS, WORKLOAD_JSON_WAIT_TIMEOUT_SECONDS, \
-    WORKLOAD_JSON_READ_ATTEMPTS, WORKLOAD_JSON_READ_SLEEP_SECONDS
+    WORKLOAD_JSON_READ_ATTEMPTS, WORKLOAD_JSON_READ_SLEEP_SECONDS, WORKLOAD_JSON_RUNSTATE_KEY, \
+    WORKLOAD_JSON_LAUNCHTIME_KEY
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
+
 
 def _wait_for_workload_files(identifier):
     start_time = time.time()
@@ -27,12 +29,13 @@ def _wait_for_workload_files(identifier):
 def get_workload_from_disk(identifier):
     _wait_for_workload_files(identifier)
 
-    # in theory these files could go away if the task dies. that is ok. a failure here will only result in the workload
-    # not being created which is fine because it is dead anyways.
+    # In theory these files could go away if the task dies. that is ok.  A failure here will only result in the workload
+    # not being created which is fine because it is dead anyway.
     json_data = __get_workload_json(identifier)
     passthrough_data = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY]
-    env_data = __get_workload_env(identifier) # note that this is string -> string
+    env_data = __get_workload_env(identifier)  # note that this is string -> string
 
+    launch_time = int(json_data[WORKLOAD_JSON_RUNSTATE_KEY][WORKLOAD_JSON_LAUNCHTIME_KEY])
     cpus = int(env_data[WORKLOAD_ENV_CPU_KEY])
     mem = int(env_data[WORKLOAD_ENV_MEM_KEY])
     disk = int(env_data[WORKLOAD_ENV_DISK_KEY])
@@ -40,21 +43,27 @@ def get_workload_from_disk(identifier):
     app_name = json_data[WORKLOAD_JSON_APP_NAME_KEY]
     owner_email = passthrough_data[WORKLOAD_JSON_OWNER_KEY]
     image = '{}@{}'.format(json_data[WORKLOAD_JSON_IMAGE_KEY], json_data[WORKLOAD_JSON_IMAGE_DIGEST_KEY])
+
     command = None
     if WORKLOAD_JSON_COMMAND_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
         command = json_data[WORKLOAD_JSON_PROCESS_KEY][WORKLOAD_JSON_COMMAND_KEY]
+
     entrypoint = None
     if WORKLOAD_JSON_ENTRYPOINT_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
         entrypoint = json_data[WORKLOAD_JSON_PROCESS_KEY][WORKLOAD_JSON_ENTRYPOINT_KEY]
+
     job_type = passthrough_data[WORKLOAD_JSON_JOB_TYPE_KEY]
+
     workload_type = STATIC
     if json_data[WORKLOAD_JSON_CPU_BURST_KEY]:
         workload_type = BURST
+
     opportunistic_cpus = -1
     if WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in passthrough_data:
         opportunistic_cpus = passthrough_data[WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY]
 
     return Workload(
+        launch_time=launch_time,
         identifier=identifier,
         thread_count=cpus,
         mem=mem,

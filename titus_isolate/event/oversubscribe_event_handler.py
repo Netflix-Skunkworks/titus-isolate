@@ -117,12 +117,10 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             consumed_cpu_count += workload.get_opportunistic_thread_count()
         self.__consumed_cpu_count = consumed_cpu_count
 
-
         if self.__is_window_active():
             self.__skip_count += 1
             self.handled_event(event, 'skipping oversubscribe - a window is currently active')
             return
-
 
         workload_count = 0
         underutilized_cpu_count = 0
