@@ -7,6 +7,7 @@ MEM_USAGE = "mem_usage"
 METADATA = "metadata"
 NET_RECV_USAGE = "net_recv_usage"
 NET_TRANS_USAGE = "net_trans_usage"
+WORKLOAD_ALLOCATIONS = "workload_allocations"
 WORKLOADS = "workloads"
 WORKLOAD_ID = "workload_id"
 
