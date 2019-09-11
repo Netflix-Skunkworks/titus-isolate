@@ -6,7 +6,7 @@ from titus_optimize.compute_v3 import IPSolverParameters, IP_SOLUTION_TIME_BOUND
 
 from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
-from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.allocate_response import AllocateResponse, get_workload_allocations
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
@@ -72,6 +72,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         return AllocateResponse(
             self.__compute_allocation(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True),
+            get_workload_allocations(cpu, workloads.values()),
             self.get_name(),
             self.__call_meta)
 
@@ -88,6 +89,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         return AllocateResponse(
             self.__compute_allocation(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, False),
+            get_workload_allocations(cpu, workloads.values()),
             self.get_name(),
             self.__call_meta)
 
@@ -101,13 +103,18 @@ class ForecastIPCpuAllocator(CpuAllocator):
         if len(workloads) == 0:
             log.warning("Ignoring rebalance of empty CPU.")
             self.__call_meta['rebalance_empty'] = 1
-            return AllocateResponse(cpu, self.get_name(), self.__call_meta)
+            return AllocateResponse(
+                cpu,
+                get_workload_allocations(cpu, workloads.values()),
+                self.get_name(),
+                self.__call_meta)
 
         log.info("Rebalancing with predictions...")
         curr_ids_per_workload = cpu.get_workload_ids_to_thread_ids()
 
         return AllocateResponse(
             self.__compute_allocation(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None),
+            get_workload_allocations(cpu, workloads.values()),
             self.get_name(),
             self.__call_meta)
 

@@ -9,7 +9,6 @@ from titus_isolate.allocate.allocate_response import AllocateResponse
 from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
-from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
 from titus_isolate.config.constants import EC2_INSTANCE_ID
@@ -195,10 +194,8 @@ class WorkloadManager(MetricsReporter):
         return self.__cgroup_manager.get_isolated_workload_ids()
 
     def is_isolated(self, workload_id):
-        noop_allocators = [NoopCpuAllocator, NoopResetCpuAllocator]
-        for allocator in noop_allocators:
-            if isinstance(self.__cpu_allocator, allocator):
-                return True
+        if isinstance(self.__cpu_allocator, NoopCpuAllocator):
+            return True
 
         return workload_id in self.get_isolated_workload_ids()
 
