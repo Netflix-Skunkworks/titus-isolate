@@ -1,9 +1,12 @@
 import copy
 from threading import Thread, Lock, RLock
+from types import FunctionType
+from typing import List
 
 from titus_isolate import log
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
-from titus_isolate.cgroup.utils import set_cpuset, wait_for_files, get_cpuset, parse_cpuset
+from titus_isolate.cgroup.utils import set_cpuset, wait_for_files, get_cpuset, parse_cpuset, set_quota, get_quota, \
+    set_shares, get_shares
 from titus_isolate.config.constants import WAIT_CGROUP_FILE_KEY, WAIT_JSON_FILE_KEY, DEFAULT_WAIT_CGROUP_FILE_SEC, \
     DEFAULT_WAIT_JSON_FILE_SEC
 from titus_isolate.metrics.constants import WRITE_CPUSET_FAILED_KEY, WRITE_CPUSET_SUCCEEDED_KEY, \
@@ -19,24 +22,32 @@ class FileCgroupManager(CgroupManager):
         self.__write_count = 0
         self.__fail_count = 0
         self.__isolated_workload_ids = set([])
-        self.__thread_lock = RLock()
+        self.__lock = RLock()
         self.__threads = []
 
-    def set_cpuset(self, container_name, thread_ids):
-        with self.__thread_lock:
-            t = Thread(target=self.__set_cpuset, args=[container_name, thread_ids])
-            t.start()
-            self.__threads.append(t)
-            self.__remove_dead_threads()
+    def set_cpuset(self, container_name: str, thread_ids: List[int]):
+        self.__start(func=self.__set_cpuset, args=[container_name, thread_ids])
 
-    def get_cpuset(self, container_name):
+    def get_cpuset(self, container_name: str) -> List[int]:
         cpuset_str = self.__get_cpuset(container_name)
         if cpuset_str is None:
             return []
         else:
             return parse_cpuset(cpuset_str)
 
-    def release_cpuset(self, container_name):
+    def set_quota(self, container_name: str, quota: int):
+        self.__start(func=self.__set_quota, args=[container_name, quota])
+
+    def get_quota(self, container_name: str) -> int:
+        return self.__get_quota(container_name)
+
+    def set_shares(self, container_name: str, shares: int):
+        self.__start(func=self.__set_shares, args=[container_name, shares])
+
+    def get_shares(self, container_name: str) -> int:
+        return self.__get_shares(container_name)
+
+    def release_container(self, container_name):
         with self.__lock:
             self.__isolated_workload_ids.discard(container_name)
 
@@ -52,39 +63,60 @@ class FileCgroupManager(CgroupManager):
             return copy.deepcopy(self.__isolated_workload_ids)
 
     def has_pending_work(self):
-        with self.__thread_lock:
+        with self.__lock:
             return self.__get_thread_count() > 0
 
     def __get_thread_count(self) -> int:
-        with self.__thread_lock:
+        with self.__lock:
             self.__remove_dead_threads()
             return len(self.__threads)
 
     def __remove_dead_threads(self):
-        with self.__thread_lock:
+        with self.__lock:
             self.__threads = [t for t in self.__threads if t.is_alive()]
 
-    def __set_cpuset(self, container_name, thread_ids):
-        thread_ids_str = self.__get_thread_ids_str(thread_ids)
+    def __start(self, func, args):
+        with self.__lock:
+            t = Thread(target=func, args=args)
+            t.start()
+            self.__threads.append(t)
+            self.__remove_dead_threads()
 
+    def __set_cpuset(self, container_name: str, thread_ids: List[Thread]):
+        thread_ids_str = self.__get_thread_ids_str(thread_ids)
+        self.__set(set_cpuset, container_name, thread_ids_str)
+
+    def __get_cpuset(self, container_name: str) -> str:
+        return self.__get(get_cpuset, container_name)
+
+    def __set_quota(self, container_name: str, quota: int):
+        self.__set(set_quota, container_name, str(quota))
+
+    def __get_quota(self, container_name: str) -> int:
+        return int(self.__get(get_quota, container_name))
+
+    def __set_shares(self, container_name: str, shares: int):
+        self.__set(set_shares, container_name, str(shares))
+
+    def __get_shares(self, container_name: str) -> int:
+        return int(self.__get(get_shares, container_name))
+
+    def __set(self, func: FunctionType, container_name: str, value: str, ):
         try:
             self.__wait_for_files(container_name)
-            log.info("updating workload: '{}' to cpuset.cpus: '{}'".format(container_name, thread_ids_str))
-            set_cpuset(container_name, thread_ids_str)
+            func(container_name, value)
             self.__write_succeeded(container_name)
         except:
             self.__write_failed()
-            log.exception("Failed to apply cpuset to threads: '{}' for workload: '{}'".format(
-                thread_ids_str, container_name))
+            log.exception("Failed to apply func: {} with value: {} to container: {}".format(
+                func.__name__, value, container_name))
 
-    def __get_cpuset(self, container_name: str) -> str:
+    def __get(self, func: FunctionType, container_name: str) -> str:
         try:
             self.__wait_for_files(container_name)
-            log.info("getting cpuset.cpus for workload: '{}'".format(container_name))
-            return get_cpuset(container_name)
+            return func(container_name)
         except:
-            log.exception("Failed to read cpuset for workload: '{}'".format(container_name))
-            return None
+            log.exception("Failed to apply func: {} to container: {}".format( func.__name__, container_name))
 
     def __write_succeeded(self, container_name):
         with self.__lock:

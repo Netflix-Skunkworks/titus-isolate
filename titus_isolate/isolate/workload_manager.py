@@ -15,7 +15,6 @@ from titus_isolate.config.constants import EC2_INSTANCE_ID
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.metrics_utils import get_static_allocated_size, get_burst_allocated_size, \
     get_burst_request_size, get_oversubscribed_thread_count, get_allocated_size, get_unallocated_size
-from titus_isolate.isolate.update import get_updates
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
@@ -64,7 +63,7 @@ class WorkloadManager(MetricsReporter):
             self.__remove_workload(workload.get_id())
 
     def remove_workload(self, workload_id):
-        self.__cgroup_manager.release_cpuset(workload_id)
+        self.__cgroup_manager.release_container(workload_id)
         self.__update_workload(self.__remove_workload, workload_id, workload_id)
         self.__removed_count += 1
 
@@ -127,21 +126,30 @@ class WorkloadManager(MetricsReporter):
         old_cpu = self.get_cpu_copy()
         new_cpu = response.get_cpu()
 
-        log.info("response: {}".format(response.to_dict()))
-
         self.__last_response = response
-        self.__apply_cpuset_updates(old_cpu, new_cpu)
+        self.__apply_isolation(response)
         self.__cpu = new_cpu
         self.__workloads = new_workloads
 
         if old_cpu != new_cpu:
             self.__report_cpu_state(old_cpu, new_cpu)
 
-    def __apply_cpuset_updates(self, old_cpu, new_cpu):
-        updates = get_updates(old_cpu, new_cpu)
-        for workload_id, thread_ids in updates.items():
-            log.info("updating workload: '{}' to '{}'".format(workload_id, thread_ids))
+    def __apply_isolation(self, response: AllocateResponse):
+        for w_alloc in response.get_workload_allocations():
+
+            workload_id = w_alloc.get_workload_id()
+            thread_ids = w_alloc.get_thread_ids()
+            quota = w_alloc.get_cpu_quota()
+            shares = w_alloc.get_cpu_shares()
+
+            log.info("updating workload: '{}' cpuset to '{}'".format(workload_id, thread_ids))
             self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
+
+            log.info("updating workload: '{}' quota  to '{}'".format(workload_id, quota))
+            self.__cgroup_manager.set_quota(workload_id, quota)
+
+            log.info("updating workload: '{}' shares to '{}'".format(workload_id, shares))
+            self.__cgroup_manager.set_shares(workload_id, shares)
 
     def __get_request_metadata(self, request_type) -> dict:
         config_manager = get_config_manager()

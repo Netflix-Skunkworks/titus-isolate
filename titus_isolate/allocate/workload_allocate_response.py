@@ -2,7 +2,7 @@ from typing import Union, List
 
 from titus_isolate.config.constants import OPPORTUNISTIC_SHARES_SCALE_KEY, DEFAULT_OPPORTUNISTIC_SHARES_SCALE, \
     DEFAULT_SHARES_SCALE, DEFAULT_QUOTA_SCALE
-from titus_isolate.isolate.update import _get_threads
+from titus_isolate.isolate.update import get_threads
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload, deserialize_workload
 from titus_isolate.utils import get_config_manager
@@ -59,7 +59,7 @@ def get_cpu_shares(workload: Workload) -> int:
 
 
 def get_workload_response(workload: Workload, cpu: Cpu) -> WorkloadAllocateResponse:
-    thread_ids = _get_threads(cpu, workload.get_id())
+    thread_ids = get_threads(cpu, workload.get_id())
     cpu_shares = get_cpu_shares(workload)
     cpu_quota = get_cpu_quota(workload)
     return WorkloadAllocateResponse(workload.get_id(), thread_ids, cpu_shares, cpu_quota)
