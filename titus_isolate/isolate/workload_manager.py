@@ -127,6 +127,8 @@ class WorkloadManager(MetricsReporter):
         old_cpu = self.get_cpu_copy()
         new_cpu = response.get_cpu()
 
+        log.info("response: {}".format(response.to_dict()))
+
         self.__last_response = response
         self.__apply_cpuset_updates(old_cpu, new_cpu)
         self.__cpu = new_cpu

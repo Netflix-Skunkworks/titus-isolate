@@ -171,6 +171,7 @@ def rebalance():
         log.info("Processing rebalance threads request: {}".format(body))
         rebalance_request = get_rebalance_request(body)
         response = get_rebalance_cpu_allocator().rebalance(rebalance_request)
+        log.info("Rebalance threads response: {}".format(response.to_dict()))
 
         global rebalance_success_count
         rebalance_success_count += 1
