@@ -24,6 +24,9 @@ class Workload:
             opportunistic_thread_count):
 
         self.__creation_time = datetime.datetime.utcnow()
+
+        if launch_time is None:
+            launch_time = -1
         self.__launch_time = int(launch_time)
 
         self.__identifier = identifier
