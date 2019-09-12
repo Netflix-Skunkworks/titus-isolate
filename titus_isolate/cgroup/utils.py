@@ -43,7 +43,7 @@ def wait_for_file_to_exist(path, timeout, check_func=__noop, start_time=None):
     if start_time is None:
         start_time = time.time()
 
-    log.info("Waiting '{}' seconds from {} for file to exist: '{}'".format(timeout, start_time, path))
+    log.debug("Waiting '{}' seconds from {} for file to exist: '{}'".format(timeout, start_time, path))
     while not os.path.exists(path):
         time.sleep(0.1)
 
@@ -97,6 +97,12 @@ def get_quota_path(container_name):
     return "{}/cpu,cpuacct{}/cpu.cfs_quota_us".format(ROOT_CGROUP_PATH, cgroup_path)
 
 
+def get_shares_path(container_name):
+    file_path = __get_info_path(container_name)
+    cgroup_path = get_cgroup_path_from_file(file_path, CPU_CPUACCT)
+    return "{}/cpu,cpuacct{}/cpu.shares".format(ROOT_CGROUP_PATH, cgroup_path)
+
+
 def get_usage_path(container_name, resource_key):
     file_path = __get_info_path(container_name)
     cgroup_path = get_cgroup_path_from_file(file_path, resource_key)
@@ -106,34 +112,44 @@ def get_usage_path(container_name, resource_key):
 
 def set_cpuset(container_name, threads_str):
     path = get_cpuset_path(container_name)
-
-    log.info("Writing '{}' to path '{}'".format(threads_str, path))
-    with open(path, 'w') as f:
-        f.write(threads_str)
+    __write(path, threads_str)
 
 
 def get_cpuset(container_name):
     path = get_cpuset_path(container_name)
-
-    log.debug("Reading path '{}'".format(path))
-    with open(path, 'r') as f:
-        return f.read()
+    return __read(path)
 
 
 def set_quota(container_name, value):
     path = get_quota_path(container_name)
+    __write(path, value)
 
+
+def get_quota(container_name):
+    path = get_quota_path(container_name)
+    return __read(path)
+
+
+def set_shares(container_name, value):
+    path = get_shares_path(container_name)
+    __write(path, value)
+
+
+def get_shares(container_name):
+    path = get_shares_path(container_name)
+    return __read(path)
+
+
+def __write(path, value):
     log.info("Writing '{}' to path '{}'".format(value, path))
     with open(path, 'w') as f:
         f.write(str(value))
 
 
-def get_quota(container_name):
-    path = get_quota_path(container_name)
-
+def __read(path) -> str:
     log.info("Reading from path '{}'".format(path))
     with open(path, 'r') as f:
-        return int(f.readline().strip())
+        return f.readline().strip()
 
 
 def parse_cpuacct_usage_all(text) -> List[CpuUsage]:
@@ -160,7 +176,7 @@ def parse_cpuacct_usage_all(text) -> List[CpuUsage]:
     return usage_rows
 
 
-def parse_cpuset(cpuset_str: str) -> list:
+def parse_cpuset(cpuset_str: str) -> List[int]:
     ranges = list(x.split("-") for x in cpuset_str.split(","))
     if len(ranges) == 0:
         return []

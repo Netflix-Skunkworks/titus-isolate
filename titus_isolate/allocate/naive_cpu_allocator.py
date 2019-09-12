@@ -2,7 +2,7 @@ import random
 from typing import List
 
 from titus_isolate.allocate.allocate_request import AllocateRequest
-from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.allocate_response import AllocateResponse, get_workload_allocations
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.model.processor.cpu import Cpu
@@ -23,7 +23,7 @@ class NaiveCpuAllocator(CpuAllocator):
         for t in threads:
             t.claim(workload.get_id())
 
-        return AllocateResponse(cpu, self.get_name())
+        return AllocateResponse(cpu, get_workload_allocations(cpu, request.get_workloads().values()), self.get_name())
 
     @staticmethod
     def _get_assign_threads(cpu: Cpu, thread_count: int) -> List[Thread]:
@@ -47,10 +47,13 @@ class NaiveCpuAllocator(CpuAllocator):
         for t in cpu.get_threads():
             t.free(workload.get_id())
 
-        return AllocateResponse(cpu, self.get_name())
+        return AllocateResponse(cpu, get_workload_allocations(cpu, request.get_workloads().values()), self.get_name())
 
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
-        return AllocateResponse(request.get_cpu(), self.get_name())
+        return AllocateResponse(
+            request.get_cpu(),
+            get_workload_allocations(request.get_cpu(), request.get_workloads().values()),
+            self.get_name())
 
     def get_name(self) -> str:
         return self.__class__.__name__

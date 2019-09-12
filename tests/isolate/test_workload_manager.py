@@ -14,7 +14,6 @@ from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAlloca
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
-from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import DEFAULT_TOTAL_THRESHOLD
 from titus_isolate.event.constants import STATIC, BURST
@@ -260,10 +259,8 @@ class TestWorkloadManager(unittest.TestCase):
             wm.add_workload(workload)
             self.assertTrue(wm.is_isolated(workload.get_id()))
 
-        noop_allocators = [NoopCpuAllocator(), NoopResetCpuAllocator()]
-        for allocator in noop_allocators:
-            wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
-            self.assertTrue(wm.is_isolated(uuid.uuid4()))
+        wm = WorkloadManager(get_cpu(), MockCgroupManager(), NoopCpuAllocator())
+        self.assertTrue(wm.is_isolated(uuid.uuid4()))
 
     def test_thread_allocation_computation(self):
         for allocator in [IntegerProgramCpuAllocator(), GreedyCpuAllocator()]:

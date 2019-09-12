@@ -2,7 +2,7 @@ import datetime
 import json
 from typing import Union
 
-from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE
+from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE, STATIC
 
 
 class Workload:
@@ -24,13 +24,16 @@ class Workload:
             opportunistic_thread_count):
 
         self.__creation_time = datetime.datetime.utcnow()
-        self.__launch_time = launch_time
+
+        if launch_time is None:
+            launch_time = -1
+        self.__launch_time = int(launch_time)
 
         self.__identifier = identifier
         self.__thread_count = int(thread_count)
-        self.__mem = mem
-        self.__disk = disk
-        self.__network = network
+        self.__mem = float(mem)
+        self.__disk = float(disk)
+        self.__network = float(network)
         self.__app_name = app_name
         self.__owner_email = owner_email
         self.__image = image
@@ -89,6 +92,12 @@ class Workload:
     def get_type(self):
         return self.__type
 
+    def is_burst(self):
+        return self.get_type() == BURST
+
+    def is_static(self):
+        return self.get_type() == STATIC
+
     def get_job_type(self):
         return self.__job_type
 
@@ -139,3 +148,21 @@ class Workload:
 
     def __str__(self):
         return json.dumps(self.to_dict())
+
+
+def deserialize_workload(body: dict) -> Workload:
+    return Workload(
+        body["launch_time"],
+        body["id"],
+        body["thread_count"],
+        body["mem"],
+        body["disk"],
+        body["network"],
+        body["app_name"],
+        body["owner_email"],
+        body["image"],
+        body["command"],
+        body["entrypoint"],
+        body["job_type"],
+        body["workload_type"],
+        body["opportunistic_thread_count"])

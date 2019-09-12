@@ -1,5 +1,5 @@
 from titus_isolate.allocate.allocate_request import AllocateRequest
-from titus_isolate.allocate.allocate_response import AllocateResponse
+from titus_isolate.allocate.allocate_response import AllocateResponse, get_workload_allocations
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.constants import DEFAULT_MAX_SOLVER_RUNTIME, MAX_SOLVER_RUNTIME
@@ -38,7 +38,11 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         metadata = {}
         update_burst_workloads(cpu, workloads, self.__free_thread_provider, metadata)
 
-        return AllocateResponse(cpu, self.get_name(), metadata)
+        return AllocateResponse(
+            cpu,
+            get_workload_allocations(cpu, workloads.values()),
+            self.get_name(),
+            metadata)
 
     def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         cpu = request.get_cpu()
@@ -53,7 +57,11 @@ class IntegerProgramCpuAllocator(CpuAllocator):
         metadata = {}
         update_burst_workloads(cpu, workloads, self.__free_thread_provider, metadata)
 
-        return AllocateResponse(cpu, self.get_name(), metadata)
+        return AllocateResponse(
+            cpu,
+            get_workload_allocations(cpu, workloads.values()),
+            self.get_name(),
+            metadata)
 
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         cpu = request.get_cpu()
@@ -61,7 +69,11 @@ class IntegerProgramCpuAllocator(CpuAllocator):
 
         metadata = {}
         cpu = rebalance(cpu, workloads, self.__free_thread_provider, metadata)
-        return AllocateResponse(cpu, self.get_name(), metadata)
+        return AllocateResponse(
+            cpu,
+            get_workload_allocations(cpu, workloads.values()),
+            self.get_name(),
+            metadata)
 
     def get_name(self) -> str:
         return self.__class__.__name__

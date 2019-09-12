@@ -20,7 +20,7 @@ class MockCgroupManager(CgroupManager):
     def get_cpuset(self, container_name):
         return self.container_update_map.get(container_name, [])
 
-    def release_cpuset(self, container_name):
+    def release_container(self, container_name):
         if container_name in self.container_update_map:
             self.container_update_map.pop(container_name)
 
