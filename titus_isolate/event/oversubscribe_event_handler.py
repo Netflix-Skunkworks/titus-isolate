@@ -37,6 +37,7 @@ VIRTUAL_KUBELET_CONFIG_PATH = '/run/virtual-kubelet.config'
 KUBECONFIG_ENVVAR = 'KUBECONFIG'
 DEFAULT_KUBECONFIG_PATH = '/run/kubernetes/config'
 
+
 def get_kubeconfig_path():
     with open(VIRTUAL_KUBELET_CONFIG_PATH) as file:
         line = file.readline()
@@ -55,8 +56,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         self.__fail_count = 0
         self.__skip_count = 0
         self.__success_count = 0
-        self.__reclaimed_cpu_count = 0
-        self.__consumed_cpu_count = 0
+        self.__reclaimed_cpu_count = None
 
         self.__config_manager = get_config_manager()
         self.__workload_monitor_manager = get_workload_monitor_manager()
@@ -77,8 +77,8 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         self.__reg.gauge(OVERSUBSCRIBE_FAIL_COUNT, tags).set(self.get_fail_count())
         self.__reg.gauge(OVERSUBSCRIBE_SKIP_COUNT, tags).set(self.get_skip_count())
         self.__reg.gauge(OVERSUBSCRIBE_SUCCESS_COUNT, tags).set(self.get_success_count())
-        self.__reg.gauge(OVERSUBSCRIBE_RECLAIMED_CPU_COUNT, tags).set(self.get_reclaimed_cpu_count())
-        self.__reg.gauge(OVERSUBSCRIBE_CONSUMED_CPU_COUNT, tags).set(self.get_consumed_cpu_count())
+        if self.get_reclaimed_cpu_count() is not None:
+            self.__reg.gauge(OVERSUBSCRIBE_RECLAIMED_CPU_COUNT, tags).set(self.get_reclaimed_cpu_count())
 
     def get_fail_count(self):
         return self.__fail_count
@@ -91,9 +91,6 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
     def get_reclaimed_cpu_count(self):
         return self.__reclaimed_cpu_count
-
-    def get_consumed_cpu_count(self):
-        return self.__consumed_cpu_count
 
     def handle(self, event):
         if not self.__relevant(event):
@@ -108,14 +105,6 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         cpu_usage = self.__workload_monitor_manager.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
         pred_env = PredEnvironment(self.__config_manager.get_region(), self.__config_manager.get_environment(),
                                    datetime.utcnow().hour)
-
-        # Update consumed cpu metric and keep track of consumed cpu count to subtract from underutilized below
-        consumed_cpu_count = 0
-        for workload in self.workload_manager.get_workloads():
-            if not workload.is_opportunistic():
-                continue
-            consumed_cpu_count += workload.get_opportunistic_thread_count()
-        self.__consumed_cpu_count = consumed_cpu_count
 
         if self.__is_window_active():
             self.__skip_count += 1

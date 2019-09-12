@@ -1,6 +1,7 @@
 import copy
 from threading import Lock
 import time
+from typing import List
 
 from titus_isolate import log
 
@@ -19,11 +20,13 @@ from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUC
     WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
-    UNALLOCATED_SIZE_KEY, REBALANCED_KEY, BURSTABLE_THREADS_KEY, OVERSUBSCRIBABLE_THREADS_KEY
+    UNALLOCATED_SIZE_KEY, REBALANCED_KEY, BURSTABLE_THREADS_KEY, OVERSUBSCRIBABLE_THREADS_KEY, \
+    OVERSUBSCRIBE_CONSUMED_CPU_COUNT
 from titus_isolate.metrics.event_log import report_cpu_event
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import visualize_cpu_comparison
+from titus_isolate.model.workload import Workload
 from titus_isolate.numa.utils import update_numa_balancing
 from titus_isolate.utils import get_workload_monitor_manager, get_config_manager
 
@@ -194,7 +197,7 @@ class WorkloadManager(MetricsReporter):
             net_trans_usage=self.__get_net_trans_usage(),
             metadata=self.__get_request_metadata("rebalance"))
 
-    def get_workloads(self):
+    def get_workloads(self) -> List[Workload]:
         return list(self.__workloads.values())
 
     def get_workload_map_copy(self):
@@ -269,6 +272,14 @@ class WorkloadManager(MetricsReporter):
 
         return oversubscribable_thread_count
 
+    def __get_consumed_opportunistic_cpu_count(self) -> int:
+        consumed_cpu_count = 0
+        opportunistic_workloads = [w for w in self.get_workloads() if w.is_opportunistic()]
+        for workload in opportunistic_workloads:
+            consumed_cpu_count += workload.get_opportunistic_thread_count()
+
+        return consumed_cpu_count
+
     def report_metrics(self, tags):
         cpu = self.get_cpu_copy()
         workload_map = self.get_workload_map_copy()
@@ -299,6 +310,7 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(OVERSUBSCRIBED_THREADS_KEY, tags).set(get_oversubscribed_thread_count(cpu, workload_map))
         self.__reg.gauge(BURSTABLE_THREADS_KEY, tags).set(self.__get_free_thread_count(self.__last_response))
         self.__reg.gauge(OVERSUBSCRIBABLE_THREADS_KEY, tags).set(self.__get_oversubscribable_thread_count(self.__last_response))
+        self.__reg.gauge(OVERSUBSCRIBE_CONSUMED_CPU_COUNT, tags).set(self.__get_consumed_opportunistic_cpu_count())
 
         # Have the sub-components report metrics
         self.__cpu_allocator.report_metrics(tags)
