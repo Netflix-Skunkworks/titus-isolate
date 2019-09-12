@@ -58,10 +58,14 @@ def get_cpu_shares(workload: Workload) -> int:
     return workload.get_thread_count() * DEFAULT_SHARES_SCALE
 
 
-def get_workload_response(workload: Workload, cpu: Cpu) -> WorkloadAllocateResponse:
+def get_workload_response(workload: Workload, cpu: Cpu) -> Union[WorkloadAllocateResponse, None]:
     thread_ids = get_threads(cpu, workload.get_id())
     cpu_shares = get_cpu_shares(workload)
     cpu_quota = get_cpu_quota(workload)
+
+    if len(thread_ids) < 1:
+        return None
+
     return WorkloadAllocateResponse(workload.get_id(), thread_ids, cpu_shares, cpu_quota)
 
 

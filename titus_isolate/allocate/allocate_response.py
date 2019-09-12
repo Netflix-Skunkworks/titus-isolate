@@ -52,7 +52,8 @@ class AllocateResponse:
 
 
 def get_workload_allocations(cpu: Cpu, workloads: List[Workload]) -> List[WorkloadAllocateResponse]:
-    return [get_workload_response(w, cpu) for w in workloads]
+    allocations = [get_workload_response(w, cpu) for w in workloads]
+    return list([a for a in allocations if a is not None])
 
 
 def deserialize_response(headers, body) -> AllocateResponse:

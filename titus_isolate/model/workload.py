@@ -47,7 +47,7 @@ class Workload:
             self.__entrypoint = entrypoint
         self.__job_type = job_type
         self.__type = workload_type.lower()
-        self.__opportunistic_thread_count = opportunistic_thread_count
+        self.__opportunistic_thread_count = int(opportunistic_thread_count)
 
         if self.__thread_count < 0:
             raise ValueError("A workload must request at least 0 threads.")
