@@ -7,16 +7,15 @@ from kubernetes.client.rest import ApiException
 from kubernetes.client.models import V1DeleteOptions, V1ObjectMeta, V1OwnerReference
 
 from titus_isolate import log
-from titus_isolate.config.constants import EC2_LOCAL_IPV4, TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
-                                           OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
-                                           DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS, \
-                                           OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY, \
-                                           DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES
+from titus_isolate.config.constants import TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
+    OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
+    DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS, \
+    OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY, \
+    DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES, EC2_INSTANCE_ID
 from titus_isolate.event.constants import ACTION, OVERSUBSCRIBE
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.metrics.constants import OVERSUBSCRIBE_FAIL_COUNT, OVERSUBSCRIBE_SKIP_COUNT, \
-                                            OVERSUBSCRIBE_SUCCESS_COUNT, OVERSUBSCRIBE_RECLAIMED_CPU_COUNT, \
-                                            OVERSUBSCRIBE_CONSUMED_CPU_COUNT
+                                            OVERSUBSCRIBE_SUCCESS_COUNT, OVERSUBSCRIBE_RECLAIMED_CPU_COUNT
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.opportunistic_resource import OpportunisticResource, OPPORTUNISTIC_RESOURCE_GROUP, \
                                                        OPPORTUNISTIC_RESOURCE_VERSION, \
@@ -62,7 +61,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         self.__workload_monitor_manager = get_workload_monitor_manager()
         self.__cpu_usage_predictor_manager = get_cpu_usage_predictor_manager()
 
-        self.__node_name = self.__config_manager.get_str(EC2_LOCAL_IPV4)
+        self.__node_name = self.__config_manager.get_str(EC2_INSTANCE_ID)
         kubeconfig = get_kubeconfig_path()
         self.__core_api = kubernetes.client.CoreV1Api(
             kubernetes.config.new_client_from_config(config_file=kubeconfig))
