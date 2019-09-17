@@ -1,5 +1,6 @@
 import logging
 import unittest
+from time import sleep
 
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, get_test_workload
@@ -25,9 +26,9 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(NoopCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_get_sorted_workloads(self):
-        w_a = get_test_workload('a', 1, STATIC)
-        w_b = get_test_workload('b', 1, STATIC)
-        w_c = get_test_workload('c', 1, STATIC)
+        w_a = get_test_workload('a', 1, STATIC, 0)
+        w_b = get_test_workload('b', 1, STATIC, 1)
+        w_c = get_test_workload('c', 1, STATIC, 2)
         expected_ids = ['a', 'b', 'c']
 
         scrambled_workloads = [w_b, w_a, w_c]

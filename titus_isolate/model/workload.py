@@ -1,8 +1,24 @@
-import datetime
 import json
-from typing import Union
+from typing import List
 
 from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE, STATIC
+from titus_isolate.model.duration_prediction import DurationPrediction, deserialize_duration_prediction
+
+LAUNCH_TIME_KEY = "launch_time"
+ID_KEY = "id"
+THREAD_COUNT_KEY = "thread_count"
+MEM_KEY = "mem"
+DISK_KEY = "disk"
+NETWORK_KEY = "network"
+APP_NAME_KEY = "app_name"
+OWNER_EMAIL_KEY = "owner_email"
+IMAGE_KEY = "image"
+COMMAND_KEY = "command"
+ENTRY_POINT_KEY = "entrypoint"
+JOB_TYPE_KEY = "job_type"
+WORKLOAD_TYPE_KEY = "type"
+OPPORTUNISTIC_THREAD_COUNT_KEY = "opportunistic_thread_count"
+DURATION_PREDICTIONS_KEY = "duration_predictions"
 
 
 class Workload:
@@ -21,12 +37,11 @@ class Workload:
             entrypoint,
             job_type,
             workload_type,
-            opportunistic_thread_count):
-
-        self.__creation_time = datetime.datetime.utcnow()
+            opportunistic_thread_count,
+            duration_predictions):
 
         if launch_time is None:
-            launch_time = -1
+            launch_time = 0
         self.__launch_time = int(launch_time)
 
         self.__identifier = identifier
@@ -37,17 +52,22 @@ class Workload:
         self.__app_name = app_name
         self.__owner_email = owner_email
         self.__image = image
+
         if command is None:
-            self.__command = ""
-        else:
-            self.__command = command
+            command = ""
+        self.__command = command
+
         if entrypoint is None:
-            self.__entrypoint = ""
-        else:
-            self.__entrypoint = entrypoint
+            entrypoint = ""
+        self.__entrypoint = entrypoint
+
         self.__job_type = job_type
         self.__type = workload_type.lower()
         self.__opportunistic_thread_count = int(opportunistic_thread_count)
+
+        if duration_predictions is None:
+            duration_predictions = []
+        self.__duration_predictions = duration_predictions
 
         if self.__thread_count < 0:
             raise ValueError("A workload must request at least 0 threads.")
@@ -59,46 +79,46 @@ class Workload:
         if self.__identifier == BURST:
             raise ValueError("The identifier '{}' is reserved".format(BURST))
 
-    def get_id(self):
+    def get_id(self) -> str:
         return self.__identifier
 
-    def get_thread_count(self):
+    def get_thread_count(self) -> int:
         return self.__thread_count
 
-    def get_mem(self):
+    def get_mem(self) -> float:
         return self.__mem
 
-    def get_disk(self):
+    def get_disk(self) -> float:
         return self.__disk
 
-    def get_network(self):
+    def get_network(self) -> float:
         return self.__network
 
-    def get_app_name(self):
+    def get_app_name(self) -> str:
         return self.__app_name
 
-    def get_owner_email(self):
+    def get_owner_email(self) -> str:
         return self.__owner_email
 
-    def get_image(self):
+    def get_image(self) -> str:
         return self.__image
 
-    def get_command(self):
+    def get_command(self) -> str:
         return self.__command
 
-    def get_entrypoint(self):
+    def get_entrypoint(self) -> str:
         return self.__entrypoint
 
-    def get_type(self):
+    def get_type(self) -> str:
         return self.__type
 
-    def is_burst(self):
+    def is_burst(self) -> bool:
         return self.get_type() == BURST
 
-    def is_static(self):
+    def is_static(self) -> bool:
         return self.get_type() == STATIC
 
-    def get_job_type(self):
+    def get_job_type(self) -> str:
         return self.__job_type
 
     def is_batch(self) -> bool:
@@ -107,19 +127,11 @@ class Workload:
     def is_service(self) -> bool:
         return self.__job_type == SERVICE
 
-    def get_launch_time(self) -> Union[int, None]:
+    def get_launch_time(self) -> int:
         """
         Launch time of workload in UTC unix seconds
         """
         return self.__launch_time
-
-    # TODO: Remove
-    def get_creation_time(self):
-        return self.__creation_time
-
-    # TODO: Remove
-    def set_creation_time(self, creation_time):
-        self.__creation_time = creation_time
 
     def is_opportunistic(self):
         return self.__opportunistic_thread_count > 0
@@ -127,23 +139,26 @@ class Workload:
     def get_opportunistic_thread_count(self):
         return self.__opportunistic_thread_count
 
+    def get_duration_predictions(self) -> List[DurationPrediction]:
+        return self.__duration_predictions
+
     def to_dict(self):
         return {
-            "creation_time": str(self.get_creation_time()),
-            "launch_time": self.get_launch_time(),
-            "id": str(self.get_id()),
-            "thread_count": self.get_thread_count(),
-            "mem": self.get_mem(),
-            "disk": self.get_disk(),
-            "network": self.get_network(),
-            "app_name": self.get_app_name(),
-            "owner_email": self.get_owner_email(),
-            "image": self.get_image(),
-            "command": self.get_command(),
-            "entrypoint": self.get_entrypoint(),
-            "job_type": self.get_job_type(),
-            "type": self.get_type(),
-            "opportunistic_thread_count": self.get_opportunistic_thread_count()
+            LAUNCH_TIME_KEY: self.get_launch_time(),
+            ID_KEY: str(self.get_id()),
+            THREAD_COUNT_KEY: self.get_thread_count(),
+            MEM_KEY: self.get_mem(),
+            DISK_KEY: self.get_disk(),
+            NETWORK_KEY: self.get_network(),
+            APP_NAME_KEY: self.get_app_name(),
+            OWNER_EMAIL_KEY: self.get_owner_email(),
+            IMAGE_KEY: self.get_image(),
+            COMMAND_KEY: self.get_command(),
+            ENTRY_POINT_KEY: self.get_entrypoint(),
+            JOB_TYPE_KEY: self.get_job_type(),
+            WORKLOAD_TYPE_KEY: self.get_type(),
+            OPPORTUNISTIC_THREAD_COUNT_KEY: self.get_opportunistic_thread_count(),
+            DURATION_PREDICTIONS_KEY: [p.to_dict() for p in self.get_duration_predictions()]
         }
 
     def __str__(self):
@@ -151,18 +166,20 @@ class Workload:
 
 
 def deserialize_workload(body: dict) -> Workload:
+    raw_duration_predictions = body.get(DURATION_PREDICTIONS_KEY, [])
     return Workload(
-        body["launch_time"],
-        body["id"],
-        body["thread_count"],
-        body["mem"],
-        body["disk"],
-        body["network"],
-        body["app_name"],
-        body["owner_email"],
-        body["image"],
-        body["command"],
-        body["entrypoint"],
-        body["job_type"],
-        body["workload_type"],
-        body["opportunistic_thread_count"])
+        body.get(LAUNCH_TIME_KEY, 0),
+        body[ID_KEY],
+        body[THREAD_COUNT_KEY],
+        body[MEM_KEY],
+        body[DISK_KEY],
+        body[NETWORK_KEY],
+        body[APP_NAME_KEY],
+        body[OWNER_EMAIL_KEY],
+        body[IMAGE_KEY],
+        body[COMMAND_KEY],
+        body[ENTRY_POINT_KEY],
+        body[JOB_TYPE_KEY],
+        body[WORKLOAD_TYPE_KEY],
+        body.get(OPPORTUNISTIC_THREAD_COUNT_KEY, 0),
+        [deserialize_duration_prediction(p) for p in raw_duration_predictions])

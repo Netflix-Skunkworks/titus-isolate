@@ -6,11 +6,14 @@ from titus_isolate import log
 from titus_isolate.config.constants import MODEL_BUCKET_FORMAT_STR, MODEL_BUCKET_PREFIX, \
     DEFAULT_MODEL_BUCKET_PREFIX, MODEL_BUCKET_LEAF, DEFAULT_MODEL_BUCKET_LEAF, MODEL_PREFIX_FORMAT_STR
 from titus_isolate.config.utils import get_required_property
+from titus_isolate.model.duration_prediction import deserialize_duration_prediction
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.package import Package
 from titus_isolate.model.processor.thread import Thread
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.workload import Workload, LAUNCH_TIME_KEY, ID_KEY, THREAD_COUNT_KEY, MEM_KEY, DISK_KEY, \
+    NETWORK_KEY, APP_NAME_KEY, OWNER_EMAIL_KEY, IMAGE_KEY, COMMAND_KEY, ENTRY_POINT_KEY, JOB_TYPE_KEY, \
+    WORKLOAD_TYPE_KEY, OPPORTUNISTIC_THREAD_COUNT_KEY, DURATION_PREDICTIONS_KEY, deserialize_workload
 from titus_isolate.utils import get_config_manager
 
 
@@ -34,31 +37,8 @@ def parse_cpu(cpu_dict: dict) -> Cpu:
 def parse_workloads(workloads: dict) -> dict:
     __workloads = {}
     for w_id, workload in workloads.items():
-        __workloads[w_id] = parse_workload(workload)
+        __workloads[w_id] = deserialize_workload(workload)
     return __workloads
-
-
-def parse_workload(workload_dict: dict) -> Workload:
-    workload = Workload(
-        launch_time=workload_dict.get('launch_time', None),
-        identifier=workload_dict['id'],
-        thread_count=workload_dict['thread_count'],
-        mem=workload_dict['mem'],
-        disk=workload_dict['disk'],
-        network=workload_dict['network'],
-        app_name=workload_dict['app_name'],
-        owner_email=workload_dict['owner_email'],
-        image=workload_dict['image'],
-        command=workload_dict['command'],
-        entrypoint=workload_dict['entrypoint'],
-        job_type=workload_dict['job_type'],
-        workload_type=workload_dict['type'],
-        opportunistic_thread_count=workload_dict.get('opportunistic_thread_count', -1))
-
-    # Input example:  "2019-03-23 18:03:50.668041"
-    creation_time = datetime.datetime.strptime(workload_dict["creation_time"], '%Y-%m-%d %H:%M:%S.%f')
-    workload.set_creation_time(creation_time)
-    return workload
 
 
 def parse_usage(usage: dict) -> dict:
