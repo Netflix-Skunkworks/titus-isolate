@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import List
+from typing import List, Union
 
 from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE, STATIC
 from titus_isolate.model.duration_prediction import DurationPrediction, deserialize_duration_prediction
@@ -176,6 +176,14 @@ class Workload:
 
     def __str__(self):
         return json.dumps(self.to_dict())
+
+
+def get_duration(workload: Workload, percentile: float) -> Union[float, None]:
+    for p in workload.get_duration_predictions():
+        if p.get_percentile() == percentile:
+            return p.get_duration()
+
+    return None
 
 
 def deserialize_workload(body: dict) -> Workload:
