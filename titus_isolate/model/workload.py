@@ -1,9 +1,11 @@
+import datetime
 import json
 from typing import List
 
 from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE, STATIC
 from titus_isolate.model.duration_prediction import DurationPrediction, deserialize_duration_prediction
 
+CREATION_TIME_KEY = "creation_time"
 LAUNCH_TIME_KEY = "launch_time"
 ID_KEY = "id"
 THREAD_COUNT_KEY = "thread_count"
@@ -39,6 +41,8 @@ class Workload:
             workload_type,
             opportunistic_thread_count,
             duration_predictions):
+
+        self.__creation_time = datetime.datetime.utcnow()
 
         if launch_time is None:
             launch_time = 0
@@ -127,6 +131,14 @@ class Workload:
     def is_service(self) -> bool:
         return self.__job_type == SERVICE
 
+    # TODO: Remove
+    def get_creation_time(self):
+        return self.__creation_time
+
+    # TODO: Remove
+    def set_creation_time(self, creation_time):
+        self.__creation_time = creation_time
+
     def get_launch_time(self) -> int:
         """
         Launch time of workload in UTC unix seconds
@@ -144,6 +156,7 @@ class Workload:
 
     def to_dict(self):
         return {
+            CREATION_TIME_KEY: str(self.get_creation_time()),
             LAUNCH_TIME_KEY: self.get_launch_time(),
             ID_KEY: str(self.get_id()),
             THREAD_COUNT_KEY: self.get_thread_count(),
@@ -167,7 +180,7 @@ class Workload:
 
 def deserialize_workload(body: dict) -> Workload:
     raw_duration_predictions = body.get(DURATION_PREDICTIONS_KEY, [])
-    return Workload(
+    workload = Workload(
         body.get(LAUNCH_TIME_KEY, 0),
         body[ID_KEY],
         body[THREAD_COUNT_KEY],
@@ -183,3 +196,12 @@ def deserialize_workload(body: dict) -> Workload:
         body[WORKLOAD_TYPE_KEY],
         body.get(OPPORTUNISTIC_THREAD_COUNT_KEY, 0),
         [deserialize_duration_prediction(p) for p in raw_duration_predictions])
+
+    # Input example:  "2019-03-23 18:03:50.668041"
+    if CREATION_TIME_KEY in body:
+        creation_time = datetime.datetime.strptime(body[CREATION_TIME_KEY], '%Y-%m-%d %H:%M:%S.%f')
+    else:
+        creation_time = datetime.datetime.utcnow()
+
+    workload.set_creation_time(creation_time)
+    return workload

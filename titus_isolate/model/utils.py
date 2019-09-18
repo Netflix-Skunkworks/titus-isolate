@@ -137,8 +137,8 @@ def get_workloads_by_type(workloads, workload_type):
     return [w for w in workloads if w.get_type() == workload_type]
 
 
-def get_sorted_workloads(workloads):
-    return sorted(workloads, key=lambda w: w.get_launch_time())
+def get_sorted_workloads(workloads: List[Workload]):
+    return sorted(workloads, key=lambda w: w.get_creation_time())
 
 
 def release_all_threads(cpu, workloads):
