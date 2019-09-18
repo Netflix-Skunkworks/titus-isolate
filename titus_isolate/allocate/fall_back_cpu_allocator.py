@@ -67,7 +67,7 @@ class FallbackCpuAllocator(CpuAllocator):
         except:
             log.exception(
                 "Failed to rebalance workloads: '{}' with primary allocator: '{}', falling back to: '{}'".format(
-                    request.get_workloads(),
+                    [w.get_id() for w in request.get_workloads().values()],
                     self.__primary_allocator.__class__.__name__,
                     self.__secondary_allocator.__class__.__name__))
             self.__secondary_rebalance_call_count += 1
