@@ -72,7 +72,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         return AllocateResponse(
             self.__compute_allocation(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, True),
-            get_workload_allocations(cpu, workloads.values()),
+            get_workload_allocations(cpu, list(workloads.values())),
             self.get_name(),
             self.__call_meta)
 
@@ -89,7 +89,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         return AllocateResponse(
             self.__compute_allocation(cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, False),
-            get_workload_allocations(cpu, workloads.values()),
+            get_workload_allocations(cpu, list(workloads.values())),
             self.get_name(),
             self.__call_meta)
 
@@ -105,7 +105,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             self.__call_meta['rebalance_empty'] = 1
             return AllocateResponse(
                 cpu,
-                get_workload_allocations(cpu, workloads.values()),
+                get_workload_allocations(cpu, list(workloads.values())),
                 self.get_name(),
                 self.__call_meta)
 
@@ -114,7 +114,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         return AllocateResponse(
             self.__compute_allocation(cpu, None, workloads, curr_ids_per_workload, cpu_usage, None),
-            get_workload_allocations(cpu, workloads.values()),
+            get_workload_allocations(cpu, list(workloads.values())),
             self.get_name(),
             self.__call_meta)
 
