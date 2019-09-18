@@ -100,7 +100,8 @@ def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()
         entrypoint=DEFAULT_TEST_ENTRYPOINT,
         job_type=DEFAULT_TEST_JOB_TYPE,
         workload_type=workload_type,
-        opportunistic_thread_count=DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT))
+        opportunistic_thread_count=DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT,
+        duration_predictions=[]))
 
     return get_event(CONTAINER, CREATE, id, attributes)
 

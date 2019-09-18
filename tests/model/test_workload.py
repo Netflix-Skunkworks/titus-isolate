@@ -5,7 +5,7 @@ from tests.utils import get_test_workload
 from titus_isolate.event.constants import STATIC, BURST
 
 
-class Testget_test_workload(unittest.TestCase):
+class TestWorkload(unittest.TestCase):
 
     def test_construction(self):
         identifier = uuid.uuid4()

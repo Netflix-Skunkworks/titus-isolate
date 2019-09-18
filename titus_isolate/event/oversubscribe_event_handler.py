@@ -11,7 +11,8 @@ from titus_isolate.config.constants import TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESH
     OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
     DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS, \
     OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY, \
-    DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES, EC2_INSTANCE_ID
+    DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES, EC2_INSTANCE_ID, \
+    DEFAULT_OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE, OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE_KEY
 from titus_isolate.event.constants import ACTION, OVERSUBSCRIBE
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.metrics.constants import OVERSUBSCRIBE_FAIL_COUNT, OVERSUBSCRIBE_SKIP_COUNT, \
@@ -26,6 +27,7 @@ from titus_isolate.model.opportunistic_resource import OpportunisticResource, OP
 from titus_isolate.model.opportunistic_resource_capacity import OpportunisticResourceCapacity
 from titus_isolate.model.opportunistic_resource_spec import OpportunisticResourceSpec
 from titus_isolate.model.opportunistic_resource_window import OpportunisticResourceWindow
+from titus_isolate.model.workload import get_duration
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import get_config_manager, get_workload_monitor_manager, get_cpu_usage_predictor_manager
 
@@ -187,16 +189,27 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             self.__fail_count += 1
             raise e
 
+    def __get_workload_duration(self, workload, min_duration_sec) -> float:
+        if workload.is_service():
+            return min_duration_sec
+
+        duration_percentile = self.__config_manager.get_float(OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE_KEY,
+                                                              DEFAULT_OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE)
+        duration = get_duration(workload, duration_percentile)
+        return duration if duration is not None else -1
+
     def __is_oversubscribable(self, workload, cpu_usage, pred_env) -> bool:
-        # as of right now we're only oversubscribing services
-        # TODO expand to batch by checking predicted duration >>> 10m
-        if workload.is_batch():
+        min_duration_sec = 60 * self.__config_manager.get_int(OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY,
+                                                              DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES)
+        workload_duration_sec = self.__get_workload_duration(workload, min_duration_sec)
+        if workload_duration_sec < min_duration_sec:
+            log.info("Workload: {} is too short. workload_duration_sec: {} < min_duration_sec: {}".format(workload.get_id(), workload_duration_sec, min_duration_sec))
             return False
 
         threshold = self.__config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
         pred_cpus = self.__cpu_usage_predictor_manager.get_predictor().predict(workload,
-                                                                          cpu_usage.get(workload.get_id(), None),
-                                                                          pred_env)
+                                                                               cpu_usage.get(workload.get_id(), None),
+                                                                               pred_env)
         pred_usage = pred_cpus / workload.get_thread_count()
 
         log.info("Testing oversubscribability of workload: {}, threshold: {}, prediction: {}".format(workload.get_id(), threshold, pred_usage))

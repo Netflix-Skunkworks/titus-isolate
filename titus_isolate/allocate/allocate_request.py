@@ -1,9 +1,11 @@
 import copy
+from typing import List, Dict
 
 from titus_isolate.allocate.constants import CPU, CPU_USAGE, WORKLOADS, METADATA, CPU_ARRAY, MEM_USAGE, NET_RECV_USAGE, \
     NET_TRANS_USAGE
 from titus_isolate.allocate.utils import parse_cpu, parse_workloads, parse_usage
 from titus_isolate.model.processor.cpu import Cpu
+from titus_isolate.model.workload import Workload
 
 
 class AllocateRequest:
@@ -47,7 +49,7 @@ class AllocateRequest:
     def get_net_trans_usage(self):
         return self.__net_trans_usage
 
-    def get_workloads(self):
+    def get_workloads(self) -> Dict[str, Workload]:
         return self.__workloads
 
     def get_metadata(self):

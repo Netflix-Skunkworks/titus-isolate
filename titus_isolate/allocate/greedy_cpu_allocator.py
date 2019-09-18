@@ -110,7 +110,8 @@ class GreedyCpuAllocator(CpuAllocator):
                 entrypoint=workload.get_entrypoint(),
                 job_type=workload.get_job_type(),
                 workload_type=workload.get_type(),
-                opportunistic_thread_count=workload.get_opportunistic_thread_count()))
+                opportunistic_thread_count=workload.get_opportunistic_thread_count(),
+                duration_predictions=workload.get_duration_predictions()))
 
     def set_registry(self, registry):
         pass

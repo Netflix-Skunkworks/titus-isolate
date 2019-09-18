@@ -2,7 +2,7 @@ import json
 import re
 import time
 
-from typing import Dict
+from typing import Dict, List
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import FREE_THREAD_IDS
@@ -14,7 +14,8 @@ from titus_isolate.model.constants import WORKLOAD_ENV_LINE_REGEXP, WORKLOAD_ENV
     WORKLOAD_JSON_COMMAND_KEY, WORKLOAD_JSON_ENTRYPOINT_KEY, WORKLOAD_JSON_JOB_TYPE_KEY, WORKLOAD_JSON_CPU_BURST_KEY, \
     WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, WORKLOAD_ENV_WAIT_TIMEOUT_SECONDS, WORKLOAD_JSON_WAIT_TIMEOUT_SECONDS, \
     WORKLOAD_JSON_READ_ATTEMPTS, WORKLOAD_JSON_READ_SLEEP_SECONDS, WORKLOAD_JSON_RUNSTATE_KEY, \
-    WORKLOAD_JSON_LAUNCHTIME_KEY
+    WORKLOAD_JSON_LAUNCHTIME_KEY, WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY
+from titus_isolate.model.duration_prediction import DurationPrediction
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
@@ -24,6 +25,17 @@ def _wait_for_workload_files(identifier):
     start_time = time.time()
     wait_for_file_to_exist(get_env_path(identifier), WORKLOAD_ENV_WAIT_TIMEOUT_SECONDS, start_time=start_time)
     wait_for_file_to_exist(get_json_path(identifier), WORKLOAD_JSON_WAIT_TIMEOUT_SECONDS, start_time=start_time)
+
+
+def get_duration_predictions(input: str) -> List[DurationPrediction]:
+    # "0.05=0.29953;0.1=0.29953;0.15=0.29953;0.2=0.29953;0.25=0.29953;0.3=0.29953;0.35=0.29953;0.4=0.29953;0.45=0.29953;0.5=0.29953;0.55=0.29953;0.6=0.29953;0.65=0.29953;0.7=0.29953;0.75=0.29953;0.8=0.29953;0.85=0.29953;0.9=0.29953;0.95=0.29953"
+    duration_predictions = []
+    pairs = input.split(';')
+    for p in pairs:
+        k, v = p.split('=')
+        duration_predictions.append(DurationPrediction(float(k), float(v)))
+
+    return duration_predictions
 
 
 def get_workload_from_disk(identifier):
@@ -62,6 +74,10 @@ def get_workload_from_disk(identifier):
     if WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in passthrough_data:
         opportunistic_cpus = passthrough_data[WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY]
 
+    duration_predictions = []
+    if WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY in passthrough_data:
+        duration_predictions = get_duration_predictions(passthrough_data[WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY])
+
     return Workload(
         launch_time=launch_time,
         identifier=identifier,
@@ -76,7 +92,8 @@ def get_workload_from_disk(identifier):
         entrypoint=entrypoint,
         job_type=job_type,
         workload_type=workload_type,
-        opportunistic_thread_count=opportunistic_cpus)
+        opportunistic_thread_count=opportunistic_cpus,
+        duration_predictions=duration_predictions)
 
 
 def __get_workload_json(identifier):
@@ -120,7 +137,7 @@ def get_workloads_by_type(workloads, workload_type):
     return [w for w in workloads if w.get_type() == workload_type]
 
 
-def get_sorted_workloads(workloads):
+def get_sorted_workloads(workloads: List[Workload]):
     return sorted(workloads, key=lambda w: w.get_creation_time())
 
 
