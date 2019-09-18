@@ -1,4 +1,4 @@
-PERCENTILE_KEY = "precentile"
+PERCENTILE_KEY = "percentile"
 DURATION_KEY = "duration"
 
 
