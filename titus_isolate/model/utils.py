@@ -102,7 +102,7 @@ def __get_workload_json(identifier):
             with open(get_json_path(identifier)) as json_file:
                 return json.load(json_file)
         except json.decoder.JSONDecodeError as err:
-            log.error("failed to read container %s json %s, retrying in %d seconds: %s", identifier,
+            log.error("failed to read container %s json %s, retrying in %s seconds: %s", identifier,
                       get_json_path(identifier), WORKLOAD_JSON_READ_SLEEP_SECONDS, err)
         else:
             break
