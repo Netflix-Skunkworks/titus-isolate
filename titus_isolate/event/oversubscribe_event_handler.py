@@ -15,6 +15,7 @@ from titus_isolate.config.constants import TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESH
     DEFAULT_OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE, OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE_KEY
 from titus_isolate.event.constants import ACTION, OVERSUBSCRIBE
 from titus_isolate.event.event_handler import EventHandler
+from titus_isolate.event.utils import unix_time_millis
 from titus_isolate.metrics.constants import OVERSUBSCRIBE_FAIL_COUNT, OVERSUBSCRIBE_SKIP_COUNT, \
                                             OVERSUBSCRIBE_SUCCESS_COUNT, OVERSUBSCRIBE_RECLAIMED_CPU_COUNT
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
@@ -114,7 +115,6 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
         workload_count = 0
         underutilized_cpu_count = 0
-        consumed_cpu_count = 0
         # we calculate the window before we send the request to ensure we're not going over our 10 minute mark
         start = datetime.utcnow()
         end = start + timedelta(minutes=self.__config_manager.get_int(OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY,
@@ -138,7 +138,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
                 underutilized_cpu_count += workload.get_thread_count()
             workload_count += 1
 
-        free_cpu_count = underutilized_cpu_count - consumed_cpu_count
+        free_cpu_count = underutilized_cpu_count
         if free_cpu_count > 0:
             self.__add_window(start, end, free_cpu_count)
 
@@ -250,14 +250,16 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             self.__fail_count += 1
             raise e
 
-    def __add_window(self, start, end, free_cpu_count):
+    def __add_window(self, start: datetime, end: datetime, free_cpu_count: int):
         node = self.__get_node()
         log.debug('owner_kind:%s owner_name:%s owner_uid:%s', node.kind, node.metadata.name, node.metadata.uid)
+        start_epoch_ms = int(unix_time_millis(start))
+        end_epoch_ms = int(unix_time_millis(end))
 
         # add opportunistic resource
         try:
             oppo_meta = V1ObjectMeta(namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
-                                     name="{}-{}-{}".format(node.metadata.name, start.timestamp(), end.timestamp()),
+                                     name="{}-{}-{}".format(node.metadata.name, start_epoch_ms, end_epoch_ms),
                                      labels={
                                          OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY: node.metadata.name,
                                          OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY: node.metadata.uid
@@ -269,7 +271,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
                                                           uid=node.metadata.uid)
                                      ])
             oppo_spec = OpportunisticResourceSpec(capacity=OpportunisticResourceCapacity(free_cpu_count),
-                                                  window=OpportunisticResourceWindow(start, end))
+                                                  window=OpportunisticResourceWindow(start_epoch_ms, end_epoch_ms))
             oppo_body = OpportunisticResource(metadata=oppo_meta,
                                               spec=oppo_spec)
             oppo = self.__custom_api.create_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,

@@ -4,8 +4,8 @@ from six import iteritems
 
 class OpportunisticResourceWindow():
     swagger_types = {
-        'start': 'datetime',
-        'end': 'datetime',
+        'start': 'int',
+        'end': 'int',
     }
 
     attribute_map = {
