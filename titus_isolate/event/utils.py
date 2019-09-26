@@ -33,3 +33,11 @@ def get_current_workloads(docker_client):
 
 def unix_time_millis(dt: datetime):
     return (dt - epoch).total_seconds() * 1000.0
+
+
+def is_int(s: str) -> bool:
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False

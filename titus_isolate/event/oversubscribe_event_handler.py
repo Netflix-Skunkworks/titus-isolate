@@ -15,7 +15,7 @@ from titus_isolate.config.constants import TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESH
     DEFAULT_OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE, OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE_KEY
 from titus_isolate.event.constants import ACTION, OVERSUBSCRIBE
 from titus_isolate.event.event_handler import EventHandler
-from titus_isolate.event.utils import unix_time_millis
+from titus_isolate.event.utils import unix_time_millis, is_int
 from titus_isolate.metrics.constants import OVERSUBSCRIBE_FAIL_COUNT, OVERSUBSCRIBE_SKIP_COUNT, \
                                             OVERSUBSCRIBE_SUCCESS_COUNT, OVERSUBSCRIBE_RECLAIMED_CPU_COUNT
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
@@ -155,6 +155,13 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
         return True
 
+    @staticmethod
+    def __get_timestamp(s: str) -> datetime:
+        if is_int(s):
+            return datetime.fromtimestamp(int(s) / 1000)
+        else:
+            return parse(s)
+
     def __cleanup(self):
         try:
             oppo_list = self.__custom_api.list_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
@@ -170,7 +177,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
                 return 0
             for item in oppo_list['items']:
                 check_time = datetime.utcnow() + timedelta(seconds=-1*check_secs)
-                if check_time < parse(item['spec']['window']['end']):
+                if check_time < self.__get_timestamp(item['spec']['window']['end']):
                     continue
                 log.debug('deleting: %s', json.dumps(item))
                 delete_opts = V1DeleteOptions(grace_period_seconds=0, propagation_policy='Foreground')
@@ -242,7 +249,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             for item in oppo_list['items']:
                 log.debug('checking for window: %s', json.dumps(item))
                 now = datetime.utcnow()
-                if now < parse(item['spec']['window']['end']):
+                if now < self.__get_timestamp(item['spec']['window']['end']):
                     return True
             return False
         except ApiException as e:
