@@ -1,6 +1,10 @@
+import datetime
+
 from titus_isolate import log
 from titus_isolate.event.constants import ACTOR, ATTRIBUTES, NAME
 import titus_isolate.model.utils
+
+epoch = datetime.datetime.utcfromtimestamp(0)
 
 
 def get_container_name(event):
@@ -25,3 +29,15 @@ def get_current_workloads(docker_client):
             log.exception("Failed to read environment for container: '%s'", container.name)
 
     return workloads
+
+
+def unix_time_millis(dt: datetime):
+    return (dt - epoch).total_seconds() * 1000.0
+
+
+def is_int(s: str) -> bool:
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
