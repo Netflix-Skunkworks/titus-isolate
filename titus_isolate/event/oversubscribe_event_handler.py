@@ -162,12 +162,18 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         else:
             return parse(s)
 
+    def __get_scoped_opportunistic_resources(self):
+        label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
+                                        self.__node_name)
+        return self.__custom_api.list_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
+                                                               group=OPPORTUNISTIC_RESOURCE_GROUP,
+                                                               plural=OPPORTUNISTIC_RESOURCE_PLURAL,
+                                                               namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
+                                                               label_selector=label_selector)
+
     def __cleanup(self):
         try:
-            oppo_list = self.__custom_api.list_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
-                                                                        group=OPPORTUNISTIC_RESOURCE_GROUP,
-                                                                        plural=OPPORTUNISTIC_RESOURCE_PLURAL,
-                                                                        namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE)
+            oppo_list = self.__get_scoped_opportunistic_resources()
             log.debug('cleanup: oppo list: %s', json.dumps(oppo_list))
             clean_count = 0
             check_secs = self.__config_manager.get_float(OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY,
@@ -238,13 +244,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
     def __is_window_active(self):
         try:
-            label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
-                                            self.__node_name)
-            oppo_list = self.__custom_api.list_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
-                                                                        group=OPPORTUNISTIC_RESOURCE_GROUP,
-                                                                        plural=OPPORTUNISTIC_RESOURCE_PLURAL,
-                                                                        namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
-                                                                        label_selector=label_selector)
+            oppo_list = self.__get_scoped_opportunistic_resources()
             log.debug('is active: oppo list: %s', json.dumps(oppo_list))
             for item in oppo_list['items']:
                 log.debug('checking for window: %s', json.dumps(item))
