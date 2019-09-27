@@ -66,13 +66,13 @@ class TestStatus(unittest.TestCase):
         workload_manager = self.__get_default_workload_manager()
         set_workload_manager(workload_manager)
 
-        _, code, _ = isolate_workload(str(uuid.uuid4()), timeout=0.5)
+        _, code, _ = isolate_workload(str(uuid.uuid4()))
         self.assertEqual(404, code)
 
         workload = get_test_workload(str(uuid.uuid4()), 2, BURST)
         workload_manager.add_workload(workload)
 
-        _, code, _ = isolate_workload(workload.get_id(), timeout=0.5)
+        _, code, _ = isolate_workload(workload.get_id())
         self.assertEqual(200, code)
 
     def test_get_cpu_endpoint(self):

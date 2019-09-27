@@ -1,7 +1,6 @@
 import json
 import logging
 import threading
-import time
 
 import docker
 from flask import Flask
@@ -9,7 +8,7 @@ from flask import Flask
 from titus_isolate import log
 from titus_isolate.api.testing import is_testing
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.config.constants import TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC, RESTART_PROPERTIES
+from titus_isolate.config.constants import RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.event.create_event_handler import CreateEventHandler
 from titus_isolate.event.event_manager import EventManager
@@ -36,17 +35,11 @@ app = Flask(__name__)
 
 
 @app.route('/isolate/<workload_id>')
-def isolate_workload(workload_id, timeout=None):
-    if timeout is None:
-        timeout = get_config_manager().get_float(TITUS_ISOLATE_BLOCK_SEC, DEFAULT_TITUS_ISOLATE_BLOCK_SEC)
-
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        if get_workload_manager().is_isolated(workload_id):
+def isolate_workload(workload_id):
+    if get_workload_manager().is_isolated(workload_id):
             return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
-        time.sleep(0.1)
 
-    log.error("Failed to isolate workload: '{}'".format(workload_id))
+    log.error("workload: '{}' is not yet isolated".format(workload_id))
     return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
 
 
@@ -104,6 +97,7 @@ def init():
         except:
             log.exception("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
 
+    log.info("Isolated currently running workloads.")
     # Start processing events after adding running workloads to avoid processing a die event before we add a workload
     event_manager.start_processing_events()
 
