@@ -38,7 +38,7 @@ class KeystoneEventLogManager(EventLogManager):
             self.__failed_msg_count += 1
             log.exception("Failed to report event for payload: {}".format(payload))
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         self.__reg = registry
 
     def report_metrics(self, tags):

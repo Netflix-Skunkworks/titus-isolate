@@ -4,7 +4,7 @@ from abc import abstractmethod
 class MetricsReporter:
 
     @abstractmethod
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         pass
 
     @abstractmethod

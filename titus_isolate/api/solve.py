@@ -187,7 +187,7 @@ class SolverMetricsReporter(MetricsReporter):
     def __init__(self):
         self.__reg = None
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         self.__reg = registry
 
     def report_metrics(self, tags):

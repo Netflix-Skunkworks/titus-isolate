@@ -90,10 +90,10 @@ class FallbackCpuAllocator(CpuAllocator):
                self.__secondary_free_threads_call_count + \
                self.__secondary_rebalance_call_count
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         self.__reg = registry
-        self.__primary_allocator.set_registry(registry)
-        self.__secondary_allocator.set_registry(registry)
+        self.__primary_allocator.set_registry(registry, tags)
+        self.__secondary_allocator.set_registry(registry, tags)
 
     def report_metrics(self, tags):
         self.__reg.gauge(PRIMARY_ASSIGN_COUNT, tags).set(self.__primary_assign_threads_call_count)

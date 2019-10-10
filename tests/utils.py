@@ -49,6 +49,12 @@ def wait_until(func, timeout=DEFAULT_TIMEOUT_SECONDS, period=0.01):
         "Function did not succeed within timeout: '{}'.".format(timeout))
 
 
+def counter_value_equals(registry, key, expected_value, tags={}):
+    value = registry.counter(key, tags).count()
+    log.debug("counter: '{}'='{}' expected: '{}'".format(key, value, expected_value))
+    return value == expected_value
+
+
 def gauge_value_equals(registry, key, expected_value, tags={}):
     value = registry.gauge(key, tags).get()
     log.debug("gauge: '{}'='{}' expected: '{}'".format(key, value, expected_value))

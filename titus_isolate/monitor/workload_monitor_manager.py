@@ -50,7 +50,7 @@ class WorkloadMonitorManager(MetricsReporter):
                 net_trans_usage[workload_id] = monitor.get_net_trans_usage(seconds, agg_granularity_secs)
         return net_trans_usage
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         self.__registry = registry
 
     def report_metrics(self, tags):

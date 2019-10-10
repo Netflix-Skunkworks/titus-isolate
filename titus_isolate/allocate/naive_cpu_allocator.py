@@ -58,7 +58,7 @@ class NaiveCpuAllocator(CpuAllocator):
     def get_name(self) -> str:
         return self.__class__.__name__
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         pass
 
     def report_metrics(self, tags):

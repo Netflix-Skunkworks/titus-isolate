@@ -70,12 +70,6 @@ def get_violations():
 @app.route('/status')
 def get_wm_status():
     return json.dumps({
-        "event_manager": {
-            "queue_depth": get_event_manager().get_queue_depth(),
-            "success_count": get_event_manager().get_success_count(),
-            "error_count": get_event_manager().get_error_count(),
-            "processed_count": get_event_manager().get_processed_count()
-        },
         "workload_manager": {
             "cpu_allocator": get_workload_manager().get_allocator_name(),
             "workload_count": len(get_workload_manager().get_workloads()),

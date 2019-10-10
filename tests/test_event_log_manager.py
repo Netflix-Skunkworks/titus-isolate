@@ -10,7 +10,7 @@ class TestEventLogManager(EventLogManager):
         log.info("Mock reporting event: {}".format(payload))
         self.payloads.append(payload)
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         pass
 
     def report_metrics(self, tags):

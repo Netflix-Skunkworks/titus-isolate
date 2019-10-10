@@ -30,7 +30,7 @@ class MockCgroupManager(CgroupManager):
     def has_pending_work(self):
         return False
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         pass
 
     def report_metrics(self, tags):

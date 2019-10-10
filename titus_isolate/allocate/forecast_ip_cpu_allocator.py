@@ -12,7 +12,7 @@ from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import ALPHA_NU, DEFAULT_ALPHA_NU, ALPHA_LLC, DEFAULT_ALPHA_LLC, ALPHA_L12, \
-    DEFAULT_ALPHA_L12, ALPHA_ORDER, DEFAULT_ALPHA_ORDER, ALPHA_PREV, DEFAULT_ALPHA_PREV, \
+    DEFAULT_ALPHA_L12, ALPHA_PREV, DEFAULT_ALPHA_PREV, \
     MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME, \
     RELATIVE_MIP_GAP_STOP, DEFAULT_RELATIVE_MIP_GAP_STOP, MIP_SOLVER, DEFAULT_MIP_SOLVER
 from titus_isolate.metrics.constants import IP_ALLOCATOR_TIMEBOUND_COUNT, FORECAST_REBALANCE_FAILURE_COUNT
@@ -321,7 +321,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
     def set_solver_max_runtime_secs(self, val):
         self.__solver_max_runtime_secs = val
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         self.__reg = registry
 
     def report_metrics(self, tags):

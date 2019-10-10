@@ -100,8 +100,7 @@ class TestStatus(unittest.TestCase):
         event_manager.start_processing_events()
 
         s = json.loads(get_wm_status())
-        self.assertEqual(2, len(s))
-        self.assertEqual(4, len(s["event_manager"]))
+        self.assertEqual(1, len(s))
         self.assertEqual(7, len(s["workload_manager"]))
 
         event_manager.stop_processing_events()

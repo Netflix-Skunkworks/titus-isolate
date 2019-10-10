@@ -66,7 +66,7 @@ class RemoteCpuAllocator(CpuAllocator):
             log.exception("Failed to GET cpu allocator name.")
             return UNKNOWN_CPU_ALLOCATOR
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         pass
 
     def report_metrics(self, tags):

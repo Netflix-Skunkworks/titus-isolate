@@ -17,11 +17,11 @@ from titus_isolate.isolate.detect import get_cross_package_violations, get_share
 from titus_isolate.isolate.metrics_utils import get_static_allocated_size, get_burst_allocated_size, \
     get_burst_request_size, get_oversubscribed_thread_count, get_allocated_size, get_unallocated_size
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
-    WORKLOAD_COUNT_KEY, ALLOCATOR_CALL_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
+    WORKLOAD_COUNT_KEY, WORKLOAD_PROCESSING_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
     ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
     UNALLOCATED_SIZE_KEY, REBALANCED_KEY, BURSTABLE_THREADS_KEY, OVERSUBSCRIBABLE_THREADS_KEY, \
-    OVERSUBSCRIBE_CONSUMED_CPU_COUNT
+    OVERSUBSCRIBE_CONSUMED_CPU_COUNT, UPDATE_STATE_DURATION
 from titus_isolate.metrics.event_log import report_cpu_event
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
@@ -36,6 +36,7 @@ class WorkloadManager(MetricsReporter):
     def __init__(self, cpu: Cpu, cgroup_manager: CgroupManager, cpu_allocator: CpuAllocator):
 
         self.__reg = None
+        self.__tags = None
         self.__lock = Lock()
         self.__instance_id = get_config_manager().get_str(EC2_INSTANCE_ID)
 
@@ -46,7 +47,8 @@ class WorkloadManager(MetricsReporter):
         self.__removed_count = 0
         self.__rebalanced_count = 0
         self.__added_to_full_cpu_count = 0
-        self.__allocator_call_duration_sum_secs = 0
+        self.__workload_processing_duration_sec = 0
+        self.__update_state_duration_sec = 0
 
         self.__cpu = cpu
         self.__cgroup_manager = cgroup_manager
@@ -82,7 +84,8 @@ class WorkloadManager(MetricsReporter):
                 start_time = time.time()
                 func(arg)
                 stop_time = time.time()
-                self.__allocator_call_duration_sum_secs = stop_time - start_time
+                if self.__reg is not None:
+                    self.__reg.distribution_summary(WORKLOAD_PROCESSING_DURATION, self.__tags).record(stop_time - start_time)
 
             log.debug("Released lock for func: {} on workload: {}".format(func.__name__, workload_id))
             return True
@@ -126,6 +129,7 @@ class WorkloadManager(MetricsReporter):
         report_cpu_event(request, response)
 
     def __update_state(self, response: AllocateResponse, new_workloads):
+        start_time = time.time()
         old_cpu = self.get_cpu_copy()
         new_cpu = response.get_cpu()
 
@@ -137,6 +141,10 @@ class WorkloadManager(MetricsReporter):
         if old_cpu != new_cpu:
             self.__report_cpu_state(old_cpu, new_cpu)
 
+        stop_time = time.time()
+        if self.__reg is not None:
+            self.__reg.distribution_summary(UPDATE_STATE_DURATION, self.__tags).record(stop_time - start_time)
+
     def __apply_isolation(self, response: AllocateResponse):
         for w_alloc in response.get_workload_allocations():
 
@@ -145,13 +153,11 @@ class WorkloadManager(MetricsReporter):
             quota = w_alloc.get_cpu_quota()
             shares = w_alloc.get_cpu_shares()
 
-            log.info("updating workload: '{}' cpuset to '{}'".format(workload_id, thread_ids))
+            log.info("updating workload: '{}' cpuset: '{}', quota: '{}', shares: '{}'".format(
+                workload_id, thread_ids, quota, shares))
+
             self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
-
-            log.info("updating workload: '{}' quota  to '{}'".format(workload_id, quota))
             self.__cgroup_manager.set_quota(workload_id, quota)
-
-            log.info("updating workload: '{}' shares to '{}'".format(workload_id, shares))
             self.__cgroup_manager.set_shares(workload_id, shares)
 
     def __get_request_metadata(self, request_type) -> dict:
@@ -235,16 +241,8 @@ class WorkloadManager(MetricsReporter):
     def get_error_count(self):
         return self.__error_count
 
-    def get_allocator_call_duration_sum_secs(self):
-        return self.__allocator_call_duration_sum_secs
-
     def get_allocator_name(self):
         return self.__cpu_allocator.get_name()
-
-    def set_registry(self, registry):
-        self.__reg = registry
-        self.__cpu_allocator.set_registry(registry)
-        self.__cgroup_manager.set_registry(registry)
 
     @staticmethod
     def __report_cpu_state(old_cpu, new_cpu):
@@ -280,6 +278,12 @@ class WorkloadManager(MetricsReporter):
 
         return consumed_cpu_count
 
+    def set_registry(self, registry, tags):
+        self.__reg = registry
+        self.__tags = tags
+        self.__cpu_allocator.set_registry(registry, tags)
+        self.__cgroup_manager.set_registry(registry, tags)
+
     def report_metrics(self, tags):
         cpu = self.get_cpu_copy()
         workload_map = self.get_workload_map_copy()
@@ -293,8 +297,6 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(FAILED_KEY, tags).set(self.get_error_count())
         self.__reg.gauge(WORKLOAD_COUNT_KEY, tags).set(len(self.get_workloads()))
         self.__reg.gauge(ADDED_TO_FULL_CPU_ERROR_KEY, tags).set(self.__added_to_full_cpu_count)
-
-        self.__reg.gauge(ALLOCATOR_CALL_DURATION, tags).set(self.get_allocator_call_duration_sum_secs())
 
         cross_package_violation_count = len(get_cross_package_violations(cpu))
         shared_core_violation_count = len(get_shared_core_violations(cpu))
