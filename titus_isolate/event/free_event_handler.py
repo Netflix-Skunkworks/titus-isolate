@@ -1,10 +1,10 @@
-from titus_isolate.event.constants import ACTION
+from titus_isolate.event.constants import ACTION, DIE
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.event.utils import get_container_name
 
 
 class FreeEventHandler(EventHandler):
-    FREE_ACTIONS = ["die"]
+    FREE_ACTIONS = [DIE]
 
     def __init__(self, workload_manager):
         super().__init__(workload_manager)

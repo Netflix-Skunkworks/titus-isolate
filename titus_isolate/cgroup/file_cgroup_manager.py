@@ -101,14 +101,14 @@ class FileCgroupManager(CgroupManager):
     def __get_shares(self, container_name: str) -> int:
         return int(self.__get(get_shares, container_name))
 
-    def __set(self, func: FunctionType, container_name: str, value: str, ):
+    def __set(self, func: FunctionType, container_name: str, value: str):
         try:
             self.__wait_for_files(container_name)
             func(container_name, value)
             self.__write_succeeded(container_name)
         except:
             self.__write_failed()
-            log.exception("Failed to apply func: {} with value: {} to container: {}".format(
+            log.debug("Failed to apply func: {} with value: {} to container: {}".format(
                 func.__name__, value, container_name))
 
     def __get(self, func: FunctionType, container_name: str) -> str:
@@ -116,7 +116,7 @@ class FileCgroupManager(CgroupManager):
             self.__wait_for_files(container_name)
             return func(container_name)
         except:
-            log.exception("Failed to apply func: {} to container: {}".format( func.__name__, container_name))
+            log.debug("Failed to apply func: {} to container: {}".format(func.__name__, container_name))
 
     def __write_succeeded(self, container_name):
         with self.__lock:
@@ -137,7 +137,7 @@ class FileCgroupManager(CgroupManager):
         json_file_wait_timeout = get_config_manager().get_float(WAIT_JSON_FILE_KEY, DEFAULT_WAIT_JSON_FILE_SEC)
         wait_for_files(container_name, cgroup_file_wait_timeout, json_file_wait_timeout)
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         self.__reg = registry
 
     def report_metrics(self, tags):

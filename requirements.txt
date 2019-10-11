@@ -5,7 +5,7 @@ flask
 requests
 schedule
 /src/cvxpy_test/dist/cvxpy-1.0.24.tar.gz
-titus-optimize==0.5.1
+titus-optimize==0.5.2
 netflix-spectator-py
 systemd
 kubernetes

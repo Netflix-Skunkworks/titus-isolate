@@ -64,6 +64,7 @@ def wait_for_files(container_name, cgroup_timeout, json_timeout):
             raise RuntimeError("JSON file: '{}' disappeared, meaning the task exited.".format(json_file_path))
 
     wait_for_file_to_exist(info_file_path, cgroup_timeout, __raise_if_json_file_gone)
+    wait_for_file_to_exist(json_file_path, json_timeout, __raise_if_json_file_gone)
 
 
 def _get_cgroup_path_from_list(cgroups_list, cgroup_name):
@@ -141,13 +142,13 @@ def get_shares(container_name):
 
 
 def __write(path, value):
-    log.info("Writing '{}' to path '{}'".format(value, path))
+    log.debug("Writing '{}' to path '{}'".format(value, path))
     with open(path, 'w') as f:
         f.write(str(value))
 
 
 def __read(path) -> str:
-    log.info("Reading from path '{}'".format(path))
+    log.debug("Reading from path '{}'".format(path))
     with open(path, 'r') as f:
         return f.readline().strip()
 

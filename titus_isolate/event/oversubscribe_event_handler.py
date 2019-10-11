@@ -1,5 +1,7 @@
 import json
 from datetime import datetime, timedelta
+from threading import Thread
+
 from dateutil.parser import parse
 import kubernetes.client
 import kubernetes.config
@@ -72,7 +74,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         self.__custom_api = kubernetes.client.CustomObjectsApi(
             kubernetes.config.new_client_from_config(config_file=kubeconfig))
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         self.__reg = registry
 
     def report_metrics(self, tags):
@@ -95,6 +97,9 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         return self.__reclaimed_cpu_count
 
     def handle(self, event):
+        Thread(target=self.__handle, args=[event]).start()
+
+    def __handle(self, event):
         if not self.__relevant(event):
             return
 

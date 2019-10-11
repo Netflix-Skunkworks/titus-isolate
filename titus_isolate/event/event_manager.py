@@ -1,4 +1,5 @@
 import json
+import time
 from queue import Queue, Empty
 from threading import Thread, Lock
 
@@ -8,18 +9,22 @@ from titus_isolate import log
 from titus_isolate.config.constants import REBALANCE_FREQUENCY_KEY, DEFAULT_REBALANCE_FREQUENCY, \
     RECONCILE_FREQUENCY_KEY, DEFAULT_RECONCILE_FREQUENCY, \
     OVERSUBSCRIBE_FREQUENCY_KEY, DEFAULT_OVERSUBSCRIBE_FREQUENCY
-from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT, OVERSUBSCRIBE_EVENT
-from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
+from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT, OVERSUBSCRIBE_EVENT, ACTION, HANDLED_ACTIONS
+from titus_isolate.event.event_handler import EventHandler
+from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY, \
+    ENQUEUED_COUNT_KEY, DEQUEUED_COUNT_KEY, QUEUE_LATENCY_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.utils import get_config_manager
 
 DEFAULT_EVENT_TIMEOUT_SECS = 60
+ENQUEUE_TIME_KEY = "enqueue_time"
 
 
 class EventManager(MetricsReporter):
 
     def __init__(self, event_iterable, event_handlers, event_timeout=DEFAULT_EVENT_TIMEOUT_SECS):
         self.__reg = None
+        self.__tags = None
         self.__stopped = False
         self.__q = Queue()
 
@@ -27,9 +32,7 @@ class EventManager(MetricsReporter):
         self.__event_handlers = event_handlers
         self.__event_timeout = event_timeout
 
-        self.__success_event_count = 0
-        self.__error_event_count = 0
-        self.__processed_event_count = 0
+        self.__processed_count = 0
 
         self.__started = False
         self.__started_lock = Lock()
@@ -70,62 +73,95 @@ class EventManager(MetricsReporter):
             self.__pulling_thread.start()
             self.__started = True
 
-    def get_success_count(self):
-        return self.__success_event_count
-
-    def get_error_count(self):
-        return self.__error_event_count
-
-    def get_processed_count(self):
-        return self.__processed_event_count
-
     def get_queue_depth(self):
         return self.__q.qsize()
 
+    def get_processed_count(self):
+        return self.__processed_count
+
     def __rebalance(self):
         if self.__q.empty():
-            self.__q.put(REBALANCE_EVENT)
+            self.__put_event(REBALANCE_EVENT)
 
     def __reconcile(self):
         if self.__q.empty():
-            self.__q.put(RECONCILE_EVENT)
+            self.__put_event(RECONCILE_EVENT)
 
     def __oversubscribe(self):
-        self.__q.put(OVERSUBSCRIBE_EVENT)
+        self.__put_event(OVERSUBSCRIBE_EVENT)
 
     def __pull_events(self):
         for event in self.__events:
+            self.__put_event(event)
+
+    def __put_event(self, event):
+        event = json.loads(event.decode("utf-8"))
+        if event[ACTION] in HANDLED_ACTIONS:
+            log.info("Enqueuing event: {}, queue depth: {}".format(event[ACTION], self.get_queue_depth()))
+            event[ENQUEUE_TIME_KEY] = time.time()
             self.__q.put(event)
+            if self.__reg is not None:
+                self.__reg.counter(ENQUEUED_COUNT_KEY, self.__tags).increment()
+                self.__reg.counter(self.__get_enqueued_metric_name(event), self.__tags).increment()
 
     def __process_events(self):
         while not self.__stopped:
             try:
                 event = self.__q.get(timeout=self.__event_timeout)
-                event = json.loads(event.decode("utf-8"))
+                dequeue_time = time.time()
+                log.info("Dequeued event: {}, queue depth: {}".format(event[ACTION], self.get_queue_depth()))
+                if self.__reg is not None:
+                    self.__reg.counter(DEQUEUED_COUNT_KEY, self.__tags).increment()
+                    self.__reg.counter(self.__get_dequeued_metric_name(event), self.__tags).increment()
+                    self.__reg.distribution_summary(QUEUE_LATENCY_KEY, self.__tags).record(dequeue_time - event[ENQUEUE_TIME_KEY])
             except Empty:
                 log.debug("Timed out waiting for event on queue.")
                 continue
 
             for event_handler in self.__event_handlers:
                 try:
+                    log.info("{} handling event: {}".format(type(event_handler).__name__, event[ACTION]))
                     event_handler.handle(event)
-                    self.__success_event_count += 1
+                    self.__report_succeeded_event(event_handler)
                 except:
                     log.exception("Event handler: '{}' failed to handle event: '{}'".format(
                         type(event_handler).__name__, event))
-                    self.__error_event_count += 1
+                    self.__report_failed_event(event_handler)
 
             self.__q.task_done()
-            self.__processed_event_count += 1
-            log.debug("processed event count: {}".format(self.get_success_count()))
+            self.__reg.counter(EVENT_PROCESSED_KEY, self.__tags).increment()
+            self.__reg.gauge(QUEUE_DEPTH_KEY, self.__tags).set(self.get_queue_depth())
+            self.__processed_count += 1
 
-    def set_registry(self, registry):
+    def __report_succeeded_event(self, event_handler: EventHandler):
+        if self.__reg is not None:
+            self.__reg.counter(self.__get_event_succeeded_metric_name(event_handler), self.__tags).increment()
+            self.__reg.counter(EVENT_SUCCEEDED_KEY, self.__tags).increment()
+
+    def __report_failed_event(self, event_handler: EventHandler):
+        if self.__reg is not None:
+            self.__reg.counter(self.__get_event_failed_metric_name(event_handler), self.__tags).increment()
+            self.__reg.counter(EVENT_FAILED_KEY, self.__tags).increment()
+
+    @staticmethod
+    def __get_event_succeeded_metric_name(event_handler: EventHandler) -> str:
+        return "titus-isolate.{}.eventSucceeded".format(type(event_handler).__name__)
+
+    @staticmethod
+    def __get_event_failed_metric_name(event_handler: EventHandler) -> str:
+        return "titus-isolate.{}.eventFailed".format(type(event_handler).__name__)
+
+    @staticmethod
+    def __get_enqueued_metric_name(event) -> str:
+        return "titus-isolate.{}.eventEnqueued".format(type(event[ACTION]).__name__)
+
+    @staticmethod
+    def __get_dequeued_metric_name(event) -> str:
+        return "titus-isolate.{}.eventDequeued".format(type(event[ACTION]).__name__)
+
+    def set_registry(self, registry, tags):
         self.__reg = registry
+        self.__tags = tags
 
     def report_metrics(self, tags):
-        log.info("Queue depth: '{}'".format(self.get_queue_depth()))
-        self.__reg.gauge(QUEUE_DEPTH_KEY, tags).set(self.get_queue_depth())
-        self.__reg.gauge(EVENT_SUCCEEDED_KEY, tags).set(self.get_success_count())
-        self.__reg.gauge(EVENT_FAILED_KEY, tags).set(self.get_error_count())
-        self.__reg.gauge(EVENT_PROCESSED_KEY, tags).set(self.get_processed_count())
-
+        pass

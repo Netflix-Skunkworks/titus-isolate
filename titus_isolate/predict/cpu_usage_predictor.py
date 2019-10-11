@@ -78,8 +78,9 @@ class CpuUsagePredictor:
 
     @staticmethod
     def __load_model_from_file(path):
+        log.info("Loading model at path: {}".format(path))
         if not os.path.isfile(path):
             raise Exception("Could not find a model at `%s`" % (path,))
-        model =  PredictorWithFilter.load(open(path, "rb").read())
+        model = PredictorWithFilter.load(open(path, "rb").read())
         log.info("Loaded CPU usage predictor. Meta-data: %s. Whitelist size: %s" % (model.meta_data, len(model.filter)))
         return model

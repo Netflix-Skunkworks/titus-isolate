@@ -191,7 +191,7 @@ class TestWorkloadManager(unittest.TestCase):
         test_context = TestContext()
         registry = Registry()
         reporter = test_context.get_workload_manager()
-        reporter.set_registry(registry)
+        reporter.set_registry(registry, {})
         reporter.report_metrics({})
 
         self.assertTrue(gauge_value_equals(registry, RUNNING, 1))
@@ -210,7 +210,7 @@ class TestWorkloadManager(unittest.TestCase):
         test_context = TestContext()
         registry = Registry()
         reporter = test_context.get_workload_manager()
-        reporter.set_registry(registry)
+        reporter.set_registry(registry, {})
 
         workload = get_test_workload(uuid.uuid4(), 2, STATIC)
         reporter.add_workload(workload)
@@ -273,7 +273,7 @@ class TestWorkloadManager(unittest.TestCase):
             registry = Registry()
 
             workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
-            workload_manager.set_registry(registry)
+            workload_manager.set_registry(registry, {})
             workload_manager.add_workload(w_static)
             workload_manager.add_workload(w_burst)
 

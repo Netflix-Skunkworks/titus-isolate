@@ -43,7 +43,7 @@ class Reconciler(MetricsReporter):
     def get_success_count(self):
         return self.__success_count
 
-    def set_registry(self, registry):
+    def set_registry(self, registry, tags):
         self.__reg = registry
 
     def report_metrics(self, tags):
