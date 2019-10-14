@@ -27,7 +27,7 @@ from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
 from titus_isolate.real_exit_handler import RealExitHandler
-from titus_isolate.utils import get_config_manager, get_workload_manager, get_event_manager, \
+from titus_isolate.utils import get_config_manager, get_workload_manager, \
     set_event_log_manager, start_periodic_scheduling, set_cpu_usage_predictor_manager, \
     set_workload_monitor_manager, set_workload_manager, set_event_manager, is_kubernetes
 
@@ -39,7 +39,7 @@ def isolate_workload(workload_id):
     if get_workload_manager().is_isolated(workload_id):
             return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
 
-    log.error("workload: '{}' is not yet isolated".format(workload_id))
+    log.info("workload: '{}' is not yet isolated".format(workload_id))
     return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
 
 
