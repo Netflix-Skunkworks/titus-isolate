@@ -77,6 +77,10 @@ class WorkloadManager(MetricsReporter):
         if succeeded:
             self.__rebalanced_count += 1
 
+    @staticmethod
+    def __get_workload_processing_metric_name(func_name: str) -> str:
+        return "titus-isolate.{}.workloadProcessingDurationSec".format(func_name)
+
     def __update_workload(self, func, arg, workload_id):
         try:
             with self.__lock:
@@ -85,6 +89,7 @@ class WorkloadManager(MetricsReporter):
                 func(arg)
                 stop_time = time.time()
                 if self.__reg is not None:
+                    self.__reg.distribution_summary(self.__get_workload_processing_metric_name(func.__name__), self.__tags).record(stop_time - start_time)
                     self.__reg.distribution_summary(WORKLOAD_PROCESSING_DURATION, self.__tags).record(stop_time - start_time)
 
             log.debug("Released lock for func: {} on workload: {}".format(func.__name__, workload_id))
