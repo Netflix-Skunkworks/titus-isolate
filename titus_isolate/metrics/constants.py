@@ -9,7 +9,6 @@ WORKLOAD_COUNT_KEY = 'titus-isolate.workloadCount'
 EVENT_SUCCEEDED_KEY = 'titus-isolate.eventSucceeded'
 EVENT_FAILED_KEY = 'titus-isolate.eventFailed'
 EVENT_PROCESSED_KEY = 'titus-isolate.eventProcessed'
-ADDED_TO_FULL_CPU_ERROR_KEY = 'titus-isolate.addedToFullCpu'
 
 ENQUEUED_COUNT_KEY = 'titus-isolate.enqueuedCount'
 DEQUEUED_COUNT_KEY = 'titus-isolate.dequeuedCount'

@@ -18,7 +18,7 @@ from titus_isolate.isolate.metrics_utils import get_static_allocated_size, get_b
     get_burst_request_size, get_oversubscribed_thread_count, get_allocated_size, get_unallocated_size
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
     WORKLOAD_COUNT_KEY, WORKLOAD_PROCESSING_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
-    ADDED_TO_FULL_CPU_ERROR_KEY, OVERSUBSCRIBED_THREADS_KEY, \
+    OVERSUBSCRIBED_THREADS_KEY, \
     STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
     UNALLOCATED_SIZE_KEY, REBALANCED_KEY, BURSTABLE_THREADS_KEY, OVERSUBSCRIBABLE_THREADS_KEY, \
     OVERSUBSCRIBE_CONSUMED_CPU_COUNT, UPDATE_STATE_DURATION
@@ -46,7 +46,6 @@ class WorkloadManager(MetricsReporter):
         self.__added_count = 0
         self.__removed_count = 0
         self.__rebalanced_count = 0
-        self.__added_to_full_cpu_count = 0
         self.__workload_processing_duration_sec = 0
         self.__update_state_duration_sec = 0
 
@@ -294,14 +293,18 @@ class WorkloadManager(MetricsReporter):
         workload_map = self.get_workload_map_copy()
 
         self.__reg.gauge(RUNNING, tags).set(1)
-
-        self.__reg.gauge(ADDED_KEY, tags).set(self.get_added_count())
-        self.__reg.gauge(REMOVED_KEY, tags).set(self.get_removed_count())
-        self.__reg.gauge(REBALANCED_KEY, tags).set(self.get_rebalanced_count())
-        self.__reg.gauge(SUCCEEDED_KEY, tags).set(self.get_success_count())
-        self.__reg.gauge(FAILED_KEY, tags).set(self.get_error_count())
         self.__reg.gauge(WORKLOAD_COUNT_KEY, tags).set(len(self.get_workloads()))
-        self.__reg.gauge(ADDED_TO_FULL_CPU_ERROR_KEY, tags).set(self.__added_to_full_cpu_count)
+
+        self.__reg.counter(ADDED_KEY, tags).increment(self.get_added_count())
+        self.__reg.counter(REMOVED_KEY, tags).increment(self.get_removed_count())
+        self.__reg.counter(REBALANCED_KEY, tags).increment(self.get_rebalanced_count())
+        self.__reg.counter(SUCCEEDED_KEY, tags).increment(self.get_success_count())
+        self.__reg.counter(FAILED_KEY, tags).increment(self.get_error_count())
+
+        self.__added_count = 0
+        self.__removed_count = 0
+        self.__rebalanced_count = 0
+        self.__error_count = 0
 
         cross_package_violation_count = len(get_cross_package_violations(cpu))
         shared_core_violation_count = len(get_shared_core_violations(cpu))

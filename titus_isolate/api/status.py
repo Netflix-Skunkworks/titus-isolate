@@ -73,11 +73,7 @@ def get_wm_status():
         "workload_manager": {
             "cpu_allocator": get_workload_manager().get_allocator_name(),
             "workload_count": len(get_workload_manager().get_workloads()),
-            "isolated_workload_count": len(get_workload_manager().get_isolated_workload_ids()),
-            "success_count": get_workload_manager().get_success_count(),
-            "error_count": get_workload_manager().get_error_count(),
-            "added_count": get_workload_manager().get_added_count(),
-            "removed_count": get_workload_manager().get_removed_count()
+            "isolated_workload_count": len(get_workload_manager().get_isolated_workload_ids())
         }
     })
 
