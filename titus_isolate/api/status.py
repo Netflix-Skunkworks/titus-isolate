@@ -1,6 +1,7 @@
 import json
 import logging
 import threading
+import time
 
 import docker
 from flask import Flask
@@ -21,8 +22,9 @@ from titus_isolate.isolate.detect import get_cross_package_violations, get_share
 from titus_isolate.isolate.reconciler import Reconciler
 from titus_isolate.isolate.utils import get_fallback_allocator
 from titus_isolate.isolate.workload_manager import WorkloadManager
+from titus_isolate.metrics.constants import ISOLATE_LATENCY_KEY
 from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
-from titus_isolate.metrics.metrics_manager import MetricsManager
+from titus_isolate.metrics.metrics_manager import MetricsManager, registry
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
@@ -33,13 +35,24 @@ from titus_isolate.utils import get_config_manager, get_workload_manager, \
 
 app = Flask(__name__)
 
+metrics_manager = None
+__isolate_latency = {}
+
 
 @app.route('/isolate/<workload_id>')
 def isolate_workload(workload_id):
+    start_time = time.time()
+
     if get_workload_manager().is_isolated(workload_id):
-            return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
+        if metrics_manager is not None:
+            stop_time = __isolate_latency.pop(workload_id, start_time)
+            duration = stop_time - start_time
+            registry.distribution_summary(ISOLATE_LATENCY_KEY, metrics_manager.get_tags()).record(duration)
+        return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
 
     log.info("workload: '{}' is not yet isolated".format(workload_id))
+    if workload_id not in __isolate_latency:
+        __isolate_latency[workload_id] = time.time()
     return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
 
 
@@ -73,11 +86,7 @@ def get_wm_status():
         "workload_manager": {
             "cpu_allocator": get_workload_manager().get_allocator_name(),
             "workload_count": len(get_workload_manager().get_workloads()),
-            "isolated_workload_count": len(get_workload_manager().get_isolated_workload_ids()),
-            "success_count": get_workload_manager().get_success_count(),
-            "error_count": get_workload_manager().get_error_count(),
-            "added_count": get_workload_manager().get_added_count(),
-            "removed_count": get_workload_manager().get_removed_count()
+            "isolated_workload_count": len(get_workload_manager().get_isolated_workload_ids())
         }
     })
 
@@ -173,7 +182,7 @@ if __name__ != '__main__' and not is_testing():
                                      workload_monitor_manager,
                                      oversub_event_handler] if m is not None]
 
-    MetricsManager(metrics_reporters)
+    metrics_manager = MetricsManager(metrics_reporters)
 
     threading.Thread(target=init).start()
 

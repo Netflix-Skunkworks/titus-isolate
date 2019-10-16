@@ -8,7 +8,7 @@ from tests.allocate.test_allocate import TestWorkloadMonitorManager, TestCpuUsag
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, TestContext, gauge_value_equals, get_threads_with_workload, \
-    get_test_workload
+    get_test_workload, counter_value_equals
 from titus_isolate import log
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
@@ -195,10 +195,10 @@ class TestWorkloadManager(unittest.TestCase):
         reporter.report_metrics({})
 
         self.assertTrue(gauge_value_equals(registry, RUNNING, 1))
-        self.assertTrue(gauge_value_equals(registry, ADDED_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, REMOVED_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, SUCCEEDED_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, FAILED_KEY, 0))
+        self.assertTrue(counter_value_equals(registry, ADDED_KEY, 0))
+        self.assertTrue(counter_value_equals(registry, REMOVED_KEY, 0))
+        self.assertTrue(counter_value_equals(registry, SUCCEEDED_KEY, 0))
+        self.assertTrue(counter_value_equals(registry, FAILED_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, WORKLOAD_COUNT_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, PACKAGE_VIOLATIONS_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, CORE_VIOLATIONS_KEY, 0))
@@ -217,10 +217,10 @@ class TestWorkloadManager(unittest.TestCase):
         reporter.report_metrics({})
 
         self.assertTrue(gauge_value_equals(registry, RUNNING, 1))
-        self.assertTrue(gauge_value_equals(registry, ADDED_KEY, 1))
-        self.assertTrue(gauge_value_equals(registry, REMOVED_KEY, 0))
-        self.assertTrue(gauge_value_equals(registry, SUCCEEDED_KEY, 1))
-        self.assertTrue(gauge_value_equals(registry, FAILED_KEY, 0))
+        self.assertTrue(counter_value_equals(registry, ADDED_KEY, 1))
+        self.assertTrue(counter_value_equals(registry, REMOVED_KEY, 0))
+        self.assertTrue(counter_value_equals(registry, SUCCEEDED_KEY, 1))
+        self.assertTrue(counter_value_equals(registry, FAILED_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, WORKLOAD_COUNT_KEY, 1))
         self.assertTrue(gauge_value_equals(registry, PACKAGE_VIOLATIONS_KEY, 0))
         self.assertTrue(gauge_value_equals(registry, CORE_VIOLATIONS_KEY, 0))
