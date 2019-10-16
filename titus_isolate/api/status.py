@@ -44,8 +44,9 @@ def isolate_workload(workload_id):
     start_time = time.time()
 
     if get_workload_manager().is_isolated(workload_id):
+        stop_time = time.time()
         if metrics_manager is not None:
-            stop_time = __isolate_latency.pop(workload_id, start_time)
+            start_time = __isolate_latency.pop(workload_id, start_time)
             duration = stop_time - start_time
             registry.distribution_summary(ISOLATE_LATENCY_KEY, metrics_manager.get_tags()).record(duration)
         return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
