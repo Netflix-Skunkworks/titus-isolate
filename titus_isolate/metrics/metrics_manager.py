@@ -19,14 +19,14 @@ class MetricsManager:
         self.__reg = reg
 
         for reporter in self.__reporters:
-            reporter.set_registry(self.__reg, self.__get_tags())
+            reporter.set_registry(self.__reg, self.get_tags())
 
         log.info("Scheduling metrics reporting every {} seconds".format(report_interval))
         schedule.every(report_interval).seconds.do(self.__report_metrics)
 
     def __report_metrics(self):
         try:
-            tags = self.__get_tags()
+            tags = self.get_tags()
 
             for reporter in self.__reporters:
                 reporter.report_metrics(tags)
@@ -34,7 +34,7 @@ class MetricsManager:
             log.exception("Failed to report metrics.")
 
     @staticmethod
-    def __get_tags():
+    def get_tags():
         ec2_instance_id = 'EC2_INSTANCE_ID'
 
         tags = {}
