@@ -96,12 +96,20 @@ class FallbackCpuAllocator(CpuAllocator):
         self.__secondary_allocator.set_registry(registry, tags)
 
     def report_metrics(self, tags):
-        self.__reg.gauge(PRIMARY_ASSIGN_COUNT, tags).set(self.__primary_assign_threads_call_count)
-        self.__reg.gauge(PRIMARY_FREE_COUNT, tags).set(self.__primary_free_threads_call_count)
-        self.__reg.gauge(PRIMARY_REBALANCE_COUNT, tags).set(self.__primary_rebalance_call_count)
-        self.__reg.gauge(FALLBACK_ASSIGN_COUNT, tags).set(self.__secondary_assign_threads_call_count)
-        self.__reg.gauge(FALLBACK_FREE_COUNT, tags).set(self.__secondary_free_threads_call_count)
-        self.__reg.gauge(FALLBACK_REBALANCE_COUNT, tags).set(self.__secondary_rebalance_call_count)
+        self.__reg.counter(PRIMARY_ASSIGN_COUNT, tags).increment(self.__primary_assign_threads_call_count)
+        self.__reg.counter(PRIMARY_FREE_COUNT, tags).increment(self.__primary_free_threads_call_count)
+        self.__reg.counter(PRIMARY_REBALANCE_COUNT, tags).increment(self.__primary_rebalance_call_count)
+        self.__reg.counter(FALLBACK_ASSIGN_COUNT, tags).increment(self.__secondary_assign_threads_call_count)
+        self.__reg.counter(FALLBACK_FREE_COUNT, tags).increment(self.__secondary_free_threads_call_count)
+        self.__reg.counter(FALLBACK_REBALANCE_COUNT, tags).increment(self.__secondary_rebalance_call_count)
+
+        self.__primary_assign_threads_call_count = 0
+        self.__primary_free_threads_call_count = 0
+        self.__primary_rebalance_call_count = 0
+        self.__secondary_assign_threads_call_count = 0
+        self.__secondary_free_threads_call_count = 0
+        self.__secondary_rebalance_call_count = 0
+
         self.__primary_allocator.report_metrics(tags)
         self.__secondary_allocator.report_metrics(tags)
 
