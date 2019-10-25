@@ -160,6 +160,8 @@ class WorkloadManager(MetricsReporter):
             log.info("updating workload: '{}' cpuset: '{}', quota: '{}', shares: '{}'".format(
                 workload_id, thread_ids, quota, shares))
 
+            # This ordering is important for reporting whether a workload is isolated.
+            # We must always set the "cpuset" first.
             self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
             self.__cgroup_manager.set_quota(workload_id, quota)
             self.__cgroup_manager.set_shares(workload_id, shares)

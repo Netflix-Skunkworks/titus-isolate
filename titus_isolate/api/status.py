@@ -37,24 +37,27 @@ app = Flask(__name__)
 
 metrics_manager = None
 __isolate_latency = {}
+__isolate_lock = threading.Lock()
 
 
 @app.route('/isolate/<workload_id>')
 def isolate_workload(workload_id):
-    start_time = time.time()
+    # We hold a lock here to serialize callers and protect against contention with actual isolation work.
+    with __isolate_lock:
+        start_time = time.time()
 
-    if get_workload_manager().is_isolated(workload_id):
-        stop_time = time.time()
-        if metrics_manager is not None:
-            start_time = __isolate_latency.pop(workload_id, start_time)
-            duration = stop_time - start_time
-            registry.distribution_summary(ISOLATE_LATENCY_KEY, metrics_manager.get_tags()).record(duration)
-        return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
+        if get_workload_manager().is_isolated(workload_id):
+            stop_time = time.time()
+            if metrics_manager is not None:
+                start_time = __isolate_latency.pop(workload_id, start_time)
+                duration = stop_time - start_time
+                registry.distribution_summary(ISOLATE_LATENCY_KEY, metrics_manager.get_tags()).record(duration)
+            return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
 
-    log.info("workload: '{}' is not yet isolated".format(workload_id))
-    if workload_id not in __isolate_latency:
-        __isolate_latency[workload_id] = time.time()
-    return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
+        log.info("workload: '{}' is not yet isolated".format(workload_id))
+        if workload_id not in __isolate_latency:
+            __isolate_latency[workload_id] = time.time()
+        return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
 
 
 @app.route('/workloads')

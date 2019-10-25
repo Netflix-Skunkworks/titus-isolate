@@ -18,12 +18,14 @@ class FileCgroupManager(CgroupManager):
 
     def __init__(self):
         self.__reg = None
-        self.__lock = Lock()
-        self.__write_count = 0
-        self.__fail_count = 0
-        self.__isolated_workload_ids = set([])
         self.__lock = RLock()
         self.__threads = []
+
+        self.__write_count = 0
+        self.__fail_count = 0
+
+        self.__isolated_lock = Lock()
+        self.__isolated_workload_ids = set([])
 
     def set_cpuset(self, container_name: str, thread_ids: List[int]):
         self.__start(func=self.__set_cpuset, args=[container_name, thread_ids])
@@ -48,18 +50,10 @@ class FileCgroupManager(CgroupManager):
         return self.__get_shares(container_name)
 
     def release_container(self, container_name):
-        with self.__lock:
-            self.__isolated_workload_ids.discard(container_name)
+        self.__remove_isolated_workload(container_name)
 
     def get_isolated_workload_ids(self):
-        with self.__lock:
-            wm = get_workload_manager()
-            if wm is None:
-                return set([])
-
-            workloads = wm.get_workloads()
-            workload_ids = set([w.get_id() for w in workloads])
-            self.__isolated_workload_ids = self.__isolated_workload_ids.intersection(workload_ids)
+        with self.__isolated_lock:
             return copy.deepcopy(self.__isolated_workload_ids)
 
     def has_pending_work(self):
@@ -119,13 +113,19 @@ class FileCgroupManager(CgroupManager):
             log.debug("Failed to apply func: {} to container: {}".format(func.__name__, container_name))
 
     def __write_succeeded(self, container_name):
-        with self.__lock:
-            self.__isolated_workload_ids.add(container_name)
-            self.__write_count += 1
+        self.__add_isolated_workload(container_name)
+        self.__write_count += 1
 
     def __write_failed(self):
-        with self.__lock:
-            self.__fail_count += 1
+        self.__fail_count += 1
+
+    def __add_isolated_workload(self, container_name):
+        with self.__isolated_lock:
+            self.__isolated_workload_ids.add(container_name)
+
+    def __remove_isolated_workload(self, container_name):
+        with self.__isolated_lock:
+            self.__isolated_workload_ids.discard(container_name)
 
     @staticmethod
     def __get_thread_ids_str(thread_ids):
