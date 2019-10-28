@@ -9,6 +9,7 @@ from flask import Flask
 from titus_isolate import log
 from titus_isolate.api.testing import is_testing
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
+from titus_isolate.cgroup.utils import get_cpuset
 from titus_isolate.config.constants import RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.event.create_event_handler import CreateEventHandler
@@ -42,22 +43,30 @@ __isolate_lock = threading.Lock()
 
 @app.route('/isolate/<workload_id>')
 def isolate_workload(workload_id):
-    # We hold a lock here to serialize callers and protect against contention with actual isolation work.
-    with __isolate_lock:
-        start_time = time.time()
+    # We acquire a lock here to serialize callers and protect against contention with actual isolation work.
+    if not __isolate_lock.acquire(timeout=0.1):
+        log.warn("timeout getting isolate lock for workload: {}".format(workload_id))
+        return json.dumps({'workload_id': workload_id}), 404, {'ContentType': 'application/json'}
 
-        if get_workload_manager().is_isolated(workload_id):
-            stop_time = time.time()
-            if metrics_manager is not None:
-                start_time = __isolate_latency.pop(workload_id, start_time)
-                duration = stop_time - start_time
-                registry.distribution_summary(ISOLATE_LATENCY_KEY, metrics_manager.get_tags()).record(duration)
-            return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
+    start_time = time.time()
 
-        log.info("workload: '{}' is not yet isolated".format(workload_id))
-        if workload_id not in __isolate_latency:
-            __isolate_latency[workload_id] = time.time()
-        return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
+    if get_workload_manager().is_isolated(workload_id):
+        stop_time = time.time()
+        if metrics_manager is not None:
+            start_time = __isolate_latency.pop(workload_id, start_time)
+            duration = stop_time - start_time
+            registry.distribution_summary(ISOLATE_LATENCY_KEY, metrics_manager.get_tags()).record(duration)
+
+        __isolate_lock.release()
+        log.info("workload: '{}' IS isolated".format(workload_id))
+        return json.dumps({'workload_id': workload_id}), 200, {'ContentType': 'application/json'}
+
+    log.info("workload: '{}' is NOT isolated".format(workload_id))
+    if workload_id not in __isolate_latency:
+        __isolate_latency[workload_id] = time.time()
+
+    __isolate_lock.release()
+    return json.dumps({'unknown_workload_id': workload_id}), 404, {'ContentType': 'application/json'}
 
 
 @app.route('/workloads')
