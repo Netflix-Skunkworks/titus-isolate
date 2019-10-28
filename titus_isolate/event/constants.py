@@ -14,14 +14,14 @@ CONTAINER = "container"
 
 # Handled Actions
 # Docker
-CREATE = "create"
+START = "start"
 DIE = "die"
 # Internal
 REBALANCE = "rebalance"
 RECONCILE = "reconcile"
 OVERSUBSCRIBE = "oversubscribe"
 
-HANDLED_ACTIONS = [CREATE, DIE, REBALANCE, RECONCILE, OVERSUBSCRIBE]
+HANDLED_ACTIONS = [START, DIE, REBALANCE, RECONCILE, OVERSUBSCRIBE]
 
 WORKLOAD_TYPE_LABEL_KEY = "com.netflix.titus.workload.type"
 REQUIRED_LABELS = [NAME, WORKLOAD_TYPE_LABEL_KEY]

@@ -39,22 +39,6 @@ def __noop():
     pass
 
 
-def wait_for_file_to_exist(path, timeout, check_func=__noop, start_time=None):
-    if start_time is None:
-        start_time = time.time()
-
-    log.debug("Waiting '{}' seconds from {} for file to exist: '{}'".format(timeout, start_time, path))
-    while not os.path.exists(path):
-        time.sleep(0.1)
-
-        check_func()
-
-        elapsed_time = time.time() - start_time
-        if elapsed_time > timeout:
-            raise TimeoutError(
-                "Expected file '{}' was not created in '{}' seconds.".format(path, timeout))
-
-
 def _get_cgroup_path_from_list(cgroups_list, cgroup_name):
     for row in cgroups_list:
         r = row.split(":")

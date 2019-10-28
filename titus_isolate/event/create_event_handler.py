@@ -1,4 +1,4 @@
-from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CREATE, REQUIRED_LABELS
+from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, REQUIRED_LABELS, START
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.event.utils import get_container_name
 import titus_isolate.model.utils
@@ -19,8 +19,8 @@ class CreateEventHandler(EventHandler):
         self.handled_event(event, "added workload: '{}'".format(workload.get_id()))
 
     def __relevant(self, event):
-        if not event[ACTION] == CREATE:
-            self.ignored_event(event, "not a CREATE event")
+        if not event[ACTION] == START:
+            self.ignored_event(event, "not a START event")
             return False
 
         for expected_label in REQUIRED_LABELS:
