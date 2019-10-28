@@ -9,7 +9,7 @@ from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import get_container_create_event, MockEventProvider, get_event, get_container_die_event
 from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals, counter_value_equals
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.event.constants import CONTAINER, CREATE, STATIC, NAME, REBALANCE_EVENT
+from titus_isolate.event.constants import CONTAINER, STATIC, NAME, REBALANCE_EVENT, START
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
@@ -96,7 +96,7 @@ class TestEvents(unittest.TestCase):
         name = str(uuid.uuid4())
         unknown_event = get_event(
             CONTAINER,
-            CREATE,
+            START,
             name,
             {})
         event_handlers = test_context.get_event_handlers()
@@ -122,7 +122,7 @@ class TestEvents(unittest.TestCase):
         name = str(uuid.uuid4())
         unknown_event = get_event(
             CONTAINER,
-            CREATE,
+            START,
             name,
             {NAME: name})
         event_handlers = test_context.get_event_handlers()

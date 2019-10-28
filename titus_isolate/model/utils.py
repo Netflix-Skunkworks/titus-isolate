@@ -6,8 +6,7 @@ from typing import Dict, List
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import FREE_THREAD_IDS
-from titus_isolate.cgroup.utils import get_json_path, get_env_path, wait_for_file_to_exist, get_info_path
-from titus_isolate.config.constants import WAIT_FILE_TIMEOUT_SEC, DEFAULT_WAIT_FILE_TIMEOUT_SEC
+from titus_isolate.cgroup.utils import get_json_path, get_env_path
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.model.constants import WORKLOAD_ENV_LINE_REGEXP, WORKLOAD_ENV_CPU_KEY, WORKLOAD_ENV_MEM_KEY, \
     WORKLOAD_ENV_DISK_KEY, WORKLOAD_ENV_NETWORK_KEY, WORKLOAD_JSON_APP_NAME_KEY, WORKLOAD_JSON_PASSTHROUGH_KEY, \
@@ -20,16 +19,6 @@ from titus_isolate.model.duration_prediction import DurationPrediction
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
-from titus_isolate.utils import get_config_manager
-
-
-def _wait_for_workload_files(identifier):
-    start_time = time.time()
-    wait_time_sec = get_config_manager().get_float(WAIT_FILE_TIMEOUT_SEC, DEFAULT_WAIT_FILE_TIMEOUT_SEC)
-
-    wait_for_file_to_exist(get_env_path(identifier), wait_time_sec, start_time=start_time)
-    wait_for_file_to_exist(get_json_path(identifier), wait_time_sec, start_time=start_time)
-    wait_for_file_to_exist(get_info_path(identifier), wait_time_sec, start_time=start_time)
 
 
 def get_duration_predictions(input: str) -> List[DurationPrediction]:
@@ -44,8 +33,6 @@ def get_duration_predictions(input: str) -> List[DurationPrediction]:
 
 
 def get_workload_from_disk(identifier):
-    _wait_for_workload_files(identifier)
-
     # In theory these files could go away if the task dies. that is ok.  A failure here will only result in the workload
     # not being created which is fine because it is dead anyway.
     json_data = __get_workload_json(identifier)

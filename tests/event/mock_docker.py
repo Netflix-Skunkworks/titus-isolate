@@ -7,8 +7,8 @@ from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWOR
     DEFAULT_TEST_APP_NAME, DEFAULT_TEST_JOB_TYPE, DEFAULT_TEST_OWNER_EMAIL, DEFAULT_TEST_CMD, DEFAULT_TEST_ENTRYPOINT, \
     DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT
 from titus_isolate import log
-from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, CREATE, ID, \
-    LOWERCASE_ID, NAME, WORKLOAD_TYPE_LABEL_KEY, TIME, TYPE, DIE, STATIC, REPO_DIGESTS
+from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, ID, \
+    LOWERCASE_ID, NAME, WORKLOAD_TYPE_LABEL_KEY, TIME, TYPE, DIE, STATIC, REPO_DIGESTS, START
 from titus_isolate.model.workload import Workload
 
 
@@ -103,7 +103,7 @@ def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()
         opportunistic_thread_count=DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT,
         duration_predictions=[]))
 
-    return get_event(CONTAINER, CREATE, id, attributes)
+    return get_event(CONTAINER, START, id, attributes)
 
 
 def get_container_die_event(name=str(uuid.uuid4()).replace("-", ""), id=str(uuid.uuid4()).replace("-", "")):
