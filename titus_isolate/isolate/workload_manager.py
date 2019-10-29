@@ -1,7 +1,7 @@
 import copy
 from threading import Lock
 import time
-from typing import List
+from typing import List, Dict
 
 from titus_isolate import log
 
@@ -11,6 +11,7 @@ from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
+from titus_isolate.allocate.workload_allocate_response import WorkloadAllocateResponse
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
 from titus_isolate.config.constants import EC2_INSTANCE_ID
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
@@ -137,10 +138,10 @@ class WorkloadManager(MetricsReporter):
         old_cpu = self.get_cpu_copy()
         new_cpu = response.get_cpu()
 
-        self.__last_response = response
         self.__apply_isolation(response)
         self.__cpu = new_cpu
         self.__workloads = new_workloads
+        self.__last_response = response
 
         if old_cpu != new_cpu:
             self.__report_cpu_state(old_cpu, new_cpu)
@@ -150,7 +151,13 @@ class WorkloadManager(MetricsReporter):
             self.__reg.distribution_summary(UPDATE_STATE_DURATION, self.__tags).record(stop_time - start_time)
 
     def __apply_isolation(self, response: AllocateResponse):
+        last_w_responses = self.__get_workload_allocation_dict(self.__last_response)
+
         for w_alloc in response.get_workload_allocations():
+            last_w_alloc = last_w_responses.get(w_alloc.get_workload_id(), None)
+            if w_alloc == last_w_alloc:
+                log.info("Skipping update of workload: {}".format(w_alloc.get_workload_id()))
+                continue
 
             workload_id = w_alloc.get_workload_id()
             thread_ids = w_alloc.get_thread_ids()
@@ -165,6 +172,18 @@ class WorkloadManager(MetricsReporter):
             self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
             self.__cgroup_manager.set_quota(workload_id, quota)
             self.__cgroup_manager.set_shares(workload_id, shares)
+
+    @staticmethod
+    def __get_workload_allocation_dict(response: AllocateResponse) -> Dict[str, WorkloadAllocateResponse]:
+        w_responses = {}
+
+        if response is None:
+            return w_responses
+
+        for w_alloc in response.get_workload_allocations():
+            w_responses[w_alloc.get_workload_id()] = w_alloc
+
+        return w_responses
 
     def __get_request_metadata(self, request_type) -> dict:
         config_manager = get_config_manager()

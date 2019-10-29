@@ -7,9 +7,8 @@ from titus_isolate.allocate.constants import CPU, METADATA, TITUS_ISOLATE_CELL_H
 from titus_isolate.allocate.utils import parse_cpu
 from titus_isolate.allocate.workload_allocate_response import WorkloadAllocateResponse, get_workload_response, \
     deserialize_workload_response
-from titus_isolate.isolate.update import get_threads
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.workload import Workload, deserialize_workload
+from titus_isolate.model.workload import Workload
 
 
 class AllocateResponse:
