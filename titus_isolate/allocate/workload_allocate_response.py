@@ -41,6 +41,15 @@ class WorkloadAllocateResponse:
             CPU_THREAD_IDS_KEY: self.get_thread_ids()
         }
 
+    def __eq__(self, other):
+        if other is None:
+            return False
+
+        return other.get_workload_id() == self.get_workload_id() and \
+               other.get_cpu_quota() == self.get_cpu_quota() and \
+               other.get_cpu_shares() == self.get_cpu_shares() and \
+               set(other.get_thread_ids()) == set(self.get_thread_ids())
+
 
 def get_cpu_quota(workload: Workload) -> int:
     if workload.is_burst():

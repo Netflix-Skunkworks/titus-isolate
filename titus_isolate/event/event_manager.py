@@ -153,11 +153,11 @@ class EventManager(MetricsReporter):
 
     @staticmethod
     def __get_enqueued_metric_name(event) -> str:
-        return "titus-isolate.{}.eventEnqueued".format(type(event[ACTION]).__name__)
+        return "titus-isolate.{}.eventEnqueued".format(event[ACTION])
 
     @staticmethod
     def __get_dequeued_metric_name(event) -> str:
-        return "titus-isolate.{}.eventDequeued".format(type(event[ACTION]).__name__)
+        return "titus-isolate.{}.eventDequeued".format(event[ACTION])
 
     def set_registry(self, registry, tags):
         self.__reg = registry
