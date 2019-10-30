@@ -196,16 +196,16 @@ class WorkloadManager(MetricsReporter):
         }
 
     def __get_cpu_usage(self) -> dict:
-        return self.__wmm.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
+        return self.__wmm.get_cpu_usage()
 
     def __get_mem_usage(self) -> dict:
-        return self.__wmm.get_mem_usage(seconds=3600, agg_granularity_secs=60)
+        return self.__wmm.get_mem_usage()
 
     def __get_net_recv_usage(self) -> dict:
-        return self.__wmm.get_net_recv_usage(seconds=3600, agg_granularity_secs=60)
+        return self.__wmm.get_net_recv_usage()
 
     def __get_net_trans_usage(self) -> dict:
-        return self.__wmm.get_net_trans_usage(seconds=3600, agg_granularity_secs=60)
+        return self.__wmm.get_net_trans_usage()
 
     def __get_threads_request(self, workload_id, workload_map, request_type):
         return AllocateThreadsRequest(

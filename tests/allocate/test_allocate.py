@@ -58,19 +58,19 @@ class TestCpuUsagePredictorManager:
 class TestWorkloadMonitorManager:
 
     @staticmethod
-    def get_cpu_usage(seconds: int, agg_granularity_secs: int) -> dict:
+    def get_cpu_usage() -> dict:
         return {}
 
     @staticmethod
-    def get_mem_usage(seconds: int, agg_granularity_secs: int) -> dict:
+    def get_mem_usage() -> dict:
         return {}
 
     @staticmethod
-    def get_net_recv_usage(seconds: int, agg_granularity_secs: int) -> dict:
+    def get_net_recv_usage() -> dict:
         return {}
 
     @staticmethod
-    def get_net_trans_usage(seconds: int, agg_granularity_secs: int) -> dict:
+    def get_net_trans_usage() -> dict:
         return {}
 
 
