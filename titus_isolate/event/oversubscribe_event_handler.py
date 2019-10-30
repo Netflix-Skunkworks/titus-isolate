@@ -109,7 +109,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         clean_count = self.__cleanup()
         log.info('cleaned up %d old opportunistic resources', clean_count)
 
-        cpu_usage = self.__workload_monitor_manager.get_cpu_usage(seconds=3600, agg_granularity_secs=60)
+        cpu_usage = self.__workload_monitor_manager.get_cpu_usage()
         pred_env = PredEnvironment(self.__config_manager.get_region(), self.__config_manager.get_environment(),
                                    datetime.utcnow().hour)
 
