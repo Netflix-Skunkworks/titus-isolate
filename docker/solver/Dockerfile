@@ -23,14 +23,14 @@ COPY cvxpy-1.0.24.tar.gz .
 RUN pip3 install -r requirements.txt
 ENV PYTHONPATH="/usr/local/lib/python3.5/dist-packages:/opt/gurobi811/linux64/lib/python3.5_utf32"
 
-COPY gurobi8.1.1_linux64.tar.gz /opt
+COPY gurobi9.0.0_linux64.tar.gz /opt
 WORKDIR /opt
-RUN tar xf gurobi8.1.1_linux64.tar.gz
+RUN tar xf gurobi9.0.0_linux64.tar.gz
 WORKDIR /
-ENV GUROBI_HOME="/opt/gurobi810/linux64"
+ENV GUROBI_HOME="/opt/gurobi900/linux64"
 
-ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/gurobi810/linux64/bin"
-ENV LD_LIBRARY_PATH="/opt/gurobi811/linux64/lib"
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/gurobi900/linux64/bin"
+ENV LD_LIBRARY_PATH="/opt/gurobi900/linux64/lib"
 
 HEALTHCHECK --interval=1m --timeout=3s CMD curl -f $EC2_LOCAL_IPV4 || exit 1
 CMD gunicorn -w $TITUS_NUM_CPU -b $EC2_LOCAL_IPV4:80 --log-level=info --worker-tmp-dir /dev/shm titus_isolate.api.solve:app
