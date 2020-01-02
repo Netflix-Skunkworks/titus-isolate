@@ -4,6 +4,6 @@ flask
 kubernetes
 requests
 schedule
-titus-optimize==0.5.1
+titus-optimize==0.6.0
 cvxpy
 tox
