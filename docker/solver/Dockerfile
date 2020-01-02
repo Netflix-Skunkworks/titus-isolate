@@ -18,16 +18,17 @@ RUN pip3 install -r prerequirements.txt
 
 COPY requirements.txt .
 COPY titus-isolate-0.SNAPSHOT.tar.gz .
-COPY cvxpy-1.0.24.tar.gz .
+COPY cvxpy-1.1.0a1.tar.gz .
 
 RUN pip3 install -r requirements.txt
-ENV PYTHONPATH="/usr/local/lib/python3.5/dist-packages:/opt/gurobi811/linux64/lib/python3.5_utf32"
+ENV PYTHONPATH="/usr/local/lib/python3.5/dist-packages:/opt/gurobi900/linux64/lib/python3.5_utf32"
 
 COPY gurobi9.0.0_linux64.tar.gz /opt
 WORKDIR /opt
 RUN tar xf gurobi9.0.0_linux64.tar.gz
 WORKDIR /
 ENV GUROBI_HOME="/opt/gurobi900/linux64"
+COPY init_900.py /opt/gurobi811/linux64/lib/python3.5_utf32/gurobipy/__init__.py
 
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/gurobi900/linux64/bin"
 ENV LD_LIBRARY_PATH="/opt/gurobi900/linux64/lib"
