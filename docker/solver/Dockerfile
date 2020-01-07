@@ -34,4 +34,10 @@ ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/guro
 ENV LD_LIBRARY_PATH="/opt/gurobi900/linux64/lib"
 
 HEALTHCHECK --interval=1m --timeout=3s CMD curl -f $EC2_LOCAL_IPV4 || exit 1
-CMD gunicorn -w $(($TITUS_NUM_CPU * ${GUNICORN_WORKER_SCALE_FACTOR:-1})) -b $EC2_LOCAL_IPV4:80 --log-level=info --worker-tmp-dir /dev/shm titus_isolate.api.solve:app
+CMD gunicorn -w ${GUNICORN_WORKER_COUNT:-$TITUS_NUM_CPU} \
+             -k gthread \
+             --threads ${GUNICORN_THREAD_COUNT:-2} \
+             -b $EC2_LOCAL_IPV4:80 \
+             --log-level=info \
+             --worker-tmp-dir /dev/shm \
+             titus_isolate.api.solve:app
