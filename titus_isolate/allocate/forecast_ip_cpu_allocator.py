@@ -296,7 +296,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
             start_time = time.time()
 
-            placement, status, _, _ = placement_solver.optimize(
+            placement, status, prob, _ = placement_solver.optimize(
                 requested_cus=requested_units,
                 previous_allocation=current_placement,
                 use_per_workload=predicted_usage,
@@ -308,6 +308,9 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
             self.__call_meta['ip_solver_call_dur_secs'] = stop_time - start_time
             self.__call_meta['ip_success'] = 1
+            internal_solver_time = prob.solution.attr.get('solve_time', None)
+            if internal_solver_time is not None:
+                self.__call_meta['ip_internal_solver_call_dur_secs'] = internal_solver_time
 
             if status == IP_SOLUTION_TIME_BOUND:
                 self.__time_bound_call_count += 1
