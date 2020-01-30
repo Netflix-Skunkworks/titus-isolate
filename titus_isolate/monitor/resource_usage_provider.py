@@ -9,3 +9,6 @@ class ResourceUsage:
         self.start_time_epoch_sec = start_time_epoch_sec
         self.interval_sec = interval_sec
         self.values = values
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
