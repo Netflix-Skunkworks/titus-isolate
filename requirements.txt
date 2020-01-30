@@ -4,7 +4,7 @@ docker
 flask
 requests
 schedule
-/src/cvxpy_test/dist/cvxpy-1.0.24.tar.gz
+/src/cvxpy_test/dist/cvxpy-1.1.0a1.tar.gz
 titus-optimize==0.6.0
 netflix-spectator-py
 systemd
