@@ -9,7 +9,6 @@ from flask import Flask
 from titus_isolate import log
 from titus_isolate.api.testing import is_testing
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.cgroup.utils import get_cpuset
 from titus_isolate.config.constants import RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.event.create_event_handler import CreateEventHandler
@@ -27,6 +26,7 @@ from titus_isolate.metrics.constants import ISOLATE_LATENCY_KEY
 from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
 from titus_isolate.metrics.metrics_manager import MetricsManager, registry
 from titus_isolate.model.processor.config import get_cpu_from_env
+from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
 from titus_isolate.real_exit_handler import RealExitHandler
