@@ -49,7 +49,7 @@ class PcpResourceUsageProvider:
 
                 log.info('Snapshoting usage from pcp: {}'.format(cmd_str))
 
-                byte_array = subprocess.check_output(cmd_str, shell=True)
+                byte_array = subprocess.check_output(cmd_str, shell=True, timeout=5)
                 self.__raw_csv_snapshot = byte_array.decode('utf-8')
             except:
                 log.exception("Failed to snapshot pcp raw data.")
