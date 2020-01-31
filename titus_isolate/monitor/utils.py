@@ -136,8 +136,9 @@ def get_resource_usage(raw_csv_usage: str, value_count: int, interval_sec: int) 
     log.debug("padded: {}".format(padded))
 
     TIME = 'Time'
-    start_time = datetime.strptime(padded[TIME][-1], "%Y-%m-%d %H:%M:%S")
-    start_time_epoch = datetime.timestamp(start_time)
+    end_time = datetime.strptime(padded[TIME][-1], "%Y-%m-%d %H:%M:%S")
+    end_time_epoch = datetime.timestamp(end_time)
+    start_time_epoch = end_time_epoch - (value_count * interval_sec)
 
     usages = []
     for k, v in padded.items():
