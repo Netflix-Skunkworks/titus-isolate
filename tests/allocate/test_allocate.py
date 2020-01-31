@@ -58,6 +58,10 @@ class TestCpuUsagePredictorManager:
 class TestWorkloadMonitorManager:
 
     @staticmethod
+    def get_pcp_usage() -> dict:
+        return {}
+
+    @staticmethod
     def get_cpu_usage() -> dict:
         return {}
 
