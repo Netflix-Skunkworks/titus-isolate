@@ -1,5 +1,6 @@
 import csv
 import re
+import socket
 from collections import deque
 
 from datetime import datetime
@@ -107,12 +108,11 @@ def parse_usage_csv(csv_raw: str) -> Union[Dict[str, List], None]:
 def pad_usage(parsed_csv: Dict[str, List], length: int = 60):
     padded = {}
     for k, v in parsed_csv.items():
-        if len(v) < length:
-            pad_size = length - len(v)
-            pad = ['' for _ in range(pad_size)]
-            d = deque(v)
-            d.extendleft(pad)
-            padded[k] = list(d)
+        pad_size = length - len(v)
+        pad = ['' for _ in range(pad_size)]
+        d = deque(v)
+        d.extendleft(pad)
+        padded[k] = list(d)
 
     return padded
 
@@ -127,8 +127,13 @@ def parse_csv_usage_heading(heading: str) -> Tuple[str, str]:
 
 
 def get_resource_usage(raw_csv_usage: str, value_count: int, interval_sec: int) -> List[ResourceUsage]:
+    log.debug("raw: {}".format(raw_csv_usage))
+
     parsed = parse_usage_csv(raw_csv_usage)
+    log.debug("parsed: {}".format(parsed))
+
     padded = pad_usage(parsed, value_count)
+    log.debug("padded: {}".format(padded))
 
     TIME = 'Time'
     start_time = datetime.strptime(padded[TIME][-1], "%Y-%m-%d %H:%M:%S")
@@ -145,6 +150,20 @@ def get_resource_usage(raw_csv_usage: str, value_count: int, interval_sec: int) 
         usages.append(usage)
 
     return usages
+
+
+def get_pcp_archive_path() -> str:
+    return "/var/log/pcp/pmlogger/{}/".format(socket.gethostname())
+
+
+def resource_usages_to_dict(usages: List[ResourceUsage]) -> dict:
+    d = {}
+    for u in usages:
+        if u.resource_name not in d:
+            d[u.resource_name] = {}
+        d[u.resource_name][u.workload_id] = [str(v) for v in u.values]
+
+    return d
 
 
 def normalize_monotonic_data(timestamps, buffers, time_scale, num_buckets=60, bucket_size_secs=60) -> List[float]:

@@ -8,13 +8,20 @@ from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import BURST_POOL_USAGE_KEY, STATIC_POOL_USAGE_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
+from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
+from titus_isolate.monitor.utils import resource_usages_to_dict
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
 from titus_isolate.utils import get_workload_manager
 
 
 class WorkloadMonitorManager(MetricsReporter):
 
-    def __init__(self, seconds: int = 3600, agg_granularity_seconds: int = 60, sample_interval=DEFAULT_SAMPLE_FREQUENCY_SEC):
+    def __init__(
+            self,
+            seconds: int = 3600,
+            agg_granularity_seconds: int = 60,
+            sample_interval=DEFAULT_SAMPLE_FREQUENCY_SEC):
+
         self.__seconds = seconds
         self.__agg_granularity_seconds = agg_granularity_seconds
         self.__sample_interval = sample_interval
@@ -29,8 +36,15 @@ class WorkloadMonitorManager(MetricsReporter):
         self.__mem_usage = {}
         self.__net_recv_usage = {}
         self.__net_trans_usage = {}
+        self.__pcp_usage_provider = PcpResourceUsageProvider(
+            relative_start_sec=seconds,
+            interval_sec=agg_granularity_seconds,
+            sample_interval=sample_interval)
 
         schedule.every(sample_interval).seconds.do(self.__sample)
+
+    def get_pcp_usage(self) -> dict:
+        return resource_usages_to_dict(self.__pcp_usage_provider.get_resource_usages())
 
     def get_cpu_usage(self):
         with self.__usage_lock:

@@ -1,7 +1,8 @@
 import unittest
 
 from titus_isolate.allocate.constants import CPU_USAGE
-from titus_isolate.monitor.utils import parse_usage_csv, pad_usage, parse_csv_usage_heading, get_resource_usage
+from titus_isolate.monitor.utils import parse_usage_csv, pad_usage, parse_csv_usage_heading, get_resource_usage, \
+    resource_usages_to_dict
 
 simple_csv = """Time,"cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service","cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service","cgroup.memory.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service","cgroup.memory.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service"
 2020-01-29 19:46:32,,,8343552,10649600
@@ -44,3 +45,10 @@ class TestCsvUsage(unittest.TestCase):
             self.assertEqual(1580356232.0, u.start_time_epoch_sec)
             self.assertEqual(value_count, len(u.values))
             self.assertEqual(interval_sec, u.interval_sec)
+
+    def test_resource_usages_to_dict(self):
+        value_count = 10
+        interval_sec = 60
+        usages = get_resource_usage(simple_csv, value_count, interval_sec)
+        d = resource_usages_to_dict(usages)
+        pass
