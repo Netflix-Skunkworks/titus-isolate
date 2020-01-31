@@ -42,7 +42,7 @@ class TestCsvUsage(unittest.TestCase):
         usages = get_resource_usage(simple_csv, value_count, interval_sec)
 
         for u in usages:
-            self.assertEqual(1580355632.0, u.start_time_epoch_sec)
+            self.assertEqual(1580326832.0, u.start_time_epoch_sec)
             self.assertEqual(value_count, len(u.values))
             self.assertEqual(interval_sec, u.interval_sec)
 

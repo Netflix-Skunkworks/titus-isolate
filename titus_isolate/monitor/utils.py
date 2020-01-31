@@ -7,6 +7,8 @@ from datetime import datetime
 from io import StringIO
 from typing import Dict, List, Tuple, Union
 
+import pytz
+
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE
 from titus_isolate.event.constants import STATIC
@@ -137,6 +139,7 @@ def get_resource_usage(raw_csv_usage: str, value_count: int, interval_sec: int) 
 
     TIME = 'Time'
     end_time = datetime.strptime(padded[TIME][-1], "%Y-%m-%d %H:%M:%S")
+    end_time = pytz.utc.localize(end_time)
     end_time_epoch = datetime.timestamp(end_time)
     start_time_epoch = end_time_epoch - (value_count * interval_sec)
 
