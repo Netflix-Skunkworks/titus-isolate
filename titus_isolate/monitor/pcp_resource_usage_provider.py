@@ -35,6 +35,7 @@ class PcpResourceUsageProvider:
                 # pmrep -a /var/log/pcp/pmlogger/$(hostname)/ -S -60m -t 1m -y s -o csv -i .*titus-executor.*.service  cgroup.cpuacct.usage cgroup.memory.usage
                 snapshot_cmd_fmt = """ pmrep -a {0} \
                     -S -{1}s \
+                    -T -0s \
                     -t {2}s \
                     -y s \
                     -o csv \
