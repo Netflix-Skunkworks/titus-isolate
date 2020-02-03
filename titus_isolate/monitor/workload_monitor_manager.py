@@ -3,7 +3,8 @@ from threading import Lock, Thread
 import schedule
 
 from titus_isolate import log
-from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC
+from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC, METRICS_QUERY_TIMEOUT_KEY, \
+    DEFAULT_METRICS_QUERY_TIMEOUT_SEC
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import BURST_POOL_USAGE_KEY, STATIC_POOL_USAGE_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
@@ -11,7 +12,7 @@ from titus_isolate.monitor.cgroup_metrics_provider import CgroupMetricsProvider
 from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
 from titus_isolate.monitor.utils import resource_usages_to_dict
 from titus_isolate.monitor.workload_perf_mon import WorkloadPerformanceMonitor
-from titus_isolate.utils import get_workload_manager
+from titus_isolate.utils import get_workload_manager, get_config_manager
 
 
 class WorkloadMonitorManager(MetricsReporter):
@@ -36,10 +37,15 @@ class WorkloadMonitorManager(MetricsReporter):
         self.__mem_usage = {}
         self.__net_recv_usage = {}
         self.__net_trans_usage = {}
+
+        metrics_query_timeout_sec = get_config_manager().get_int(
+            METRICS_QUERY_TIMEOUT_KEY,
+            DEFAULT_METRICS_QUERY_TIMEOUT_SEC)
         self.__pcp_usage_provider = PcpResourceUsageProvider(
             relative_start_sec=seconds,
             interval_sec=agg_granularity_seconds,
-            sample_interval=sample_interval)
+            sample_interval_sec=sample_interval,
+            query_timeout_sec=metrics_query_timeout_sec)
 
         schedule.every(sample_interval).seconds.do(self.__sample)
 
