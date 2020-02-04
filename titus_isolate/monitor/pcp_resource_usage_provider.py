@@ -8,6 +8,7 @@ from titus_isolate import log
 from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC, DEFAULT_METRICS_QUERY_TIMEOUT_SEC
 from titus_isolate.monitor.resource_usage_provider import ResourceUsage
 from titus_isolate.monitor.utils import get_resource_usage, get_pcp_archive_path
+from titus_isolate.utils import is_kubernetes
 
 
 class PcpResourceUsageProvider:
@@ -28,8 +29,11 @@ class PcpResourceUsageProvider:
         self.__lock = Lock()
         self.__snapshot_usage_raw()
 
-        log.info("Scheduling pcp metrics collecting every {} seconds".format(sample_interval_sec))
-        schedule.every(sample_interval_sec).seconds.do(self.__snapshot_usage_raw)
+        if is_kubernetes():
+            log.info("Scheduling pcp metrics collecting every {} seconds".format(sample_interval_sec))
+            schedule.every(sample_interval_sec).seconds.do(self.__snapshot_usage_raw)
+        else:
+            log.warning("NOT scheduling pcp metrics collection since we're not in a Kubernetes cluster.")
 
     def __snapshot_usage_raw(self) -> str:
         try:
@@ -62,8 +66,12 @@ class PcpResourceUsageProvider:
         with self.__lock:
             try:
                 log.debug('Computing usages from pcp snapshot: {}'.format(self.__raw_csv_snapshot))
-                usages = get_resource_usage(self.__raw_csv_snapshot, self.__interval_count, self.__interval_sec)
-                log.debug('usages: {}'.format(usages))
-                return usages
+                if self.__raw_csv_snapshot is not None:
+                    usages = get_resource_usage(self.__raw_csv_snapshot, self.__interval_count, self.__interval_sec)
+                    log.debug('usages: {}'.format(usages))
+                    return usages
+                else:
+                    log.warning('No PCP resource CSV snapshot set')
+                    return []
             except:
                 log.exception("Failed to compute usages.")
