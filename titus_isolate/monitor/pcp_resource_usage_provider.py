@@ -1,6 +1,6 @@
 import subprocess
 from threading import Lock
-from typing import List
+from typing import List, Union
 
 import schedule
 
@@ -62,8 +62,12 @@ class PcpResourceUsageProvider:
         with self.__lock:
             try:
                 log.debug('Computing usages from pcp snapshot: {}'.format(self.__raw_csv_snapshot))
-                usages = get_resource_usage(self.__raw_csv_snapshot, self.__interval_count, self.__interval_sec)
-                log.debug('usages: {}'.format(usages))
-                return usages
+                if self.__raw_csv_snapshot is not None:
+                    usages = get_resource_usage(self.__raw_csv_snapshot, self.__interval_count, self.__interval_sec)
+                    log.debug('usages: {}'.format(usages))
+                    return usages
+                else:
+                    log.warning('No PCP resource CSV snapshot set')
+                    return []
             except:
                 log.exception("Failed to compute usages.")
