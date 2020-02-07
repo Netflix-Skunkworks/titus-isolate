@@ -80,12 +80,10 @@ class EventManager(MetricsReporter):
         return self.__processed_count
 
     def __rebalance(self):
-        if self.__q.empty():
-            self.__put_event(REBALANCE_EVENT)
+        self.__put_event(REBALANCE_EVENT)
 
     def __reconcile(self):
-        if self.__q.empty():
-            self.__put_event(RECONCILE_EVENT)
+        self.__put_event(RECONCILE_EVENT)
 
     def __oversubscribe(self):
         self.__put_event(OVERSUBSCRIBE_EVENT)
