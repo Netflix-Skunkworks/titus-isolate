@@ -1,9 +1,6 @@
-import os
-import time
 from typing import List
 
 from titus_isolate import log
-from titus_isolate.monitor.usage.cpu_usage import CpuUsage
 
 ROOT_CGROUP_PATH = "/sys/fs/cgroup"
 TITUS_INITS_PATH = "/var/lib/titus-inits"
@@ -123,30 +120,6 @@ def __read(path) -> str:
     log.debug("Reading from path '{}'".format(path))
     with open(path, 'r') as f:
         return f.readline().strip()
-
-
-def parse_cpuacct_usage_all(text) -> List[CpuUsage]:
-    # Text looks like this:
-    #
-    #     cpu user system
-    #     0 0 0
-    #     1 0 0
-    #     2 73169258935876 0
-    #     3 0 0
-    #     ...
-    #
-    # so we skip the first line and return a list of lists
-
-    #raw_rows = [line.split() for line in text.splitlines()[1:]]
-
-    usage_rows = []
-    for ind, row in enumerate(text.splitlines()):
-        if ind == 0:
-            continue
-        cpu, user, system = row.split()
-        usage_rows.append(CpuUsage(int(cpu), int(user), int(system)))
-
-    return usage_rows
 
 
 def parse_cpuset(cpuset_str: str) -> List[int]:

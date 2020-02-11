@@ -1,6 +1,5 @@
 from typing import Dict, List
 
-from titus_isolate import log
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.thread import Thread
 from titus_isolate.model.workload import Workload

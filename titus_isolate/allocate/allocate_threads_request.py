@@ -15,6 +15,7 @@ class AllocateThreadsRequest(AllocateRequest):
                  mem_usage: dict,
                  net_recv_usage: dict,
                  net_trans_usage: dict,
+                 disk_usage: dict,
                  metadata: dict):
         """
         A threads request encapsulates all information needed to assign threads to workloads when a workload is being
@@ -32,6 +33,7 @@ class AllocateThreadsRequest(AllocateRequest):
             mem_usage=mem_usage,
             net_recv_usage=net_recv_usage,
             net_trans_usage=net_trans_usage,
+            disk_usage=disk_usage,
             metadata=metadata)
         self.__workload_id = copy.deepcopy(workload_id)
 
@@ -55,4 +57,5 @@ def deserialize_allocate_threads_request(serialized_request: dict) -> AllocateTh
         mem_usage=allocate_request.get_mem_usage(),
         net_recv_usage=allocate_request.get_net_recv_usage(),
         net_trans_usage=allocate_request.get_net_trans_usage(),
+        disk_usage=allocate_request.get_disk_usage(),
         metadata=allocate_request.get_metadata())

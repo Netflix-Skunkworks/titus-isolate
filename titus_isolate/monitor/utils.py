@@ -16,9 +16,7 @@ from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload import Workload
 
-import numpy as np
-
-from titus_isolate.monitor.resource_usage_provider import ResourceUsage
+from titus_isolate.monitor.resource_usage import ResourceUsage
 
 CPU_USAGE_HEADING = 'cgroup.cpuacct.usage'
 MEM_USAGE_HEADING = 'cgroup.memory.usage'
@@ -174,87 +172,3 @@ def resource_usages_to_dict(usages: List[ResourceUsage]) -> dict:
         d[u.resource_name][u.workload_id] = [str(v) for v in u.values]
 
     return d
-
-
-def normalize_monotonic_data(timestamps, buffers, time_scale, num_buckets=60, bucket_size_secs=60) -> List[float]:
-    return __normalize_data(__get_monotonic_element, timestamps, buffers, time_scale, num_buckets, bucket_size_secs)
-
-
-def normalize_gauge_data(timestamps, buffers, num_buckets=60, bucket_size_secs=60) -> List[float]:
-    return __normalize_data(__get_gauge_element, timestamps, buffers, None, num_buckets, bucket_size_secs)
-
-
-def __normalize_data(get_element, timestamps, buffers, time_scale, num_buckets, bucket_size_secs) -> List[float]:
-    data = np.full((num_buckets,), np.nan, dtype=np.float32)
-    if len(timestamps) == 0:
-        return list(data.tolist())
-
-    min_indices, max_indices = __get_bucket_indices(timestamps, num_buckets, bucket_size_secs)
-
-    for i in range(len(min_indices)):
-        min_index = min_indices[i]
-        max_index = max_indices[i]
-
-        if min_index < 0 or max_index < 0:
-            continue
-
-        data[i] = get_element(timestamps, buffers, time_scale, min_index, max_index)
-
-    return list(data.tolist())
-
-
-def __get_monotonic_element(timestamps, buffers, time_scale, min_index, max_index) -> float:
-    time_diff_ns = (timestamps[max_index] - timestamps[min_index]) * time_scale
-    s = 0.0
-    for b in buffers:
-        s += b[max_index] - b[min_index]
-    if time_diff_ns > 0:
-        s /= time_diff_ns
-
-    return s
-
-
-def __get_gauge_element(timestamps, buffers, time_scale, min_index, max_index) -> float:
-    s = 0.0
-    value_count = max_index - min_index + 1
-    for b in buffers:
-        for i in range(value_count):
-            s += b[min_index + i]
-    return s / value_count
-
-
-def __get_bucket_indices(timestamps, num_buckets, bucket_size_secs) -> Tuple[List[int], List[int]]:
-    min_indices = np.full((num_buckets,), np.nan, dtype=np.int32)
-    max_indices = np.full((num_buckets,), np.nan, dtype=np.int32)
-
-    ts_max = timestamps[-1]
-    for i in range(num_buckets):
-        ts_min = ts_max - bucket_size_secs
-
-        # get slice:
-        slice_ts_min = np.searchsorted(timestamps, ts_min)
-        slice_ts_max = np.searchsorted(timestamps, ts_max, 'right')
-        if slice_ts_max == len(timestamps):
-            slice_ts_max -= 1
-
-        ts_max = ts_min
-
-        if slice_ts_min == slice_ts_max:
-            continue
-
-        if slice_ts_min < 0 or slice_ts_min >= len(timestamps):
-            continue
-
-        if slice_ts_max < 0 or slice_ts_max >= len(timestamps):
-            continue
-
-        if timestamps[slice_ts_max] < ts_min - bucket_size_secs:
-            continue
-
-        min_indices[num_buckets - 1 - i] = slice_ts_min
-        max_indices[num_buckets - 1 - i] = slice_ts_max
-
-    min_indices = list(min_indices.tolist())
-    max_indices = list(max_indices.tolist())
-    return min_indices, max_indices
-
