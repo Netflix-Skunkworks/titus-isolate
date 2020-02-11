@@ -10,7 +10,7 @@ from typing import Dict, List, Tuple, Union
 import pytz
 
 from titus_isolate import log
-from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE
+from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
@@ -22,10 +22,16 @@ from titus_isolate.monitor.resource_usage_provider import ResourceUsage
 
 CPU_USAGE_HEADING = 'cgroup.cpuacct.usage'
 MEM_USAGE_HEADING = 'cgroup.memory.usage'
+NET_RECV_USAGE_HEADING = 'titus.network.in.bytes'
+NET_TRANS_USAGE_HEADING = 'titus.network.out.bytes'
+DISK_USAGE_HEADING = 'titus.disk.bytes_used'
 
 RESOURCE_HEADING_MAPPINGS = {
     CPU_USAGE_HEADING: CPU_USAGE,
-    MEM_USAGE_HEADING: MEM_USAGE
+    MEM_USAGE_HEADING: MEM_USAGE,
+    NET_RECV_USAGE_HEADING: NET_RECV_USAGE,
+    NET_TRANS_USAGE_HEADING: NET_TRANS_USAGE,
+    DISK_USAGE_HEADING: DISK_USAGE,
 }
 
 
