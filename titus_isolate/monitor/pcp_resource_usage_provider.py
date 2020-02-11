@@ -46,7 +46,10 @@ class PcpResourceUsageProvider:
                     -o csv \
                     -i .*titus-executor.*.service \
                     cgroup.cpuacct.usage \
-                    cgroup.memory.usage """
+                    cgroup.memory.usage \
+                    titus.network.in.bytes \
+                    titus.network.out.bytes \
+                    titus.disk.bytes_used """
 
             cmd_str = snapshot_cmd_fmt.format(
                 self.__archive_path,
