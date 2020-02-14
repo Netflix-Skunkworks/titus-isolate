@@ -33,8 +33,10 @@ class WorkloadMonitorManager(MetricsReporter):
         metrics_query_timeout_sec = get_config_manager().get_int(
             METRICS_QUERY_TIMEOUT_KEY,
             DEFAULT_METRICS_QUERY_TIMEOUT_SEC)
+
+        pcp_extra_time_sec = 2 * 60  # Two extra minutes to ensure full metrics buckets and no trailing nan
         self.__pcp_usage_provider = PcpResourceUsageProvider(
-            relative_start_sec=seconds,
+            relative_start_sec=seconds + pcp_extra_time_sec,
             interval_sec=agg_granularity_seconds,
             sample_interval_sec=sample_interval,
             query_timeout_sec=metrics_query_timeout_sec)

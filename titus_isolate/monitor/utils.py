@@ -116,7 +116,7 @@ def pad_usage(parsed_csv: Dict[str, List], length: int = 60):
     for k, v in parsed_csv.items():
         pad_size = length - len(v)
         pad = ['' for _ in range(pad_size)]
-        d = deque(v)
+        d = deque(v, maxlen=length)
         d.extendleft(pad)
         padded[k] = list(d)
 
