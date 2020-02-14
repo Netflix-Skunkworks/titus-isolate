@@ -24,7 +24,6 @@ class PcpResourceUsageProvider:
         self.__interval_sec = interval_sec
         self.__query_timeout_sec = query_timeout_sec
         self.__interval_count = int(relative_start_sec / interval_sec)
-        self.__archive_path = get_pcp_archive_path()
         self.__raw_csv_snapshot = None
         self.__lock = Lock()
         self.__snapshot_usage_raw()
@@ -52,7 +51,7 @@ class PcpResourceUsageProvider:
                     titus.disk.bytes_used """
 
             cmd_str = snapshot_cmd_fmt.format(
-                self.__archive_path,
+                get_pcp_archive_path(),
                 self.__relative_start_sec,
                 self.__interval_sec)
 
