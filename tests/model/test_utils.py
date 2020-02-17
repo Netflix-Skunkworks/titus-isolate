@@ -20,3 +20,8 @@ class TestWorkload(unittest.TestCase):
             expected_duration += duration_step
             self.assertAlmostEqual(expected_percentile, p.get_percentile())
             self.assertAlmostEqual(expected_duration, p.get_duration())
+
+    def test_empty_predictions_input(self):
+        input = ""
+        predictions = get_duration_predictions(input)
+        self.assertEqual(0, len(predictions))
