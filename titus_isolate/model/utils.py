@@ -22,14 +22,18 @@ from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 
 
 def get_duration_predictions(input: str) -> List[DurationPrediction]:
-    # "0.05=0.29953;0.1=0.29953;0.15=0.29953;0.2=0.29953;0.25=0.29953;0.3=0.29953;0.35=0.29953;0.4=0.29953;0.45=0.29953;0.5=0.29953;0.55=0.29953;0.6=0.29953;0.65=0.29953;0.7=0.29953;0.75=0.29953;0.8=0.29953;0.85=0.29953;0.9=0.29953;0.95=0.29953"
-    duration_predictions = []
-    pairs = input.split(';')
-    for p in pairs:
-        k, v = p.split('=')
-        duration_predictions.append(DurationPrediction(float(k), float(v)))
+    try:
+        # "0.05=0.29953;0.1=0.29953;0.15=0.29953;0.2=0.29953;0.25=0.29953;0.3=0.29953;0.35=0.29953;0.4=0.29953;0.45=0.29953;0.5=0.29953;0.55=0.29953;0.6=0.29953;0.65=0.29953;0.7=0.29953;0.75=0.29953;0.8=0.29953;0.85=0.29953;0.9=0.29953;0.95=0.29953"
+        duration_predictions = []
+        pairs = input.split(';')
+        for p in pairs:
+            k, v = p.split('=')
+            duration_predictions.append(DurationPrediction(float(k), float(v)))
 
-    return duration_predictions
+        return duration_predictions
+    except:
+        log.exception("Failed to parse duration predictions: '{}'".format(input))
+        return []
 
 
 def get_workload_from_disk(identifier):
