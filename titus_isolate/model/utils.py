@@ -66,7 +66,7 @@ def get_workload_from_disk(identifier):
     if json_data[WORKLOAD_JSON_CPU_BURST_KEY]:
         workload_type = BURST
 
-    opportunistic_cpus = -1
+    opportunistic_cpus = 0
     if WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in passthrough_data:
         opportunistic_cpus = passthrough_data[WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY]
 
