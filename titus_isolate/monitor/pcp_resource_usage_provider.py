@@ -8,7 +8,7 @@ from titus_isolate import log
 from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC, DEFAULT_METRICS_QUERY_TIMEOUT_SEC
 from titus_isolate.monitor.resource_usage_provider import ResourceUsage
 from titus_isolate.monitor.utils import get_resource_usage, get_pcp_archive_path
-from titus_isolate.utils import is_kubernetes
+from titus_isolate.utils import is_kubernetes, get_workload_manager
 
 
 class PcpResourceUsageProvider:
@@ -34,8 +34,14 @@ class PcpResourceUsageProvider:
         else:
             log.warning("NOT scheduling pcp metrics collection since we're not in a Kubernetes cluster.")
 
-    def __snapshot_usage_raw(self) -> str:
+    def __snapshot_usage_raw(self):
         try:
+            # Avoid making a metrics query on a potentially empty dataset which causes the query command to fail, which
+            # causes noisy logs which look like failures.
+            if len(get_workload_manager().get_workloads()) == 0:
+                log.info('No workloads so skipping pcp snapshot.')
+                return
+
             # pmrep -a /var/log/pcp/pmlogger/$(hostname)/ -S -60m -t 1m -y s -o csv -i .*titus-executor.*.service  cgroup.cpuacct.usage cgroup.memory.usage
             snapshot_cmd_fmt = """ pmrep -a {0} \
                     -S -{1}s \
