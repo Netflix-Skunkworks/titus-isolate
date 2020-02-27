@@ -7,7 +7,8 @@ from titus_isolate import log
 
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse
-from titus_isolate.allocate.constants import FREE_THREAD_IDS
+from titus_isolate.allocate.constants import FREE_THREAD_IDS, CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, \
+    DISK_USAGE
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
@@ -191,42 +192,34 @@ class WorkloadManager(MetricsReporter):
             "type": request_type,
             "instance_id": self.__instance_id,
             "region": config_manager.get_region(),
-            "environment": config_manager.get_environment(),
-            "stack": config_manager.get_stack(),
-            "pcp": self.__wmm.get_pcp_usage()
+            "environment": config_manager.get_environment()
         }
 
-    def __get_cpu_usage(self) -> dict:
-        return self.__wmm.get_cpu_usage()
-
-    def __get_mem_usage(self) -> dict:
-        return self.__wmm.get_mem_usage()
-
-    def __get_net_recv_usage(self) -> dict:
-        return self.__wmm.get_net_recv_usage()
-
-    def __get_net_trans_usage(self) -> dict:
-        return self.__wmm.get_net_trans_usage()
-
     def __get_threads_request(self, workload_id, workload_map, request_type):
+        pcp_usage = self.__wmm.get_pcp_usage()
+
         return AllocateThreadsRequest(
             cpu=self.get_cpu_copy(),
             workload_id=workload_id,
             workloads=workload_map,
-            cpu_usage=self.__get_cpu_usage(),
-            mem_usage=self.__get_mem_usage(),
-            net_recv_usage=self.__get_net_recv_usage(),
-            net_trans_usage=self.__get_net_trans_usage(),
+            cpu_usage=pcp_usage.get(CPU_USAGE, {}),
+            mem_usage=pcp_usage.get(MEM_USAGE, {}),
+            net_recv_usage=pcp_usage.get(NET_RECV_USAGE, {}),
+            net_trans_usage=pcp_usage.get(NET_TRANS_USAGE, {}),
+            disk_usage=pcp_usage.get(DISK_USAGE, {}),
             metadata=self.__get_request_metadata(request_type))
 
     def __get_rebalance_request(self):
+        pcp_usage = self.__wmm.get_pcp_usage()
+
         return AllocateRequest(
             cpu=self.get_cpu_copy(),
             workloads=self.get_workload_map_copy(),
-            cpu_usage=self.__get_cpu_usage(),
-            mem_usage=self.__get_mem_usage(),
-            net_recv_usage=self.__get_net_recv_usage(),
-            net_trans_usage=self.__get_net_trans_usage(),
+            cpu_usage=pcp_usage.get(CPU_USAGE, {}),
+            mem_usage=pcp_usage.get(MEM_USAGE, {}),
+            net_recv_usage=pcp_usage.get(NET_RECV_USAGE, {}),
+            net_trans_usage=pcp_usage.get(NET_TRANS_USAGE, {}),
+            disk_usage=pcp_usage.get(DISK_USAGE, {}),
             metadata=self.__get_request_metadata("rebalance"))
 
     def get_workloads(self) -> List[Workload]:

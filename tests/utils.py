@@ -121,6 +121,7 @@ def get_no_usage_threads_request(cpu: Cpu, workloads: List[Workload]):
         mem_usage={},
         net_recv_usage={},
         net_trans_usage={},
+        disk_usage={},
         metadata=DEFAULT_TEST_REQUEST_METADATA)
 
 
@@ -132,6 +133,7 @@ def get_no_usage_rebalance_request(cpu: Cpu, workloads: List[Workload]):
         mem_usage={},
         net_recv_usage={},
         net_trans_usage={},
+        disk_usage={},
         metadata=DEFAULT_TEST_REQUEST_METADATA)
 
 

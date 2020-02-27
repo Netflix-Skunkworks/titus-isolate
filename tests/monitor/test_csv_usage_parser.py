@@ -27,8 +27,15 @@ class TestCsvUsage(unittest.TestCase):
         padded = pad_usage(parsed, padded_length)
         self.assertEqual(len(parsed), len(padded))
 
-        for v in padded.values():
-            self.assertEqual(padded_length, len(v))
+    def test_pad_long_input(self):
+        parsed = parse_usage_csv(simple_csv)
+        padded_length = 3
+        padded = pad_usage(parsed, padded_length)
+
+        cpu_usage = padded['cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service']
+
+        # The oldest values were truncated as expected
+        self.assertEqual(['1.988', '1.991', '1.987'], cpu_usage)
 
     def test_parse_heading(self):
         raw_heading = "cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service"

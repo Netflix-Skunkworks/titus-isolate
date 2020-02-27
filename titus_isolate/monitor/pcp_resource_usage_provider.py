@@ -6,7 +6,7 @@ import schedule
 
 from titus_isolate import log
 from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC, DEFAULT_METRICS_QUERY_TIMEOUT_SEC
-from titus_isolate.monitor.resource_usage_provider import ResourceUsage
+from titus_isolate.monitor.resource_usage import ResourceUsage
 from titus_isolate.monitor.utils import get_resource_usage, get_pcp_archive_path
 from titus_isolate.utils import is_kubernetes, get_workload_manager
 
