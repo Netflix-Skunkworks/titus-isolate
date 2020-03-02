@@ -108,6 +108,8 @@ free_threads_failure_count = 0
 rebalance_success_count = 0
 rebalance_failure_count = 0
 
+FORWARDED_FOR_HEADER = "X-Forwarded-For"
+
 
 @app.route('/', methods=['GET'])
 def health_check():
@@ -129,8 +131,10 @@ def remote_get_cpu_allocator():
 @app.route('/assign_threads', methods=['PUT'])
 def assign_threads():
     try:
+        request_ip = request.headers.get(FORWARDED_FOR_HEADER)
+        log.info("Processing assign threads request (from, proxy): {}".format(request_ip))
+
         body = request.get_json()
-        log.info("Processing assign threads request: {}".format(body))
         threads_request = get_threads_request(body)
         response = get_assign_cpu_allocator().assign_threads(threads_request)
 
@@ -148,8 +152,10 @@ def assign_threads():
 @app.route('/free_threads', methods=['PUT'])
 def free_threads():
     try:
+        request_ip = request.headers.get(FORWARDED_FOR_HEADER)
+        log.info("Processing free threads request (from, proxy): {}".format(request_ip))
+
         body = request.get_json()
-        log.info("Processing free threads request: {}".format(body))
         threads_request = get_threads_request(body)
         response = get_free_cpu_allocator().free_threads(threads_request)
 
@@ -167,8 +173,10 @@ def free_threads():
 @app.route('/rebalance', methods=['PUT'])
 def rebalance():
     try:
+        request_ip = request.headers.get(FORWARDED_FOR_HEADER)
+        log.info("Processing rebalance threads request (from, proxy): {}".format(request_ip))
+
         body = request.get_json()
-        log.info("Processing rebalance threads request: {}".format(body))
         rebalance_request = get_rebalance_request(body)
         response = get_rebalance_cpu_allocator().rebalance(rebalance_request)
 

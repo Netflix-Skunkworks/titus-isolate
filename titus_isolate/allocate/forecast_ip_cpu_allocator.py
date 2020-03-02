@@ -161,7 +161,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         except:
             self.__call_meta['pred_cpu_usage_model_id'] = 'unknown'
 
-        log.info("Usage prediction per workload: " + str(res))
+        log.debug("Usage prediction per workload: " + str(res))
         if len(res) > 0:
             self.__call_meta['pred_cpu_usage'] = dict(res)
         return res
