@@ -3,7 +3,7 @@ from six import iteritems
 
 
 class OpportunisticResourceSpec():
-    swagger_types = {
+    openapi_types = {
         'capacity': 'OpportunisticResourceCapacity',
         'window': 'OpportunisticResourceWindow',
     }
@@ -67,7 +67,7 @@ class OpportunisticResourceSpec():
         """
         result = {}
 
-        for attr, _ in iteritems(self.swagger_types):
+        for attr, _ in iteritems(self.openapi_types):
             value = getattr(self, attr)
             if isinstance(value, list):
                 result[attr] = list(map(

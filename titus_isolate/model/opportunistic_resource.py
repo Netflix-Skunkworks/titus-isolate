@@ -13,7 +13,7 @@ OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY = 'node_name'
 OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY = 'node_uid'
 
 class OpportunisticResource():
-    swagger_types = {
+    openapi_types = {
         'api_version': 'str',
         'kind': 'str',
         'metadata': 'V1ObjectMeta',
@@ -139,7 +139,7 @@ class OpportunisticResource():
         """
         result = {}
 
-        for attr, _ in iteritems(self.swagger_types):
+        for attr, _ in iteritems(self.openapi_types):
             value = getattr(self, attr)
             if isinstance(value, list):
                 result[attr] = list(map(
