@@ -61,22 +61,6 @@ class TestWorkloadMonitorManager:
     def get_pcp_usage() -> dict:
         return {}
 
-    @staticmethod
-    def get_cpu_usage() -> dict:
-        return {}
-
-    @staticmethod
-    def get_mem_usage() -> dict:
-        return {}
-
-    @staticmethod
-    def get_net_recv_usage() -> dict:
-        return {}
-
-    @staticmethod
-    def get_net_trans_usage() -> dict:
-        return {}
-
 
 forecast_ip_alloc_simple = ForecastIPCpuAllocator(
     TestCpuUsagePredictorManager(),

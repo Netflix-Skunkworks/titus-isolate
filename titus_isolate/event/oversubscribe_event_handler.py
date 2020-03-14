@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timedelta
 from threading import Thread
+from typing import Dict, List
 
 from dateutil.parser import parse
 import kubernetes.client
@@ -9,6 +10,7 @@ from kubernetes.client.rest import ApiException
 from kubernetes.client.models import V1DeleteOptions, V1ObjectMeta, V1OwnerReference
 
 from titus_isolate import log
+from titus_isolate.allocate.constants import CPU_USAGE
 from titus_isolate.config.constants import TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD, \
     OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
     DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS, \
@@ -100,58 +102,64 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         Thread(target=self.__handle, args=[event]).start()
 
     def __handle(self, event):
-        if not self.__relevant(event):
-            return
+        try:
+            if not self.__relevant(event):
+                return
 
-        self.handling_event(event, 'oversubscribing workloads')
+            self.handling_event(event, 'oversubscribing workloads')
 
-        log.info('cleaning up old opportunistic resources')
-        clean_count = self.__cleanup()
-        log.info('cleaned up %d old opportunistic resources', clean_count)
+            log.info('cleaning up old opportunistic resources')
+            clean_count = self.__cleanup()
+            log.info('cleaned up %d old opportunistic resources', clean_count)
 
-        cpu_usage = self.__workload_monitor_manager.get_cpu_usage()
-        pred_env = PredEnvironment(self.__config_manager.get_region(), self.__config_manager.get_environment(),
-                                   datetime.utcnow().hour)
+            pcp_usage = self.__workload_monitor_manager.get_pcp_usage()
+            cpu_usage = pcp_usage.get(CPU_USAGE, {})
+            pred_env = PredEnvironment(self.__config_manager.get_region(), self.__config_manager.get_environment(),
+                                       datetime.utcnow().hour)
 
-        if self.__is_window_active():
-            self.__skip_count += 1
-            self.handled_event(event, 'skipping oversubscribe - a window is currently active')
-            return
+            if self.__is_window_active():
+                self.__skip_count += 1
+                self.handled_event(event, 'skipping oversubscribe - a window is currently active')
+                return
 
-        workload_count = 0
-        underutilized_cpu_count = 0
-        # we calculate the window before we send the request to ensure we're not going over our 10 minute mark
-        start = datetime.utcnow()
-        end = start + timedelta(minutes=self.__config_manager.get_int(OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY,
-                                                                      DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES))
-        for workload in self.workload_manager.get_workloads():
-            log.info('workload:%s job_type:%s cpu:%d', workload.get_app_name(), workload.get_job_type(),
-                      workload.get_thread_count())
+            workload_count = 0
+            underutilized_cpu_count = 0
+            # we calculate the window before we send the request to ensure we're not going over our 10 minute mark
+            start = datetime.utcnow()
+            end = start + timedelta(minutes=self.__config_manager.get_int(OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY,
+                                                                          DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES))
+            for workload in self.workload_manager.get_workloads():
+                log.info('workload:%s job_type:%s cpu:%d', workload.get_app_name(), workload.get_job_type(),
+                          workload.get_thread_count())
 
-            is_oversubscribable = self.__is_oversubscribable(workload, cpu_usage, pred_env)
-            log.info("Workload: {} is oversubscribable: {}".format(workload.get_id(), is_oversubscribable))
-            if not is_oversubscribable:
-                continue
-
-            if workload.is_opportunistic():
-                # only add the number of "real" threads (non-opportunistic)
-                free = workload.get_thread_count() - workload.get_opportunistic_thread_count()
-                if free <= 0:
+                is_oversubscribable = self.__is_oversubscribable(workload, cpu_usage, pred_env)
+                log.info("Workload: {} is oversubscribable: {}".format(workload.get_id(), is_oversubscribable))
+                if not is_oversubscribable:
+                    log.info("Workload: {} is NOT oversubscribable: {}".format(workload.get_id(), is_oversubscribable))
                     continue
-                underutilized_cpu_count += free
-            else:
-                underutilized_cpu_count += workload.get_thread_count()
-            workload_count += 1
 
-        free_cpu_count = underutilized_cpu_count
-        if free_cpu_count > 0:
-            self.__add_window(start, end, free_cpu_count)
+                if workload.is_opportunistic():
+                    # only add the number of "real" threads (non-opportunistic)
+                    free = workload.get_thread_count() - workload.get_opportunistic_thread_count()
+                    if free <= 0:
+                        continue
+                    underutilized_cpu_count += free
+                else:
+                    underutilized_cpu_count += workload.get_thread_count()
+                workload_count += 1
 
-        self.__success_count += 1
-        self.__reclaimed_cpu_count = underutilized_cpu_count
-        self.handled_event(event,
-                           'oversubscribed {} cpus from {} workloads, {} total cpus are oversubscribed'.format(
-                               free_cpu_count, workload_count, underutilized_cpu_count))
+            free_cpu_count = underutilized_cpu_count
+            if free_cpu_count > 0:
+                self.__add_window(start, end, free_cpu_count)
+
+            self.__success_count += 1
+            self.__reclaimed_cpu_count = underutilized_cpu_count
+            self.handled_event(event,
+                               'oversubscribed {} cpus from {} workloads, {} total cpus are oversubscribed'.format(
+                                   free_cpu_count, workload_count, underutilized_cpu_count))
+        except:
+            log.exception("Event handler: '{}' failed to handle event: '{}'".format(
+                self.__class__.__name__, event))
 
     def __relevant(self, event):
         if not event[ACTION] == OVERSUBSCRIBE:
@@ -216,7 +224,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         duration = get_duration(workload, duration_percentile)
         return duration if duration is not None else -1
 
-    def __is_oversubscribable(self, workload, cpu_usage, pred_env) -> bool:
+    def __is_oversubscribable(self, workload, cpu_usage: Dict[str, List], pred_env) -> bool:
         min_duration_sec = 60 * self.__config_manager.get_int(OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY,
                                                               DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES)
         workload_duration_sec = self.__get_workload_duration(workload, min_duration_sec)
@@ -224,11 +232,20 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             log.info("Workload: {} is too short. workload_duration_sec: {} < min_duration_sec: {}".format(workload.get_id(), workload_duration_sec, min_duration_sec))
             return False
 
-        threshold = self.__config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
+        log.info("Workload: {} is long enough. workload_duration_sec: {} >= min_duration_sec: {}".format(workload.get_id(), workload_duration_sec, min_duration_sec))
+
+        if workload.get_id() not in list(cpu_usage.keys()):
+            log.info("No cpu usage data for workload: {} in keys: {}".format(workload.get_id(), list(cpu_usage.keys())))
+            return False
+
+        workload_cpu_usage = cpu_usage[workload.get_id()]
+        log.info("workload: {}, workload_cpu_usage: {}".format(workload.get_id(), workload_cpu_usage))
+        workload_cpu_usage = [float(u) for u in workload_cpu_usage]
         pred_cpus = self.__cpu_usage_predictor_manager.get_predictor().predict(workload,
-                                                                               cpu_usage.get(workload.get_id(), None),
+                                                                               workload_cpu_usage,
                                                                                pred_env)
         pred_usage = pred_cpus / workload.get_thread_count()
+        threshold = self.__config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
 
         log.info("Testing oversubscribability of workload: {}, threshold: {}, prediction: {}".format(workload.get_id(), threshold, pred_usage))
         if pred_usage > threshold:

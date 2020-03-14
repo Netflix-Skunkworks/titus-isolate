@@ -3,7 +3,7 @@ from six import iteritems
 
 
 class OpportunisticResourceCapacity():
-    swagger_types = {
+    openapi_types = {
         'cpu': 'float',
     }
 
@@ -43,7 +43,7 @@ class OpportunisticResourceCapacity():
         """
         result = {}
 
-        for attr, _ in iteritems(self.swagger_types):
+        for attr, _ in iteritems(self.openapi_types):
             value = getattr(self, attr)
             if isinstance(value, list):
                 result[attr] = list(map(

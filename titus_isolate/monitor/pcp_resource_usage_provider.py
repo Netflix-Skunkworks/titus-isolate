@@ -61,7 +61,7 @@ class PcpResourceUsageProvider:
                 self.__relative_start_sec,
                 self.__interval_sec)
 
-            log.info('Snapshoting usage from pcp: {}'.format(cmd_str))
+            log.info('Snapshoting usage from pcp: {}'.format(' '.join(cmd_str.split())))
 
             byte_array = subprocess.check_output(cmd_str, shell=True, timeout=self.__query_timeout_sec)
 
