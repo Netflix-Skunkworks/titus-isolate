@@ -2,6 +2,7 @@ import json
 import time
 from queue import Queue, Empty
 from threading import Thread, Lock
+from datetime import datetime
 
 import schedule
 
@@ -39,6 +40,7 @@ class EventManager(MetricsReporter):
 
         self.__processing_thread = Thread(target=self.__process_events)
         self.__pulling_thread = Thread(target=self.__pull_events)
+        self.last_successful_event_epoch_s = 0
 
         config_manager = get_config_manager()
 
@@ -135,6 +137,7 @@ class EventManager(MetricsReporter):
         if self.__reg is not None:
             self.__reg.counter(self.__get_event_succeeded_metric_name(event_handler), self.__tags).increment()
             self.__reg.counter(EVENT_SUCCEEDED_KEY, self.__tags).increment()
+            self.last_successful_event_epoch_s = datetime.utcnow().timestamp()
 
     def __report_failed_event(self, event_handler: EventHandler):
         if self.__reg is not None:
