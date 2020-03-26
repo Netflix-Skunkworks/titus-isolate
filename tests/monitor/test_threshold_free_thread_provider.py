@@ -1,7 +1,7 @@
 import logging
 import unittest
 
-from tests.utils import config_logs, get_test_workload, DEFAULT_TEST_REQUEST_METADATA, get_no_usage_threads_request
+from tests.utils import config_logs, get_test_workload, get_no_usage_threads_request
 from titus_isolate import log
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.config.constants import DEFAULT_TOTAL_THRESHOLD

@@ -16,7 +16,7 @@ from titus_isolate.config.constants import BURST_CORE_COLLOC_USAGE_THRESH
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_workload_monitor_manager

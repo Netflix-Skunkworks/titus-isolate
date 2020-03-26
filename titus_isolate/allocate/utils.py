@@ -1,19 +1,13 @@
-import datetime
-
 import boto3 as boto3
 
 from titus_isolate import log
-from titus_isolate.config.constants import MODEL_BUCKET_FORMAT_STR, MODEL_BUCKET_PREFIX, \
-    DEFAULT_MODEL_BUCKET_PREFIX, MODEL_BUCKET_LEAF, DEFAULT_MODEL_BUCKET_LEAF, MODEL_PREFIX_FORMAT_STR
+from titus_isolate.config.constants import *
 from titus_isolate.config.utils import get_required_property
-from titus_isolate.model.duration_prediction import deserialize_duration_prediction
+from titus_isolate.model.legacy_workload import deserialize_legacy_workload
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.package import Package
 from titus_isolate.model.processor.thread import Thread
-from titus_isolate.model.workload import Workload, LAUNCH_TIME_KEY, ID_KEY, THREAD_COUNT_KEY, MEM_KEY, DISK_KEY, \
-    NETWORK_KEY, APP_NAME_KEY, OWNER_EMAIL_KEY, IMAGE_KEY, COMMAND_KEY, ENTRY_POINT_KEY, JOB_TYPE_KEY, \
-    WORKLOAD_TYPE_KEY, OPPORTUNISTIC_THREAD_COUNT_KEY, DURATION_PREDICTIONS_KEY, deserialize_workload
 from titus_isolate.utils import get_config_manager
 
 
@@ -34,10 +28,10 @@ def parse_cpu(cpu_dict: dict) -> Cpu:
     return Cpu(packages)
 
 
-def parse_workloads(workloads: dict) -> dict:
+def parse_legacy_workloads(workloads: dict) -> dict:
     __workloads = {}
     for w_id, workload in workloads.items():
-        __workloads[w_id] = deserialize_workload(workload)
+        __workloads[w_id] = deserialize_legacy_workload(workload)
     return __workloads
 
 

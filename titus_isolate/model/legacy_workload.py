@@ -1,29 +1,14 @@
 import datetime
-import json
-from typing import List, Union
+from typing import List
 
-from titus_isolate.event.constants import WORKLOAD_TYPES, BURST, BATCH, SERVICE, STATIC
+from titus_isolate.event.constants import *
+from titus_isolate.model.constants import *
 from titus_isolate.model.duration_prediction import DurationPrediction, deserialize_duration_prediction
-
-CREATION_TIME_KEY = "creation_time"
-LAUNCH_TIME_KEY = "launch_time"
-ID_KEY = "id"
-THREAD_COUNT_KEY = "thread_count"
-MEM_KEY = "mem"
-DISK_KEY = "disk"
-NETWORK_KEY = "network"
-APP_NAME_KEY = "app_name"
-OWNER_EMAIL_KEY = "owner_email"
-IMAGE_KEY = "image"
-COMMAND_KEY = "command"
-ENTRY_POINT_KEY = "entrypoint"
-JOB_TYPE_KEY = "job_type"
-WORKLOAD_TYPE_KEY = "type"
-OPPORTUNISTIC_THREAD_COUNT_KEY = "opportunistic_thread_count"
-DURATION_PREDICTIONS_KEY = "duration_predictions"
+from titus_isolate.model.workload_interface import Workload
 
 
-class Workload:
+class LegacyWorkload(Workload):
+
     def __init__(
             self,
             launch_time,
@@ -82,6 +67,9 @@ class Workload:
 
         if self.__identifier == BURST:
             raise ValueError("The identifier '{}' is reserved".format(BURST))
+
+    def get_object_type(self) -> type:
+        return type(self)
 
     def get_id(self) -> str:
         return self.__identifier
@@ -178,17 +166,9 @@ class Workload:
         return json.dumps(self.to_dict())
 
 
-def get_duration(workload: Workload, percentile: float) -> Union[float, None]:
-    for p in workload.get_duration_predictions():
-        if p.get_percentile() == percentile:
-            return p.get_duration()
-
-    return None
-
-
-def deserialize_workload(body: dict) -> Workload:
+def deserialize_legacy_workload(body: dict) -> LegacyWorkload:
     raw_duration_predictions = body.get(DURATION_PREDICTIONS_KEY, [])
-    workload = Workload(
+    workload = LegacyWorkload(
         body.get(LAUNCH_TIME_KEY, 0),
         body[ID_KEY],
         body[THREAD_COUNT_KEY],

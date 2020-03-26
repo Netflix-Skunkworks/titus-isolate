@@ -10,7 +10,7 @@ import pytest
 from titus_isolate.allocate.allocate_response import deserialize_response
 from titus_isolate.allocate.utils import parse_cpu
 from titus_isolate.api.testing import set_testing
-from titus_isolate.model.workload import deserialize_workload
+from titus_isolate.model.legacy_workload import deserialize_legacy_workload
 
 set_testing()
 
@@ -51,7 +51,7 @@ class TestStatus(unittest.TestCase):
         w_in = get_test_workload("a", 2, STATIC)
         log.info("w_in : {}".format(w_in))
 
-        w_out = deserialize_workload(w_in.to_dict())
+        w_out = deserialize_legacy_workload(w_in.to_dict())
         log.info("w_out: {}".format(w_out))
 
         self.assertEqual(w_in.to_dict(), w_out.to_dict())

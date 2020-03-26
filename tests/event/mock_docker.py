@@ -9,7 +9,7 @@ from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWOR
 from titus_isolate import log
 from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, ID, \
     LOWERCASE_ID, NAME, WORKLOAD_TYPE_LABEL_KEY, TIME, TYPE, DIE, STATIC, REPO_DIGESTS, START
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.legacy_workload import LegacyWorkload
 
 
 class MockEventProvider:
@@ -86,7 +86,7 @@ def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()
         NAME: name,
         WORKLOAD_TYPE_LABEL_KEY: workload_type
     }
-    MOCK_TITUS_ENVIRONMENT.add_workload(Workload(
+    MOCK_TITUS_ENVIRONMENT.add_workload(LegacyWorkload(
         launch_time=int(time.time()),
         identifier=name,
         thread_count=cpus,

@@ -7,8 +7,7 @@ from titus_isolate import log
 
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse
-from titus_isolate.allocate.constants import FREE_THREAD_IDS, CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, \
-    DISK_USAGE
+from titus_isolate.allocate.constants import *
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
@@ -16,19 +15,13 @@ from titus_isolate.allocate.workload_allocate_response import WorkloadAllocateRe
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
 from titus_isolate.config.constants import EC2_INSTANCE_ID
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
-from titus_isolate.isolate.metrics_utils import get_static_allocated_size, get_burst_allocated_size, \
-    get_burst_request_size, get_oversubscribed_thread_count, get_allocated_size, get_unallocated_size
-from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
-    WORKLOAD_COUNT_KEY, WORKLOAD_PROCESSING_DURATION, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, \
-    OVERSUBSCRIBED_THREADS_KEY, \
-    STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY, BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
-    UNALLOCATED_SIZE_KEY, REBALANCED_KEY, BURSTABLE_THREADS_KEY, OVERSUBSCRIBABLE_THREADS_KEY, \
-    OVERSUBSCRIBE_CONSUMED_CPU_COUNT, UPDATE_STATE_DURATION
+from titus_isolate.isolate.metrics_utils import *
+from titus_isolate.metrics.constants import *
 from titus_isolate.metrics.event_log import report_cpu_event
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import visualize_cpu_comparison
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.workload_interface import Workload
 from titus_isolate.numa.utils import update_numa_balancing
 from titus_isolate.utils import get_workload_monitor_manager, get_config_manager
 
