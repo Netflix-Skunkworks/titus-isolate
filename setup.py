@@ -28,5 +28,6 @@ setup(name='titus-isolate',
           "titus_isolate/model/processor",
           "titus_isolate/monitor",
           "titus_isolate/numa",
+          "titus_isolate/pod",
           "titus_isolate/predict"],
       url="https://github.com/Netflix-Skunkworks/titus-isolate")
