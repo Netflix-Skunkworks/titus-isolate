@@ -4,7 +4,7 @@ from titus_isolate.config.constants import OPPORTUNISTIC_SHARES_SCALE_KEY, DEFAU
     DEFAULT_SHARES_SCALE, DEFAULT_QUOTA_SCALE
 from titus_isolate.isolate.update import get_threads
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.workload import Workload, deserialize_workload
+from titus_isolate.model.workload_interface import Workload
 from titus_isolate.utils import get_config_manager
 
 WORKLOAD_ID_KEY = "workload_id"

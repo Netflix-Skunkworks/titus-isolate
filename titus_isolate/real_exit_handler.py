@@ -1,7 +1,6 @@
 import os
 import signal
 import time
-from datetime import datetime
 
 from titus_isolate import log
 from titus_isolate.exit_handler import ExitHandler

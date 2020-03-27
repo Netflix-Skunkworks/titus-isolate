@@ -4,9 +4,9 @@ from titus_isolate.allocate.allocate_response import AllocateResponse, get_workl
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.event.constants import STATIC
+from titus_isolate.model.legacy_workload import LegacyWorkload
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads, update_burst_workloads, rebalance
-from titus_isolate.model.workload import Workload
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 
@@ -96,7 +96,7 @@ class GreedyCpuAllocator(CpuAllocator):
 
         return claimed_threads + self.__assign_threads(
             cpu,
-            Workload(
+            LegacyWorkload(
                 launch_time=workload.get_launch_time(),
                 identifier=workload.get_id(),
                 thread_count=thread_count,

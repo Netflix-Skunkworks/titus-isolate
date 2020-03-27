@@ -8,7 +8,7 @@ from titus_isolate.allocate.utils import parse_cpu
 from titus_isolate.allocate.workload_allocate_response import WorkloadAllocateResponse, get_workload_response, \
     deserialize_workload_response
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.workload_interface import Workload
 
 
 class AllocateResponse:

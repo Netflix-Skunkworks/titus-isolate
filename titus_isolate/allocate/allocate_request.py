@@ -3,9 +3,9 @@ from typing import List, Dict
 
 from titus_isolate.allocate.constants import CPU, CPU_USAGE, WORKLOADS, METADATA, CPU_ARRAY, MEM_USAGE, NET_RECV_USAGE, \
     NET_TRANS_USAGE, DISK_USAGE
-from titus_isolate.allocate.utils import parse_cpu, parse_workloads, parse_usage
+from titus_isolate.allocate.utils import parse_cpu, parse_legacy_workloads, parse_usage
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.workload_interface import Workload
 
 
 class AllocateRequest:
@@ -91,7 +91,7 @@ class AllocateRequest:
 
 def deserialize_allocate_request(serialized_request: dict) -> AllocateRequest:
     cpu = parse_cpu(serialized_request[CPU])
-    workloads = parse_workloads(serialized_request[WORKLOADS])
+    workloads = parse_legacy_workloads(serialized_request[WORKLOADS])
     cpu_usage = parse_usage(serialized_request.get(CPU_USAGE, {}))
     mem_usage = parse_usage(serialized_request.get(MEM_USAGE, {}))
     net_recv_usage = parse_usage(serialized_request.get(NET_RECV_USAGE, {}))

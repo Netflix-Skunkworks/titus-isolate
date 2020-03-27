@@ -14,7 +14,7 @@ from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAG
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.workload_interface import Workload
 
 from titus_isolate.monitor.resource_usage import ResourceUsage
 

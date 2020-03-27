@@ -4,10 +4,11 @@ import re
 import numpy as np
 
 from titus_isolate import log
-from titus_isolate.model.workload import Workload
 
 from titus_optimize.data import Query2, build_ts_features
 from titus_optimize.predictors import PredictorWithFilter
+
+from titus_isolate.model.workload_interface import Workload
 
 
 class PredEnvironment:

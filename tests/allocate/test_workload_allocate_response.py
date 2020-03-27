@@ -6,7 +6,7 @@ from titus_isolate.config.constants import DEFAULT_QUOTA_SCALE, DEFAULT_SHARES_S
 from titus_isolate.event.constants import STATIC, BURST
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.workload_interface import Workload
 
 
 def assign_threads(workload: Workload) -> Cpu:

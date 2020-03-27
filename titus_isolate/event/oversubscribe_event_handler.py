@@ -32,7 +32,7 @@ from titus_isolate.model.opportunistic_resource import OpportunisticResource, OP
 from titus_isolate.model.opportunistic_resource_capacity import OpportunisticResourceCapacity
 from titus_isolate.model.opportunistic_resource_spec import OpportunisticResourceSpec
 from titus_isolate.model.opportunistic_resource_window import OpportunisticResourceWindow
-from titus_isolate.model.workload import get_duration
+from titus_isolate.model.utils import get_duration
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import get_config_manager, get_workload_monitor_manager, get_cpu_usage_predictor_manager
 

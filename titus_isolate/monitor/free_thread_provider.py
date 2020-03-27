@@ -3,7 +3,7 @@ from typing import List, Dict
 
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.thread import Thread
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.workload_interface import Workload
 
 
 class FreeThreadProvider:

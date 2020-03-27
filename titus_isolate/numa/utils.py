@@ -2,7 +2,7 @@ from titus_isolate import log
 from titus_isolate.config.constants import TITUS_ISOLATE_DYNAMIC_NUMA_BALANCING, \
     DEFAULT_TITUS_ISOLATE_DYNAMIC_NUMA_BALANCING
 from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.workload import Workload
+from titus_isolate.model.workload_interface import Workload
 from titus_isolate.utils import get_config_manager
 
 NUMA_BALANCING_PATH = '/proc/sys/kernel/numa_balancing'
