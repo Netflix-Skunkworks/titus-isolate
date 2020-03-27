@@ -12,11 +12,13 @@ import pytz
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE
 from titus_isolate.event.constants import STATIC
+from titus_isolate.model.duration_prediction import DurationPrediction
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
 
 from titus_isolate.monitor.resource_usage import ResourceUsage
+from titus_isolate.utils import is_kubernetes
 
 CPU_USAGE_HEADING = 'cgroup.cpuacct.usage'
 MEM_USAGE_HEADING = 'cgroup.memory.usage'
@@ -31,6 +33,21 @@ RESOURCE_HEADING_MAPPINGS = {
     NET_TRANS_USAGE_HEADING: NET_TRANS_USAGE,
     DISK_USAGE_HEADING: DISK_USAGE,
 }
+
+
+def get_duration_predictions(input_str: str) -> List[DurationPrediction]:
+    try:
+        # "0.05=0.29953;0.1=0.29953;0.15=0.29953;0.2=0.29953;0.25=0.29953;0.3=0.29953;0.35=0.29953;0.4=0.29953;0.45=0.29953;0.5=0.29953;0.55=0.29953;0.6=0.29953;0.65=0.29953;0.7=0.29953;0.75=0.29953;0.8=0.29953;0.85=0.29953;0.9=0.29953;0.95=0.29953"
+        duration_predictions = []
+        pairs = input_str.split(';')
+        for p in pairs:
+            k, v = p.split('=')
+            duration_predictions.append(DurationPrediction(float(k), float(v)))
+
+        return duration_predictions
+    except:
+        log.exception("Failed to parse duration predictions: '{}'".format(input_str))
+        return []
 
 
 def get_free_cores(
@@ -123,9 +140,19 @@ def pad_usage(parsed_csv: Dict[str, List], length: int = 60):
     return padded
 
 
-def parse_csv_usage_heading(heading: str) -> Tuple[str, str]:
+def parse_mesos_csv_usage_heading(heading: str) -> Tuple[str, str]:
+    # cgroup.cpuacct.usage-/containers.slice/dcc5ae03-745b-45b4-a759-5c63c4434a97
+    regex = "([^\/]+$)"
+    return __parse_csv_usage_heading(heading, regex)
+
+
+def parse_kubernetes_csv_usage_heading(heading: str) -> Tuple[str, str]:
     # cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service
     regex = "__(.*)\\.service"
+    return __parse_csv_usage_heading(heading, regex)
+
+
+def __parse_csv_usage_heading(heading: str, regex: str) -> Tuple[str, str]:
     resource_name, container_name = heading.split('-', maxsplit=1)
     workload_id = re.search(regex, container_name).group(1)
 
@@ -152,7 +179,11 @@ def get_resource_usage(raw_csv_usage: str, value_count: int, interval_sec: int) 
         if k == TIME:
             continue
 
-        w_id, resource_name = parse_csv_usage_heading(k)
+        if is_kubernetes():
+            w_id, resource_name = parse_kubernetes_csv_usage_heading(k)
+        else:
+            w_id, resource_name = parse_mesos_csv_usage_heading(k)
+
         values = [float('nan') if x == '' else float(x) for x in v]
         usage = ResourceUsage(w_id, resource_name, start_time_epoch, interval_sec, values)
         usages.append(usage)

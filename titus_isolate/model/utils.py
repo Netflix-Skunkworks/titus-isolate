@@ -7,28 +7,16 @@ from typing import Dict, List, Optional
 from titus_isolate import log
 from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.cgroup.utils import get_json_path, get_env_path
+from titus_isolate.config.constants import GET_WORKLOAD_RETRY_COUNT, DEFAULT_GET_WORKLOAD_RETRY_COUNT, \
+    GET_WORKLOAD_RETRY_INTERVAL_SEC, DEFAULT_GET_WORKLOAD_RETRY_INTERVAL_SEC
 from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.model.constants import *
-from titus_isolate.model.duration_prediction import DurationPrediction
+from titus_isolate.model.kubernetes_workload import KubernetesWorkload
 from titus_isolate.model.legacy_workload import LegacyWorkload
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
-
-
-def get_duration_predictions(input_str: str) -> List[DurationPrediction]:
-    try:
-        # "0.05=0.29953;0.1=0.29953;0.15=0.29953;0.2=0.29953;0.25=0.29953;0.3=0.29953;0.35=0.29953;0.4=0.29953;0.45=0.29953;0.5=0.29953;0.55=0.29953;0.6=0.29953;0.65=0.29953;0.7=0.29953;0.75=0.29953;0.8=0.29953;0.85=0.29953;0.9=0.29953;0.95=0.29953"
-        duration_predictions = []
-        pairs = input_str.split(';')
-        for p in pairs:
-            k, v = p.split('=')
-            duration_predictions.append(DurationPrediction(float(k), float(v)))
-
-        return duration_predictions
-    except:
-        log.exception("Failed to parse duration predictions: '{}'".format(input_str))
-        return []
+from titus_isolate.utils import get_pod_manager, managers_are_initialized, get_config_manager
 
 
 def get_duration(workload: Workload, percentile: float) -> Optional[float]:
@@ -39,6 +27,27 @@ def get_duration(workload: Workload, percentile: float) -> Optional[float]:
     return None
 
 
+def get_workload_from_kubernetes(identifier) -> Optional[KubernetesWorkload]:
+    if not managers_are_initialized():
+        log.error("Cannot get workload from kubernetes because managers aren't initialized")
+        return None
+
+    retry_count = get_config_manager().get_int(GET_WORKLOAD_RETRY_COUNT, DEFAULT_GET_WORKLOAD_RETRY_COUNT)
+    retry_interval = get_config_manager().get_int(GET_WORKLOAD_RETRY_INTERVAL_SEC, DEFAULT_GET_WORKLOAD_RETRY_INTERVAL_SEC)
+
+    pod_manager = get_pod_manager()
+    for i in range(retry_count):
+        log.info("Getting pod from kubernetes: %s", identifier)
+        pod = pod_manager.get_pod(identifier)
+        if pod is not None:
+            log.info("Got pod from kubernetes: %s", identifier)
+            return KubernetesWorkload(pod)
+
+        log.info("Retrying getting pod from kubernetes in %s seconds", retry_interval)
+        time.sleep(retry_interval)
+
+    log.error("Failed to get pod from kubernetes: %s", identifier)
+    return None
 
 
 def get_workload_from_disk(identifier) -> LegacyWorkload:

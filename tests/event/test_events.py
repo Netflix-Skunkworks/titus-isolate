@@ -4,16 +4,17 @@ import uuid
 
 from spectator import Registry
 
-from tests.allocate.test_allocate import TestWorkloadMonitorManager
+from tests.allocate.test_allocate import TestWorkloadMonitorManager, TestPodManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import get_container_create_event, MockEventProvider, get_event, get_container_die_event
-from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals, counter_value_equals
+from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals, counter_value_equals, \
+    get_simple_test_pod
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.constants import CONTAINER, STATIC, NAME, REBALANCE_EVENT, START
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
-from titus_isolate.utils import set_config_manager, set_workload_monitor_manager
+from titus_isolate.utils import set_config_manager, set_workload_monitor_manager, set_pod_manager, get_pod_manager
 
 DEFAULT_CPU_COUNT = 2
 
@@ -22,13 +23,16 @@ config_logs(logging.DEBUG)
 DEFAULT_TEST_EVENT_TIMEOUT_SECS = 0.01
 set_config_manager(ConfigManager(TestPropertyProvider({})))
 set_workload_monitor_manager(TestWorkloadMonitorManager())
+set_pod_manager(TestPodManager())
 
 
 class TestEvents(unittest.TestCase):
 
     def test_update_mock_container(self):
         registry = Registry()
-        workload_name = str(uuid.uuid4())
+        test_pod = get_simple_test_pod()
+        get_pod_manager().set_pod(test_pod)
+        workload_name = test_pod.metadata.name
 
         events = [get_container_create_event(DEFAULT_CPU_COUNT, STATIC, workload_name, workload_name)]
         event_count = len(events)
@@ -60,7 +64,9 @@ class TestEvents(unittest.TestCase):
 
     def test_free_cpu_on_container_die(self):
         registry = Registry()
-        workload_name = str(uuid.uuid4())
+        test_pod = get_simple_test_pod()
+        get_pod_manager().set_pod(test_pod)
+        workload_name = test_pod.metadata.name
 
         events = [
             get_container_create_event(DEFAULT_CPU_COUNT, STATIC, workload_name, workload_name),

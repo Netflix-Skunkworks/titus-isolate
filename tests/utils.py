@@ -187,14 +187,14 @@ test_pod_json = {
                 "name": "122413d6-79f2-4a24-82e3-3040b9890b43",
                 "resources": {
                     "limits": {
-                        "cpu": "1",
+                        "cpu": str(2),
                         "memory": "512",
                         "titus/disk": "10k",
                         "titus/gpu": "0",
                         "titus/network": "128"
                     },
                     "requests": {
-                        "cpu": "1",
+                        "cpu": str(2),
                         "memory": "512",
                         "titus/disk": "10k",
                         "titus/gpu": "0",
