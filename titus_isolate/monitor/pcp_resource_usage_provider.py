@@ -8,7 +8,7 @@ from titus_isolate import log
 from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC, DEFAULT_METRICS_QUERY_TIMEOUT_SEC
 from titus_isolate.monitor.resource_usage import ResourceUsage
 from titus_isolate.monitor.utils import get_resource_usage, get_pcp_archive_path
-from titus_isolate.utils import is_kubernetes, get_workload_manager
+from titus_isolate.utils import get_workload_manager, is_kubernetes
 
 
 class PcpResourceUsageProvider:
@@ -28,19 +28,23 @@ class PcpResourceUsageProvider:
         self.__lock = Lock()
         self.__snapshot_usage_raw()
 
-        if is_kubernetes():
-            log.info("Scheduling pcp metrics collecting every {} seconds".format(sample_interval_sec))
-            schedule.every(sample_interval_sec).seconds.do(self.__snapshot_usage_raw)
-        else:
-            log.warning("NOT scheduling pcp metrics collection since we're not in a Kubernetes cluster.")
+        log.info("Scheduling pcp metrics collecting every {} seconds".format(sample_interval_sec))
+        schedule.every(sample_interval_sec).seconds.do(self.__snapshot_usage_raw)
 
     def __snapshot_usage_raw(self):
         try:
             # Avoid making a metrics query on a potentially empty dataset which causes the query command to fail, which
             # causes noisy logs which look like failures.
-            if len(get_workload_manager().get_workloads()) == 0:
+            workload_manager = get_workload_manager()
+            if workload_manager is None or len(workload_manager.get_workloads()) == 0:
                 log.info('No workloads so skipping pcp snapshot.')
                 return
+
+            instance_filter = "INVALID_INSTANCE_FILTER"
+            if is_kubernetes():
+                instance_filter = '.*titus-executor.*.service'
+            else:
+                instance_filter = '/containers.slice/[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}'
 
             # pmrep -a /var/log/pcp/pmlogger/$(hostname)/ -S -60m -t 1m -y s -o csv -i .*titus-executor.*.service  cgroup.cpuacct.usage cgroup.memory.usage
             snapshot_cmd_fmt = """ pmrep -a {0} \
@@ -49,7 +53,7 @@ class PcpResourceUsageProvider:
                     -t {2}s \
                     -y s \
                     -o csv \
-                    -i .*titus-executor.*.service \
+                    -i {3} \
                     cgroup.cpuacct.usage \
                     cgroup.memory.usage \
                     titus.network.in.bytes \
@@ -59,7 +63,8 @@ class PcpResourceUsageProvider:
             cmd_str = snapshot_cmd_fmt.format(
                 get_pcp_archive_path(),
                 self.__relative_start_sec,
-                self.__interval_sec)
+                self.__interval_sec,
+                instance_filter)
 
             log.info('Snapshoting usage from pcp: {}'.format(' '.join(cmd_str.split())))
 

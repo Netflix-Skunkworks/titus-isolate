@@ -32,11 +32,13 @@ from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogMan
 from titus_isolate.metrics.metrics_manager import MetricsManager, registry
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
+from titus_isolate.pod.pod_manager import PodManager
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
 from titus_isolate.real_exit_handler import RealExitHandler
 from titus_isolate.utils import get_config_manager, get_workload_manager, \
     set_event_log_manager, start_periodic_scheduling, set_cpu_usage_predictor_manager, \
-    set_workload_monitor_manager, set_workload_manager, set_event_manager, is_kubernetes, get_event_manager
+    set_workload_monitor_manager, set_workload_manager, set_event_manager, is_kubernetes, get_event_manager, \
+    set_pod_manager
 
 app = Flask(__name__)
 
@@ -166,6 +168,12 @@ if __name__ != '__main__' and not is_testing():
 
     exit_handler = RealExitHandler()
 
+    if is_kubernetes():
+        log.info("Setting pod manager...")
+        pod_manager = PodManager()
+        pod_manager.start()
+        set_pod_manager(pod_manager)
+
     log.info("Setting event log manager...")
     event_log_manager = KeystoneEventLogManager()
     set_event_log_manager(event_log_manager)
@@ -176,7 +184,7 @@ if __name__ != '__main__' and not is_testing():
     log.info("Modeling the CPU...")
     cpu = get_cpu_from_env()
 
-    # Start period scheduling
+    # Start periodic scheduling
     log.info("Starting periodic event scheduling...")
     start_periodic_scheduling()
 

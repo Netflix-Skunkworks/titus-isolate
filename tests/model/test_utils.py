@@ -4,7 +4,7 @@ from tests.utils import get_simple_test_pod
 from titus_isolate.model.constants import JOB_DESCRIPTOR
 from titus_isolate.model.kubernetes_workload import get_workload_from_pod
 from titus_isolate.model.pod_utils import get_start_time, get_main_container, get_job_descriptor, decode_job_descriptor
-from titus_isolate.model.utils import get_duration_predictions
+from titus_isolate.monitor.utils import get_duration_predictions
 
 
 class TestUtils(unittest.TestCase):

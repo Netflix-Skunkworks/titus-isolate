@@ -15,8 +15,8 @@ from titus_isolate.model.constants import CPU, MEMORY, TITUS_NETWORK, EPHEMERAL_
 from titus_isolate.model.duration_prediction import DurationPrediction
 from titus_isolate.model.pod_utils import get_main_container, parse_kubernetes_value, get_job_descriptor, get_app_name, \
     get_image, get_cmd, get_entrypoint
-from titus_isolate.model.utils import get_duration_predictions
 from titus_isolate.model.workload_interface import Workload
+from titus_isolate.monitor.utils import get_duration_predictions
 
 
 class KubernetesWorkload(Workload):

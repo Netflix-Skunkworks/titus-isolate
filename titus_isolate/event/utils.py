@@ -2,7 +2,8 @@ import datetime
 
 from titus_isolate import log
 from titus_isolate.event.constants import ACTOR, ATTRIBUTES, NAME
-import titus_isolate.model.utils
+from titus_isolate.model.utils import get_workload_from_disk, get_workload_from_kubernetes
+from titus_isolate.utils import is_kubernetes
 
 epoch = datetime.datetime.utcfromtimestamp(0)
 
@@ -24,7 +25,10 @@ def get_current_workloads(docker_client):
     workloads = []
     for container in docker_client.containers.list():
         try:
-            workloads.append(titus_isolate.model.utils.get_workload_from_disk(container.name))
+            if is_kubernetes():
+                workloads.append(get_workload_from_kubernetes(container.name))
+            else:
+                workloads.append(get_workload_from_disk(container.name))
         except:
             log.exception("Failed to read environment for container: '%s'", container.name)
 

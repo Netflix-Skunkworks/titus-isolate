@@ -1,8 +1,8 @@
 import unittest
 
 from titus_isolate.allocate.constants import CPU_USAGE
-from titus_isolate.monitor.utils import parse_usage_csv, pad_usage, parse_csv_usage_heading, get_resource_usage, \
-    resource_usages_to_dict
+from titus_isolate.monitor.utils import parse_usage_csv, pad_usage, parse_kubernetes_csv_usage_heading, get_resource_usage, \
+    resource_usages_to_dict, parse_mesos_csv_usage_heading
 
 simple_csv = """Time,"cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service","cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service","cgroup.memory.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service","cgroup.memory.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service"
 2020-01-29 19:46:32,,,8343552,10649600
@@ -37,10 +37,16 @@ class TestCsvUsage(unittest.TestCase):
         # The oldest values were truncated as expected
         self.assertEqual(['1.988', '1.991', '1.987'], cpu_usage)
 
-    def test_parse_heading(self):
+    def test_parse_kubernetes_csv_usage_heading(self):
         raw_heading = "cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service"
-        workload_id, resource_name = parse_csv_usage_heading(raw_heading)
+        workload_id, resource_name = parse_kubernetes_csv_usage_heading(raw_heading)
         self.assertEqual('7b1c435b-9473-40be-b944-2b0b26e2a703', workload_id)
+        self.assertEqual(CPU_USAGE, resource_name)
+
+    def test_parse_mesos_csv_usage_heading(self):
+        raw_heading = 'cgroup.cpuacct.usage-/containers.slice/dcc5ae03-745b-45b4-a759-5c63c4434a97'
+        workload_id, resource_name = parse_mesos_csv_usage_heading(raw_heading)
+        self.assertEqual('dcc5ae03-745b-45b4-a759-5c63c4434a97', workload_id)
         self.assertEqual(CPU_USAGE, resource_name)
 
     def test_csv_to_resource_usage(self):

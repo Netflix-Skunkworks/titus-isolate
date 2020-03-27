@@ -1,7 +1,11 @@
 import logging
+from typing import Optional
+
 import numpy as np
 import unittest
 import uuid
+
+from kubernetes.client import V1Pod
 
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, get_test_workload, get_threads_with_workload, get_no_usage_threads_request, get_no_usage_rebalance_request
@@ -60,6 +64,17 @@ class TestWorkloadMonitorManager:
     @staticmethod
     def get_pcp_usage() -> dict:
         return {}
+
+
+class TestPodManager:
+    def __init__(self):
+        self.pod = None
+
+    def set_pod(self, pod: V1Pod):
+        self.pod = pod
+
+    def get_pod(self, pod_name: str) -> Optional[V1Pod]:
+        return self.pod
 
 
 forecast_ip_alloc_simple = ForecastIPCpuAllocator(
