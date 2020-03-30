@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timedelta
 from threading import Thread
+from typing import Dict
 
 from dateutil.parser import parse
 import kubernetes.client
@@ -9,12 +10,13 @@ from kubernetes.client.rest import ApiException
 from kubernetes.client.models import V1DeleteOptions, V1ObjectMeta, V1OwnerReference
 
 from titus_isolate import log
+from titus_isolate.allocate.constants import CPU_USAGE
 from titus_isolate.config.constants import OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
     DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS, \
     OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY, \
     DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES, EC2_INSTANCE_ID, \
     DEFAULT_OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE, OVERSUBSCRIBE_BATCH_DURATION_PERCENTILE_KEY, TOTAL_THRESHOLD, \
-    DEFAULT_TOTAL_THRESHOLD
+    DEFAULT_TOTAL_THRESHOLD, CPU_PREDICTOR, DEFAULT_CPU_PREDICTOR, SERVICE_CPU_PREDICTOR, LEGACY_CPU_PREDICTOR
 from titus_isolate.event.constants import ACTION, OVERSUBSCRIBE
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.event.utils import unix_time_millis, is_int
@@ -32,10 +34,11 @@ from titus_isolate.model.opportunistic_resource_spec import OpportunisticResourc
 from titus_isolate.model.opportunistic_resource_window import OpportunisticResourceWindow
 from titus_isolate.model.utils import get_duration
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
+from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 
 from titus_isolate.predict.resource_usage_predictor import ResourceUsagePredictor, get_first_window_cpu_prediction
 from titus_isolate.utils import get_config_manager, get_workload_monitor_manager, managers_are_initialized, \
-    get_pod_manager
+    get_pod_manager, get_cpu_usage_predictor_manager
 
 CRD_VERSION = 'apiextensions.k8s.io/v1beta1'
 CRD_KIND = 'CustomResourceDefinition'
@@ -68,6 +71,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         self.__config_manager = get_config_manager()
         self.__workload_monitor_manager = get_workload_monitor_manager()
         self.__resource_usage_predictor = ResourceUsagePredictor()
+        self.__cpu_usage_predictor_manager = get_cpu_usage_predictor_manager()
 
         self.__node_name = self.__config_manager.get_str(EC2_INSTANCE_ID)
         kubeconfig = get_kubeconfig_path()
@@ -102,6 +106,59 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
     def handle(self, event):
         Thread(target=self.__handle, args=[event]).start()
 
+    def __get_simple_cpu_predictions_from_service(self) -> Dict[str, float]:
+        predictions = {}
+        log.info("Getting resource usage predictions...")
+        resource_usage = GlobalResourceUsage(self.__workload_monitor_manager.get_pcp_usage())
+        resource_usage_predictions = self.__resource_usage_predictor.get_predictions(get_pod_manager().get_pods(),
+                                                                                     resource_usage)
+
+        if resource_usage_predictions is None:
+            log.error("Got no resource usage predictions")
+            return predictions
+        else:
+            log.info("Got resource usage predictions: %s", json.dumps(resource_usage_predictions.raw))
+
+        for w_id, prediction in resource_usage_predictions.predictions.items():
+            predictions[w_id] = get_first_window_cpu_prediction(prediction)
+
+        return predictions
+
+    def __get_simple_cpu_predictions_from_local_model(self) -> Dict[str, float]:
+        pcp_usage = self.__workload_monitor_manager.get_pcp_usage()
+        cpu_usage = pcp_usage.get(CPU_USAGE, {})
+        pred_env = PredEnvironment(self.__config_manager.get_region(),
+                                   self.__config_manager.get_environment(),
+                                   datetime.utcnow().hour)
+
+        predictions = {}
+        for workload in self.workload_manager.get_workloads():
+            workload_cpu_usage = cpu_usage.get(workload.get_id(), None)
+            workload_cpu_usage = [float(u) for u in workload_cpu_usage]
+            if workload_cpu_usage is None:
+                log.warning("No CPU usage for workload: %s", workload.get_id())
+                continue
+
+            pred_cpus = self.__cpu_usage_predictor_manager.get_predictor().predict(workload,
+                                                                                   workload_cpu_usage,
+                                                                                   pred_env)
+            predictions[workload.get_id()] = pred_cpus
+
+        return predictions
+
+    def __get_simple_cpu_predictions(self) -> Dict[str, float]:
+        cpu_predictor = self.__config_manager.get_str(CPU_PREDICTOR, DEFAULT_CPU_PREDICTOR)
+        log.info("Using cpu predictor: %s", cpu_predictor)
+
+        if cpu_predictor == SERVICE_CPU_PREDICTOR:
+            return self.__get_simple_cpu_predictions_from_service()
+
+        if cpu_predictor == LEGACY_CPU_PREDICTOR:
+            return self.__get_simple_cpu_predictions_from_local_model()
+
+        log.error("Failed to determine cpu predictor implementation for: %s", cpu_predictor)
+        return {}
+
     def __handle(self, event):
         try:
             if not managers_are_initialized():
@@ -130,12 +187,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
                                                                           DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES))
 
             # Resource usage prediction
-            log.info("Getting resource usage predictions...")
-            resource_usage = GlobalResourceUsage(self.__workload_monitor_manager.get_pcp_usage())
-            resource_usage_predictions = self.__resource_usage_predictor.get_predictions(
-                get_pod_manager().get_pods(),
-                resource_usage)
-            log.info("Got resource usage predictions: %s", json.dumps(resource_usage_predictions.raw))
+            simple_cpu_usage_predictions = self.__get_simple_cpu_predictions()
 
             for workload in self.workload_manager.get_workloads():
                 log.info('workload:%s job_type:%s cpu:%d', workload.get_app_name(), workload.get_job_type(),
@@ -144,20 +196,13 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
                 if not self.__is_long_enough(workload):
                     continue
 
-                pod = get_pod_manager().get_pod(workload.get_id())
-                if pod is None:
-                    log.warning("Pod not found")
+                simple_cpu_prediction = simple_cpu_usage_predictions.get(workload.get_id(), None)
+                if simple_cpu_prediction is None:
+                    log.warning("No CPU prediction for workload: %s", workload.get_id())
                     continue
-
-                resource_usage_prediction = resource_usage_predictions.predictions.get(workload.get_id(), None)
-                if resource_usage_prediction is None:
-                    log.warning("No prediction for workload: %s", workload.get_id())
-                    continue
-
-                first_window_pred_cpus = get_first_window_cpu_prediction(resource_usage_prediction)
 
                 # Process prediction
-                pred_usage = first_window_pred_cpus / workload.get_thread_count()
+                pred_usage = simple_cpu_prediction / workload.get_thread_count()
                 threshold = self.__config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
 
                 log.info("Testing oversubscribability of workload: {}, threshold: {}, prediction: {}".format(
