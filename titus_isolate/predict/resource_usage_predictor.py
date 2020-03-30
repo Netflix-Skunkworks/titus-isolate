@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import requests
 from kubernetes.client import V1Pod
@@ -9,9 +9,12 @@ from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import PREDICTION_SERVICE_URL_FORMAT_STR, CREDENTIALS_PATH
+from titus_isolate.model.kubernetes_workload import KubernetesWorkload
 from titus_isolate.model.pod_utils import get_job_descriptor, get_start_time, get_main_container_status
+from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 from titus_isolate.predict.resource_usage_prediction import ResourceUsagePrediction, ResourceUsagePredictions
+from titus_isolate.predict.simple_cpu_predictor import SimpleCpuPredictor
 from titus_isolate.utils import get_config_manager
 
 CPU = "cpu"
@@ -82,7 +85,7 @@ def get_first_window_cpu_predictions(predictions: ResourceUsagePredictions):
         simple_predictions[w_id] = get_first_window_cpu_prediction(prediction)
 
 
-class ResourceUsagePredictor:
+class ResourceUsagePredictor(SimpleCpuPredictor):
 
     @staticmethod
     def __translate_usage(usages: Dict[str, List[float]]) -> dict:
@@ -125,6 +128,30 @@ class ResourceUsagePredictor:
             return False
 
         return True
+
+    def get_cpu_predictions(self, workloads: List[Workload], resource_usage: GlobalResourceUsage) -> Optional[Dict[str, float]]:
+        pods = []
+        for w in workloads:
+            if w.get_object_type() is not KubernetesWorkload:
+                log.warning("Cannot predict non Kubernetes workload %s: %s is not %s",
+                            w.get_id(), w.get_object_type(), KubernetesWorkload)
+                continue
+
+            pods.append(w.get_pod())
+
+        resource_usage_predictions = self.get_predictions(pods, resource_usage)
+
+        predictions = {}
+        if resource_usage_predictions is None:
+            log.error("Got no resource usage predictions")
+            return predictions
+        else:
+            log.info("Got resource usage predictions: %s", json.dumps(resource_usage_predictions.raw))
+
+        for w_id, prediction in resource_usage_predictions.predictions.items():
+            predictions[w_id] = get_first_window_cpu_prediction(prediction)
+
+        return predictions
 
     def get_predictions(self,
                         pods: List[V1Pod],

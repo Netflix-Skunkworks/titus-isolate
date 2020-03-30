@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 from threading import Thread
-from typing import Dict
+from typing import Dict, Optional
 
 from dateutil.parser import parse
 import kubernetes.client
@@ -10,7 +10,6 @@ from kubernetes.client.rest import ApiException
 from kubernetes.client.models import V1DeleteOptions, V1ObjectMeta, V1OwnerReference
 
 from titus_isolate import log
-from titus_isolate.allocate.constants import CPU_USAGE
 from titus_isolate.config.constants import OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
     DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS, \
     OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY, \
@@ -34,11 +33,9 @@ from titus_isolate.model.opportunistic_resource_spec import OpportunisticResourc
 from titus_isolate.model.opportunistic_resource_window import OpportunisticResourceWindow
 from titus_isolate.model.utils import get_duration
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
-from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 
-from titus_isolate.predict.resource_usage_predictor import ResourceUsagePredictor, get_first_window_cpu_prediction
 from titus_isolate.utils import get_config_manager, get_workload_monitor_manager, managers_are_initialized, \
-    get_pod_manager, get_cpu_usage_predictor_manager
+    get_cpu_usage_predictor_manager
 
 CRD_VERSION = 'apiextensions.k8s.io/v1beta1'
 CRD_KIND = 'CustomResourceDefinition'
@@ -70,7 +67,6 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
         self.__config_manager = get_config_manager()
         self.__workload_monitor_manager = get_workload_monitor_manager()
-        self.__resource_usage_predictor = ResourceUsagePredictor()
         self.__cpu_usage_predictor_manager = get_cpu_usage_predictor_manager()
 
         self.__node_name = self.__config_manager.get_str(EC2_INSTANCE_ID)
@@ -106,58 +102,23 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
     def handle(self, event):
         Thread(target=self.__handle, args=[event]).start()
 
-    def __get_simple_cpu_predictions_from_service(self) -> Dict[str, float]:
-        predictions = {}
-        log.info("Getting resource usage predictions...")
-        resource_usage = GlobalResourceUsage(self.__workload_monitor_manager.get_pcp_usage())
-        resource_usage_predictions = self.__resource_usage_predictor.get_predictions(get_pod_manager().get_pods(),
-                                                                                     resource_usage)
-
-        if resource_usage_predictions is None:
-            log.error("Got no resource usage predictions")
-            return predictions
-        else:
-            log.info("Got resource usage predictions: %s", json.dumps(resource_usage_predictions.raw))
-
-        for w_id, prediction in resource_usage_predictions.predictions.items():
-            predictions[w_id] = get_first_window_cpu_prediction(prediction)
-
-        return predictions
-
-    def __get_simple_cpu_predictions_from_local_model(self) -> Dict[str, float]:
-        pcp_usage = self.__workload_monitor_manager.get_pcp_usage()
-        cpu_usage = pcp_usage.get(CPU_USAGE, {})
-        pred_env = PredEnvironment(self.__config_manager.get_region(),
-                                   self.__config_manager.get_environment(),
-                                   datetime.utcnow().hour)
-
-        predictions = {}
-        for workload in self.workload_manager.get_workloads():
-            workload_cpu_usage = cpu_usage.get(workload.get_id(), None)
-            workload_cpu_usage = [float(u) for u in workload_cpu_usage]
-            if workload_cpu_usage is None:
-                log.warning("No CPU usage for workload: %s", workload.get_id())
-                continue
-
-            pred_cpus = self.__cpu_usage_predictor_manager.get_predictor().predict(workload,
-                                                                                   workload_cpu_usage,
-                                                                                   pred_env)
-            predictions[workload.get_id()] = pred_cpus
-
-        return predictions
-
     def __get_simple_cpu_predictions(self) -> Dict[str, float]:
-        cpu_predictor = self.__config_manager.get_str(CPU_PREDICTOR, DEFAULT_CPU_PREDICTOR)
-        log.info("Using cpu predictor: %s", cpu_predictor)
+        cpu_predictor = self.__cpu_usage_predictor_manager.get_cpu_predictor()
+        if cpu_predictor is None:
+            log.error("Failed to get cpu predictor")
+            return {}
 
-        if cpu_predictor == SERVICE_CPU_PREDICTOR:
-            return self.__get_simple_cpu_predictions_from_service()
+        workloads = self.workload_manager.get_workloads()
+        resource_usage = GlobalResourceUsage(self.__workload_monitor_manager.get_pcp_usage())
 
-        if cpu_predictor == LEGACY_CPU_PREDICTOR:
-            return self.__get_simple_cpu_predictions_from_local_model()
-
-        log.error("Failed to determine cpu predictor implementation for: %s", cpu_predictor)
-        return {}
+        log.info("Getting simple cpu predictions...")
+        cpu_predictions = cpu_predictor.get_cpu_predictions(workloads, resource_usage)
+        if cpu_predictions is None:
+            log.error("Failed to get cpu predictions")
+            return {}
+        else:
+            log.info("Got simple cpu predictions: %s", json.dumps(cpu_predictions))
+            return cpu_predictions
 
     def __handle(self, event):
         try:

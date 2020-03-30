@@ -33,7 +33,7 @@ from titus_isolate.metrics.metrics_manager import MetricsManager, registry
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.pod.pod_manager import PodManager
-from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
+from titus_isolate.predict.cpu_usage_predictor_manager import ConfigurableCpuUsagePredictorManager
 from titus_isolate.real_exit_handler import RealExitHandler
 from titus_isolate.utils import get_config_manager, get_workload_manager, \
     set_event_log_manager, start_periodic_scheduling, set_cpu_usage_predictor_manager, \
@@ -190,8 +190,7 @@ if __name__ != '__main__' and not is_testing():
 
     # Start the cpu usage predictor manager
     log.info("Setting up the cpu usage predictor manager...")
-    cpu_predictor_manager = CpuUsagePredictorManager()
-    set_cpu_usage_predictor_manager(cpu_predictor_manager)
+    set_cpu_usage_predictor_manager(ConfigurableCpuUsagePredictorManager())
 
     # Start performance monitoring
     log.info("Starting performance monitoring...")
