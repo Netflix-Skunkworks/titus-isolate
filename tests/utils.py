@@ -23,6 +23,7 @@ from titus_isolate.model.pod_utils import parse_pod
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
+from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_config_manager
 
 DEFAULT_TIMEOUT_SECONDS = 3

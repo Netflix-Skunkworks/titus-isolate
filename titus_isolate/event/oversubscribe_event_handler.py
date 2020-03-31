@@ -10,7 +10,6 @@ from titus_isolate.config.constants import OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY
     DEFAULT_TOTAL_THRESHOLD
 from titus_isolate.event.constants import ACTION, OVERSUBSCRIBE
 from titus_isolate.event.event_handler import EventHandler
-from titus_isolate.event.kubernetes_opportunistic_window_publisher import KubernetesOpportunisticWindowPublisher
 from titus_isolate.event.opportunistic_window_publisher import OpportunisticWindowPublisher
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import OVERSUBSCRIBE_FAIL_COUNT, OVERSUBSCRIBE_SKIP_COUNT, \
@@ -30,7 +29,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
     def __init__(self,
                  workload_manager: WorkloadManager,
-                 window_publisher: OpportunisticWindowPublisher = KubernetesOpportunisticWindowPublisher()):
+                 window_publisher: OpportunisticWindowPublisher):
 
         super().__init__(workload_manager)
         self.__window_publisher = window_publisher
@@ -70,7 +69,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
         return self.__reclaimed_cpu_count
 
     def handle(self, event):
-        Thread(target=self.__handle, args=[event]).start()
+        Thread(target=self._handle, args=[event]).start()
 
     def __get_simple_cpu_predictions(self) -> Dict[str, float]:
         cpu_predictor = self.__cpu_usage_predictor_manager.get_cpu_predictor()
@@ -90,7 +89,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             log.info("Got simple cpu predictions: %s", json.dumps(cpu_predictions))
             return cpu_predictions
 
-    def __handle(self, event):
+    def _handle(self, event):
         try:
             if not self.__relevant(event):
                 return

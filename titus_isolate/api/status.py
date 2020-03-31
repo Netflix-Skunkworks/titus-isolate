@@ -18,6 +18,7 @@ from titus_isolate.constants import HEALTH_CHECK_FAILURE_EXIT_CODE, HEALTH_CHECK
 from titus_isolate.event.create_event_handler import CreateEventHandler
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.event.free_event_handler import FreeEventHandler
+from titus_isolate.event.kubernetes_opportunistic_window_publisher import KubernetesOpportunisticWindowPublisher
 from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.event.reconcile_event_handler import ReconcileEventHandler
 from titus_isolate.event.oversubscribe_event_handler import OversubscribeEventHandler
@@ -216,7 +217,7 @@ if __name__ != '__main__' and not is_testing():
     reconcile_event_handler = ReconcileEventHandler(reconciler)
     oversub_event_handler = None
     if is_kubernetes():
-        oversub_event_handler = OversubscribeEventHandler(workload_manager)
+        oversub_event_handler = OversubscribeEventHandler(workload_manager, KubernetesOpportunisticWindowPublisher())
 
     event_handlers = [h for h in [create_event_handler,
                                   free_event_handler,
