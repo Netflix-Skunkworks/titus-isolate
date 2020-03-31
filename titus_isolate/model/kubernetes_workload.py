@@ -81,7 +81,7 @@ class KubernetesWorkload(Workload):
         self.__job_type = job_type
         self.__owner_email = owner_email
         self.__workload_type = workload_type
-        self.__opportunistic_cpus = opportunistic_cpus
+        self.__opportunistic_cpus = int(opportunistic_cpus)
         self.__duration_predictions = duration_predictions
 
     def get_pod(self):

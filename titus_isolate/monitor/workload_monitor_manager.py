@@ -57,7 +57,12 @@ class WorkloadMonitorManager(MetricsReporter):
             log.debug("Not reporting metrics because there's no workload manager available yet.")
             return
 
-        usage = self.get_pcp_usage()[CPU_USAGE]
+        pcp_usage = self.get_pcp_usage()
+        if CPU_USAGE not in pcp_usage.keys():
+            log.warning("No CPU usage in PCP usage.")
+            return
+
+        usage = pcp_usage[CPU_USAGE]
         static_pool_cpu_usage = self.__get_pool_usage(STATIC, usage)
         burst_pool_cpu_usage = self.__get_pool_usage(BURST, usage)
 

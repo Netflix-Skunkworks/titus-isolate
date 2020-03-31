@@ -20,7 +20,7 @@ from titus_isolate.metrics.constants import SOLVER_GET_CPU_ALLOCATOR_SUCCESS, SO
 from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
 from titus_isolate.metrics.metrics_manager import MetricsManager
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
-from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
+from titus_isolate.predict.cpu_usage_predictor_manager import ConfigurableCpuUsagePredictorManager
 from titus_isolate.utils import get_config_manager, set_cpu_usage_predictor_manager, set_config_manager, \
     start_periodic_scheduling, set_event_log_manager
 
@@ -240,8 +240,7 @@ if __name__ != '__main__' and not is_testing():
     set_event_log_manager(KeystoneEventLogManager())
 
     log.info("Setting up the cpu usage predictor manager...")
-    cpu_predictor_manager = CpuUsagePredictorManager()
-    set_cpu_usage_predictor_manager(cpu_predictor_manager)
+    set_cpu_usage_predictor_manager(ConfigurableCpuUsagePredictorManager())
 
     log.info("Setting cpu_allocators...")
 
