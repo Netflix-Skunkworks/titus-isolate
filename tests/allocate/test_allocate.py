@@ -8,7 +8,8 @@ import uuid
 from kubernetes.client import V1Pod
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.utils import config_logs, get_test_workload, get_threads_with_workload, get_no_usage_threads_request, get_no_usage_rebalance_request
+from tests.utils import config_logs, get_test_workload, get_threads_with_workload, get_no_usage_threads_request, \
+    get_no_usage_rebalance_request, TestCpuUsagePredictorManager, TestPredictor, TestCpuUsagePredictor
 from titus_isolate import log
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
@@ -26,37 +27,6 @@ from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_workload_monitor_manager
 
 config_logs(logging.INFO)
-
-
-class TestPredictor(object):
-    
-    def __init__(self):
-        self.meta_data = {'model_training_titus_task_id': '123'}
-
-
-class TestCpuUsagePredictor:
-
-    def __init__(self, constant_percent_busy: float = 100):
-        self.__constant_percent_busy = constant_percent_busy
-        self.__model = TestPredictor()
-
-    def predict(self, workload: Workload, cpu_usage_last_hour: np.array, pred_env: PredEnvironment) -> float:
-        return workload.get_thread_count() * self.__constant_percent_busy / 100
-
-    def get_model(self):
-        return self.__model
-
-
-class TestCpuUsagePredictorManager:
-
-    def __init__(self, predictor=TestCpuUsagePredictor()):
-        self.__predictor = predictor
-
-    def get_predictor(self):
-        return self.__predictor
-
-    def set_predictor(self, predictor):
-        self.__predictor = predictor
 
 
 class TestWorkloadMonitorManager:
