@@ -1,6 +1,7 @@
 from datetime import datetime as dt
 from collections import defaultdict
 import time
+from typing import Optional
 
 from titus_optimize.compute_v3 import IPSolverParameters, IP_SOLUTION_TIME_BOUND, PlacementSolver
 
@@ -20,8 +21,9 @@ from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.utils import get_burst_workloads, release_all_threads
 from titus_isolate.model.utils import get_sorted_workloads
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
-from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
+from titus_isolate.predict.cpu_usage_predictor import PredEnvironment, CpuUsagePredictor
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
+from titus_isolate.predict.simple_cpu_predictor import SimpleCpuPredictor
 
 
 class CUVector:
@@ -140,8 +142,8 @@ class ForecastIPCpuAllocator(CpuAllocator):
     def get_name(self) -> str:
         return self.__class__.__name__
 
-    def __get_cpu_usage_predictor(self):
-        return self.__cpu_usage_predictor_manager.get_predictor()
+    def __get_cpu_usage_predictor(self) -> Optional[SimpleCpuPredictor]:
+        return self.__cpu_usage_predictor_manager.get_cpu_predictor()
 
     def __predict_usage(self, workloads, cpu_usage):
         res = {}
@@ -152,7 +154,13 @@ class ForecastIPCpuAllocator(CpuAllocator):
 
         start_time = time.time()
         for w in workloads.values():  # TODO: batch the call
-            pred = cpu_usage_predictor.predict(w, cpu_usage.get(w.get_id(), None), pred_env)
+            # TODO: Integrate new prediction service
+            pred = w.get_thread_count()
+            if type(cpu_usage_predictor) is CpuUsagePredictor:
+                pred = cpu_usage_predictor.predict(w, cpu_usage.get(w.get_id(), None), pred_env)
+                log.info("Predicted cpu usage: %s for workload: %s", pred, w.get_id())
+            else:
+                log.info("Not predicting cpu usage for workload: %s", w.get_id())
             res[w.get_id()] = pred
         stop_time = time.time()
         self.__call_meta['pred_cpu_usage_dur_secs'] = stop_time - start_time
