@@ -7,7 +7,8 @@ from titus_isolate.allocate.allocate_threads_request import AllocateThreadsReque
 from titus_isolate.allocate.constants import UNKNOWN_CPU_ALLOCATOR
 from titus_isolate.allocate.cpu_allocate_exception import CpuAllocationException
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_isolate.config.constants import REMOTE_ALLOCATOR_URL, MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME
+from titus_isolate.config.constants import REMOTE_ALLOCATOR_URL, MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME, \
+    MAX_SOLVER_CONNECT_SEC, DEFAULT_MAX_SOLVER_CONNECT_SEC
 from titus_isolate.utils import get_config_manager
 
 
@@ -17,7 +18,9 @@ class RemoteCpuAllocator(CpuAllocator):
         config_manager = get_config_manager()
 
         self.__url = config_manager.get_str(REMOTE_ALLOCATOR_URL, "http://localhost:7501")
-        self.__solver_max_runtime_secs = config_manager.get_float(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
+        solver_max_runtime_secs = config_manager.get_float(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
+        solver_max_connect_secs = config_manager.get_float(MAX_SOLVER_CONNECT_SEC, DEFAULT_MAX_SOLVER_CONNECT_SEC)
+        self.__timeout = (solver_max_connect_secs, solver_max_runtime_secs)
         self.__headers = {'Content-Type': "application/json"}
         self.__reg = None
 
@@ -25,7 +28,7 @@ class RemoteCpuAllocator(CpuAllocator):
         url = "{}/assign_threads".format(self.__url)
         body = request.to_dict()
         log.debug("url: {}, body: {}".format(url, body))
-        response = requests.put(url, json=body, headers=self.__headers, timeout=self.__solver_max_runtime_secs)
+        response = requests.put(url, json=body, headers=self.__headers, timeout=self.__timeout)
         log.debug("assign_threads response code: {}".format(response.status_code))
 
         if response.status_code == 200:
@@ -36,9 +39,10 @@ class RemoteCpuAllocator(CpuAllocator):
     def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         url = "{}/free_threads".format(self.__url)
         body = request.to_dict()
-        log.debug("url: {}, body: {}".format(url, body))
-        response = requests.put(url, json=body, headers=self.__headers, timeout=self.__solver_max_runtime_secs)
-        log.debug("free_threads response code: {}".format(response.status_code))
+
+        log.info("freeing threads remotely for workload: %s, url: %s", request.get_workload_id(), url)
+        response = requests.put(url, json=body, headers=self.__headers, timeout=self.__timeout)
+        log.info("freed threads remotely with response code: %s for workload: %s", response.status_code, request.get_workload_id())
 
         if response.status_code == 200:
             return deserialize_response(response.headers, response.json())
@@ -49,7 +53,7 @@ class RemoteCpuAllocator(CpuAllocator):
         url = "{}/rebalance".format(self.__url)
         body = request.to_dict()
         log.debug("url: {}, body: {}".format(url, body))
-        response = requests.put(url, json=body, headers=self.__headers, timeout=self.__solver_max_runtime_secs)
+        response = requests.put(url, json=body, headers=self.__headers, timeout=self.__timeout)
         log.debug("rebalance response code: {}".format(response.status_code))
 
         if response.status_code == 200:
@@ -60,7 +64,7 @@ class RemoteCpuAllocator(CpuAllocator):
     def get_name(self) -> str:
         url = "{}/cpu_allocator".format(self.__url)
         try:
-            response = requests.get(url, timeout=self.__solver_max_runtime_secs)
+            response = requests.get(url, timeout=self.__timeout)
             return "Remote({})".format(response.text)
         except:
             log.exception("Failed to GET cpu allocator name.")
