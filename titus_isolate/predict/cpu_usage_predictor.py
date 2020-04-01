@@ -40,6 +40,9 @@ class CpuUsagePredictor(SimpleCpuPredictor):
             return {}
 
         cpu_usage = resource_usage.get_cpu_usage()
+        if cpu_usage is None:
+            log.warning("No cpu usage")
+            return {}
         pred_env = PredEnvironment(config_manager.get_region(),
                                    config_manager.get_environment(),
                                    datetime.utcnow().hour)
@@ -47,11 +50,11 @@ class CpuUsagePredictor(SimpleCpuPredictor):
         predictions = {}
         for workload in workloads:
             workload_cpu_usage = cpu_usage.get(workload.get_id(), None)
-            workload_cpu_usage = [float(u) for u in workload_cpu_usage]
             if workload_cpu_usage is None:
                 log.warning("No CPU usage for workload: %s", workload.get_id())
                 continue
 
+            workload_cpu_usage = [float(u) for u in workload_cpu_usage]
             pred_cpus = self.predict(workload, workload_cpu_usage, pred_env)
             predictions[workload.get_id()] = pred_cpus
 

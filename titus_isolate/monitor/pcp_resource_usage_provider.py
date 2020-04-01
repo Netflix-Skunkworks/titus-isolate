@@ -1,4 +1,6 @@
+import copy
 import subprocess
+import uuid
 from threading import Lock
 from typing import List
 
@@ -24,7 +26,7 @@ class PcpResourceUsageProvider:
         self.__interval_sec = interval_sec
         self.__query_timeout_sec = query_timeout_sec
         self.__interval_count = int(relative_start_sec / interval_sec)
-        self.__raw_csv_snapshot = None
+        self.__usages = None
         self.__lock = Lock()
         self.__snapshot_usage_raw()
 
@@ -69,22 +71,22 @@ class PcpResourceUsageProvider:
             log.info('Snapshoting usage from pcp: {}'.format(' '.join(cmd_str.split())))
 
             byte_array = subprocess.check_output(cmd_str, shell=True, timeout=self.__query_timeout_sec)
+            raw_csv_snapshot = byte_array.decode('utf-8')
+            usages = get_resource_usage(raw_csv_snapshot, self.__interval_count, self.__interval_sec)
 
             with self.__lock:
-                self.__raw_csv_snapshot = byte_array.decode('utf-8')
+                self.__usages = usages
         except:
-            log.exception("Failed to snapshot pcp raw data.")
+            log.exception("Failed to snapshot pcp data or compute usages")
+
+    def __get_usages_copy(self) -> List[ResourceUsage]:
+        with self.__lock:
+            return copy.deepcopy(self.__usages)
 
     def get_resource_usages(self) -> List[ResourceUsage]:
-        with self.__lock:
-            try:
-                log.debug('Computing usages from pcp snapshot: {}'.format(self.__raw_csv_snapshot))
-                if self.__raw_csv_snapshot is not None:
-                    usages = get_resource_usage(self.__raw_csv_snapshot, self.__interval_count, self.__interval_sec)
-                    log.debug('usages: {}'.format(usages))
-                    return usages
-                else:
-                    log.warning('No PCP resource CSV snapshot set')
-                    return []
-            except:
-                log.exception("Failed to compute usages.")
+        usages_copy = self.__get_usages_copy()
+        if usages_copy is None:
+            log.warning("No usage snapshot")
+            return []
+        else:
+            return usages_copy
