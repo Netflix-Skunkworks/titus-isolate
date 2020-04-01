@@ -1,0 +1,10 @@
+[Unit]
+Description=generates environment file
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/apps/titus-isolate/bin/env.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -7,7 +7,7 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 
 
-if "DISTRIB_ID" in os.environ:
+if 'DISTRIB_ID' in os.environ and 'TITUS_TASK_ID' not in os.environ:
     from systemd.journal import JournaldLogHandler
     journald_handler = JournaldLogHandler()
     journald_handler.setFormatter(logging.Formatter(LOG_FMT_STRING))

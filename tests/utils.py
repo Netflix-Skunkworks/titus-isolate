@@ -312,7 +312,7 @@ class TestCpuUsagePredictorManager:
     def __init__(self, predictor=TestCpuUsagePredictor()):
         self.__predictor = predictor
 
-    def get_predictor(self):
+    def get_cpu_predictor(self):
         return self.__predictor
 
     def set_predictor(self, predictor):

@@ -1,0 +1,18 @@
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=nflx-config.service
+After=network.target
+
+[Service]
+RuntimeDirectory=gunicorn
+WorkingDirectory=/usr/local/lib/python3.6/dist-packages
+EnvironmentFile=/etc/nflx/env_file
+ExecStart=/usr/bin/gunicorn3 -w 4 --log-level=info --worker-tmp-dir /dev/shm titus_isolate.api.solve:app
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
