@@ -16,6 +16,7 @@ from titus_isolate.model.legacy_workload import LegacyWorkload
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
+from titus_isolate.monitor.utils import get_duration_predictions
 from titus_isolate.utils import get_pod_manager, managers_are_initialized, get_config_manager
 
 
