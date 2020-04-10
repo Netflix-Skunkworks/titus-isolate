@@ -193,7 +193,7 @@ def start_periodic_scheduling():
 
 
 def is_kubernetes() -> bool:
-    return get_config_manager().get_bool(KUBERNETES_BACKEND_KEY, True)
+    return get_config_manager().get_cached_bool(KUBERNETES_BACKEND_KEY, True)
 
 
 def __schedule_loop():

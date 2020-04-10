@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from titus_isolate.config.agent_property_provider import AgentPropertyProvider
 
 
@@ -22,6 +24,22 @@ class ConfigManager:
 
     def get_bool(self, key, default=None):
         return bool(self.get_str(key, default))
+
+    @lru_cache(maxsize=None)
+    def get_cached_str(self, key, default=None):
+        return self.get_str(key, default)
+
+    @lru_cache(maxsize=None)
+    def get_cached_float(self, key, default=None):
+        return self.get_float(key, default)
+
+    @lru_cache(maxsize=None)
+    def get_cached_int(self, key, default=None):
+        return self.get_int(key, default)
+
+    @lru_cache(maxsize=None)
+    def get_cached_bool(self, key, default=None):
+        return self.get_bool(key, default)
 
     def get_region(self):
         return self.__property_provider.get('EC2_REGION')

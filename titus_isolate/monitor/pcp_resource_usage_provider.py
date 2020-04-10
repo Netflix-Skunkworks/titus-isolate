@@ -1,6 +1,5 @@
 import copy
 import subprocess
-import uuid
 from threading import Lock
 from typing import List
 
