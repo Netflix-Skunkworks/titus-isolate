@@ -7,7 +7,7 @@ from tests.utils import config_logs
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, NOOP, IP, GREEDY
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
-from titus_isolate.constants import ALLOCATOR_CONFIG_CHANGE_EXIT
+from titus_isolate.constants import GENERIC_PROPERTY_CHANGE_EXIT
 
 config_logs(logging.DEBUG)
 
@@ -23,7 +23,7 @@ class TestCpuAllocatorWatcher(unittest.TestCase):
 
         property_provider.map[CPU_ALLOCATOR] = GREEDY
         watcher.detect_changes()
-        self.assertEqual(ALLOCATOR_CONFIG_CHANGE_EXIT, exit_handler.last_code)
+        self.assertEqual(GENERIC_PROPERTY_CHANGE_EXIT, exit_handler.last_code)
 
     def test_nothing_to_no_change_update(self):
         property_provider = TestPropertyProvider({})
@@ -51,4 +51,4 @@ class TestCpuAllocatorWatcher(unittest.TestCase):
         # titus-isolate should exit when the allocator changes
         property_provider.map[CPU_ALLOCATOR] = IP
         watcher.detect_changes()
-        self.assertEqual(ALLOCATOR_CONFIG_CHANGE_EXIT, exit_handler.last_code)
+        self.assertEqual(GENERIC_PROPERTY_CHANGE_EXIT, exit_handler.last_code)

@@ -26,6 +26,10 @@ class ConfigManager:
         return bool(self.get_str(key, default))
 
     @lru_cache(maxsize=None)
+    def get_cached_str(self, key, default=None):
+        return self.get_str(key, default)
+
+    @lru_cache(maxsize=None)
     def get_cached_float(self, key, default=None):
         return self.get_float(key, default)
 
