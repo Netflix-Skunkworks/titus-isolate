@@ -13,8 +13,6 @@ from titus_isolate.constants import KUBERNETES_BACKEND_KEY
 
 SCHEDULING_SLEEP_INTERVAL = 1.0
 
-__property_cache = {}
-
 scheduling_lock = Lock()
 scheduling_started = False
 
@@ -195,12 +193,7 @@ def start_periodic_scheduling():
 
 
 def is_kubernetes() -> bool:
-    global __property_cache
-
-    if KUBERNETES_BACKEND_KEY not in __property_cache:
-        __property_cache[KUBERNETES_BACKEND_KEY] = get_config_manager().get_bool(KUBERNETES_BACKEND_KEY, True)
-
-    return __property_cache[KUBERNETES_BACKEND_KEY]
+    return get_config_manager().get_cached_bool(KUBERNETES_BACKEND_KEY, True)
 
 
 def __schedule_loop():
