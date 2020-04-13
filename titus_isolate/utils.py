@@ -9,7 +9,9 @@ from titus_isolate.allocate.constants import TITUS_ISOLATE_CELL_HEADER, UNKNOWN_
 from titus_isolate.config.agent_property_provider import AgentPropertyProvider
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import REMOTE_ALLOCATOR_URL, MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME
-from titus_isolate.constants import KUBERNETES_BACKEND_KEY
+from titus_isolate.constants import KUBERNETES_BACKEND_KEY, SCHEDULE_ONCE_FAILURE_EXIT_CODE, \
+    SCHEDULING_LOOP_FAILURE_EXIT_CODE
+from titus_isolate.exit_handler import ExitHandler
 
 SCHEDULING_SLEEP_INTERVAL = 1.0
 
@@ -179,25 +181,37 @@ def get_cell_name():
         return UNKNOWN_CELL
 
 
-def start_periodic_scheduling():
+def is_kubernetes() -> bool:
+    return get_config_manager().get_cached_bool(KUBERNETES_BACKEND_KEY, True)
+
+
+def start_periodic_scheduling(exit_handler: ExitHandler):
     global scheduling_started
 
     with scheduling_lock:
         if scheduling_started:
             return
 
-        worker_thread = Thread(target=__schedule_loop)
+        worker_thread = Thread(target=__schedule_loop, args=[exit_handler])
         worker_thread.daemon = True
         worker_thread.start()
         scheduling_started = True
 
 
-def is_kubernetes() -> bool:
-    return get_config_manager().get_cached_bool(KUBERNETES_BACKEND_KEY, True)
-
-
-def __schedule_loop():
+def __schedule_loop(exit_handler: ExitHandler):
+    log.info("Starting scheduling loop...")
     while True:
+        try:
+            sleep_time = _schedule_once(exit_handler)
+            log.debug("Scheduling thread sleeping for: '%d' seconds", sleep_time)
+            time.sleep(sleep_time)
+        except:
+            log.exception("Failed to run scheduling loop")
+            exit_handler.exit(SCHEDULING_LOOP_FAILURE_EXIT_CODE)
+
+
+def _schedule_once(exit_handler: ExitHandler) -> float:
+    try:
         log.debug("Running pending scheduled tasks.")
         schedule.run_pending()
 
@@ -208,5 +222,7 @@ def __schedule_loop():
         if sleep_time < 0:
             sleep_time = SCHEDULING_SLEEP_INTERVAL
 
-        log.debug("Scheduling thread sleeping for: '{}' seconds".format(sleep_time))
-        time.sleep(sleep_time)
+        return sleep_time
+    except:
+        log.exception("Failed to run scheduling once")
+        exit_handler.exit(SCHEDULE_ONCE_FAILURE_EXIT_CODE)
