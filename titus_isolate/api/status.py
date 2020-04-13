@@ -1,4 +1,3 @@
-import datetime
 import json
 import logging
 import threading
@@ -10,11 +9,8 @@ from flask import Flask
 from titus_isolate import log
 from titus_isolate.api.testing import is_testing
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.config.constants import RESTART_PROPERTIES, DEFAULT_HEALTH_CHECK_FREQUENCY, \
-    DEFAULT_MAX_TIME_SINCE_LAST_SUCCESSFUL_EVENT, MAX_TIME_SINCE_LAST_SUCCESSFUL_EVENT_KEY, HEALTH_CHECK_FREQUENCY_KEY
+from titus_isolate.config.constants import RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
-from titus_isolate.constants import HEALTH_CHECK_FAILURE_EXIT_CODE, HEALTH_CHECK_EXCEPTION_EXIT_CODE
 from titus_isolate.event.create_event_handler import CreateEventHandler
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.event.free_event_handler import FreeEventHandler
@@ -23,7 +19,6 @@ from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.event.reconcile_event_handler import ReconcileEventHandler
 from titus_isolate.event.oversubscribe_event_handler import OversubscribeEventHandler
 from titus_isolate.event.utils import get_current_workloads
-from titus_isolate.exit_handler import ExitHandler
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.reconciler import Reconciler
 from titus_isolate.isolate.utils import get_fallback_allocator
@@ -38,8 +33,8 @@ from titus_isolate.predict.cpu_usage_predictor_manager import ConfigurableCpuUsa
 from titus_isolate.real_exit_handler import RealExitHandler
 from titus_isolate.utils import get_config_manager, get_workload_manager, \
     set_event_log_manager, start_periodic_scheduling, set_cpu_usage_predictor_manager, \
-    set_workload_monitor_manager, set_workload_manager, set_event_manager, is_kubernetes, get_event_manager, \
-    set_pod_manager
+    set_workload_monitor_manager, set_workload_manager, set_event_manager, is_kubernetes, \
+    set_pod_manager, is_running_on_agent
 
 app = Flask(__name__)
 
@@ -111,37 +106,11 @@ def get_wm_status():
     })
 
 
-def health_check(local_exit_handler: ExitHandler, local_event_manager: EventManager, config_manager: ConfigManager):
-    last_processed_event_time_epoch_s = datetime.datetime.utcnow().timestamp()
-
-    while True:
-        try:
-            threshold = config_manager.get_int(
-                MAX_TIME_SINCE_LAST_SUCCESSFUL_EVENT_KEY,
-                DEFAULT_MAX_TIME_SINCE_LAST_SUCCESSFUL_EVENT)
-
-            health_check_interval = config_manager.get_int(
-                HEALTH_CHECK_FREQUENCY_KEY,
-                DEFAULT_HEALTH_CHECK_FREQUENCY)
-
-            last_event_epoch_s = local_event_manager.last_successful_event_epoch_s
-            if last_event_epoch_s > 0:
-                last_processed_event_time_epoch_s = last_event_epoch_s
-
-            time_since_last_event = datetime.datetime.utcnow().timestamp() - last_processed_event_time_epoch_s
-            log.info("Seconds since last successful event processing: %s, threshold: %s",
-                     time_since_last_event, threshold)
-
-            if time_since_last_event > threshold:
-                log.info("Event processing is not completing as expected, exiting...")
-                local_exit_handler.exit(HEALTH_CHECK_FAILURE_EXIT_CODE)
-
-            log.info("Next health check in %s seconds", health_check_interval)
-            time.sleep(health_check_interval)
-
-        except:
-            log.exception("Failed to healthcheck")
-            local_exit_handler.exit(HEALTH_CHECK_EXCEPTION_EXIT_CODE)
+def _notify_ready():
+    if is_running_on_agent():
+        from systemd import daemon
+        from systemd.daemon import Notification
+        daemon.notify(Notification.READY)
 
 
 def init():
@@ -156,6 +125,7 @@ def init():
     log.info("Isolated currently running workloads.")
     # Start processing events after adding running workloads to avoid processing a die event before we add a workload
     event_manager.start_processing_events()
+    _notify_ready()
 
 
 if __name__ != '__main__' and not is_testing():
@@ -229,9 +199,6 @@ if __name__ != '__main__' and not is_testing():
     log.info("Starting Docker event handling...")
     event_manager = EventManager(docker.from_env().events(), event_handlers)
     set_event_manager(event_manager)
-
-    log.info("Starting health check thread...")
-    threading.Thread(target=health_check, args=[exit_handler, event_manager, get_config_manager()]).start()
 
     # Report metrics
     log.info("Starting metrics reporting...")
