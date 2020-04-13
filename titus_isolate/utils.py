@@ -1,3 +1,4 @@
+import os
 import time
 from threading import Thread, Lock
 
@@ -13,7 +14,7 @@ from titus_isolate.constants import KUBERNETES_BACKEND_KEY, SCHEDULE_ONCE_FAILUR
     SCHEDULING_LOOP_FAILURE_EXIT_CODE
 from titus_isolate.exit_handler import ExitHandler
 
-SCHEDULING_SLEEP_INTERVAL = 1.0
+SCHEDULING_SLEEP_INTERVAL = 10.0
 
 scheduling_lock = Lock()
 scheduling_started = False
@@ -198,11 +199,23 @@ def start_periodic_scheduling(exit_handler: ExitHandler):
         scheduling_started = True
 
 
+def is_running_on_agent():
+    return 'NOTIFY_SOCKET' in os.environ and 'TITUS_TASK_ID' not in os.environ
+
+
+def _notify_watchdog():
+    if is_running_on_agent():
+        from systemd import daemon
+        from systemd.daemon import Notification
+        daemon.notify(Notification.WATCHDOG)
+
+
 def __schedule_loop(exit_handler: ExitHandler):
     log.info("Starting scheduling loop...")
     while True:
         try:
             sleep_time = _schedule_once(exit_handler)
+            _notify_watchdog()
             log.debug("Scheduling thread sleeping for: '%d' seconds", sleep_time)
             time.sleep(sleep_time)
         except:
