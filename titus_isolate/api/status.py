@@ -187,7 +187,7 @@ if __name__ != '__main__' and not is_testing():
 
     # Start periodic scheduling
     log.info("Starting periodic event scheduling...")
-    start_periodic_scheduling()
+    start_periodic_scheduling(exit_handler)
 
     # Start the cpu usage predictor manager
     log.info("Setting up the cpu usage predictor manager...")
