@@ -91,7 +91,7 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
     def __translate_usage(usages: Dict[str, List[float]]) -> dict:
         out_usage = {}
         for resource_name, values in usages.items():
-            out_usage[RESOURCE_HEADING_MAPPINGS[resource_name]] = values[:60]
+            out_usage[RESOURCE_HEADING_MAPPINGS[resource_name]] = values[-60:]
 
         return out_usage
 
