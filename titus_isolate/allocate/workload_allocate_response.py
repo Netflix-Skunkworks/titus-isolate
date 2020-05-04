@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import List, Optional
 
 from titus_isolate.config.constants import OPPORTUNISTIC_SHARES_SCALE_KEY, DEFAULT_OPPORTUNISTIC_SHARES_SCALE, \
     DEFAULT_SHARES_SCALE, DEFAULT_QUOTA_SCALE
@@ -67,7 +67,7 @@ def get_cpu_shares(workload: Workload) -> int:
     return workload.get_thread_count() * DEFAULT_SHARES_SCALE
 
 
-def get_workload_response(workload: Workload, cpu: Cpu) -> Union[WorkloadAllocateResponse, None]:
+def get_workload_response(workload: Workload, cpu: Cpu) -> Optional[WorkloadAllocateResponse]:
     thread_ids = get_threads(cpu, workload.get_id())
     cpu_shares = get_cpu_shares(workload)
     cpu_quota = get_cpu_quota(workload)

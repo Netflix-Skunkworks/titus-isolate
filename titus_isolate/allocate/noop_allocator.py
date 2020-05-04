@@ -14,21 +14,21 @@ class NoopCpuAllocator(CpuAllocator):
         log.info("Ignoring attempt to assign threads to workload: '{}'".format(request.get_workload_id()))
         return AllocateResponse(
             request.get_cpu(),
-            get_workload_allocations(request.get_cpu(), request.get_workloads().values()),
+            get_workload_allocations(request.get_cpu(), list(request.get_workloads().values())),
             self.get_name())
 
     def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         log.info("Ignoring attempt to free threads for workload: '{}'".format(request.get_workload_id()))
         return AllocateResponse(
             request.get_cpu(),
-            get_workload_allocations(request.get_cpu(), request.get_workloads().values()),
+            get_workload_allocations(request.get_cpu(), list(request.get_workloads().values())),
             self.get_name())
 
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         log.info("Ignoring attempt to rebalance workloads: '{}'".format(request.get_workloads()))
         return AllocateResponse(
             request.get_cpu(),
-            get_workload_allocations(request.get_cpu(), request.get_workloads().values()),
+            get_workload_allocations(request.get_cpu(), list(request.get_workloads().values())),
             self.get_name())
 
     def get_name(self) -> str:
