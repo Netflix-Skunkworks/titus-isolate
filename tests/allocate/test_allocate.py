@@ -58,7 +58,7 @@ OVER_ALLOCATORS = [NaiveCpuAllocator(), forecast_ip_alloc_simple]
 set_workload_monitor_manager(TestWorkloadMonitorManager())
 
 
-class TestCpu(unittest.TestCase):
+class TestAllocation(unittest.TestCase):
 
     def test_assign_one_thread_empty_cpu(self):
         """
