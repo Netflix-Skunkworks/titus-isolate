@@ -11,10 +11,12 @@ from titus_isolate.api.testing import is_testing
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 from titus_isolate.config.constants import RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
+from titus_isolate.crd.publish.kubernetes_predicted_usage_publisher import KubernetesPredictedUsagePublisher
 from titus_isolate.event.create_event_handler import CreateEventHandler
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.event.free_event_handler import FreeEventHandler
-from titus_isolate.event.kubernetes_opportunistic_window_publisher import KubernetesOpportunisticWindowPublisher
+from titus_isolate.crd.publish.kubernetes_opportunistic_window_publisher import KubernetesOpportunisticWindowPublisher
+from titus_isolate.event.predict_usage_event_handler import ResourceUsagePredictionHandler
 from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.event.reconcile_event_handler import ReconcileEventHandler
 from titus_isolate.event.oversubscribe_event_handler import OversubscribeEventHandler
@@ -30,11 +32,12 @@ from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.pod.pod_manager import PodManager
 from titus_isolate.predict.cpu_usage_predictor_manager import ConfigurableCpuUsagePredictorManager
+from titus_isolate.predict.resource_usage_predictor import ResourceUsagePredictor
 from titus_isolate.real_exit_handler import RealExitHandler
 from titus_isolate.utils import get_config_manager, get_workload_manager, \
     set_event_log_manager, start_periodic_scheduling, set_cpu_usage_predictor_manager, \
     set_workload_monitor_manager, set_workload_manager, set_event_manager, is_kubernetes, \
-    set_pod_manager, is_running_on_agent
+    set_pod_manager, is_running_on_agent, get_pod_manager
 
 app = Flask(__name__)
 
@@ -186,15 +189,20 @@ if __name__ != '__main__' and not is_testing():
     rebalance_event_handler = RebalanceEventHandler(workload_manager)
     reconcile_event_handler = ReconcileEventHandler(reconciler)
     oversub_event_handler = None
+    predicted_usage_handler = None
     if is_kubernetes():
-        oversub_event_handler = OversubscribeEventHandler(workload_manager,
-                                                          KubernetesOpportunisticWindowPublisher(exit_handler))
+        oversub_event_handler = OversubscribeEventHandler(workload_manager, KubernetesOpportunisticWindowPublisher())
+        predicted_usage_handler = ResourceUsagePredictionHandler(
+            KubernetesPredictedUsagePublisher(resource_usage_predictor=ResourceUsagePredictor(),
+                                              pod_manager=get_pod_manager(),
+                                              workload_monitor_manager=workload_monitor_manager))
 
     event_handlers = [h for h in [create_event_handler,
                                   free_event_handler,
                                   rebalance_event_handler,
                                   reconcile_event_handler,
-                                  oversub_event_handler] if h is not None]
+                                  oversub_event_handler,
+                                  predicted_usage_handler] if h is not None]
 
     # Start event processing
     log.info("Starting Docker event handling...")
@@ -209,7 +217,8 @@ if __name__ != '__main__' and not is_testing():
                                      reconciler,
                                      workload_manager,
                                      workload_monitor_manager,
-                                     oversub_event_handler] if m is not None]
+                                     oversub_event_handler,
+                                     predicted_usage_handler] if m is not None]
 
     metrics_manager = MetricsManager(metrics_reporters)
 

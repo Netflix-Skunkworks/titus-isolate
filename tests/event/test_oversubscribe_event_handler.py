@@ -9,7 +9,7 @@ from tests.utils import get_test_workload
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import DEFAULT_TOTAL_THRESHOLD
 from titus_isolate.event.constants import OVERSUBSCRIBE_EVENT, STATIC
-from titus_isolate.event.opportunistic_window_publisher import OpportunisticWindowPublisher
+from titus_isolate.crd.publish.opportunistic_window_publisher import OpportunisticWindowPublisher
 from titus_isolate.event.oversubscribe_event_handler import OversubscribeEventHandler
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
@@ -74,6 +74,9 @@ class TestWorkloadMonitorManager:
     @staticmethod
     def get_pcp_usage() -> dict:
         return {}
+
+    def get_resource_usage(self) -> GlobalResourceUsage:
+        return GlobalResourceUsage(self.get_pcp_usage())
 
 
 class TestOversubscribeEventHandler(unittest.TestCase):

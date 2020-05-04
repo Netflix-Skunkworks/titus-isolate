@@ -7,7 +7,8 @@ from titus_isolate.utils import is_kubernetes
 
 class CreateEventHandler(EventHandler):
     def __init__(self, workload_manager):
-        super().__init__(workload_manager)
+        super().__init__()
+        self.__workload_manager = workload_manager
 
     def handle(self, event):
         if not self.__relevant(event):
@@ -25,7 +26,7 @@ class CreateEventHandler(EventHandler):
             raise Exception('failed to construct workload from event')
 
         self.handling_event(event, "adding workload: '{}'".format(workload.get_id()))
-        self.workload_manager.add_workload(workload)
+        self.__workload_manager.add_workload(workload)
         self.handled_event(event, "added workload: '{}'".format(workload.get_id()))
 
     def __relevant(self, event):
