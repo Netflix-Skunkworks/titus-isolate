@@ -68,9 +68,9 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
             try:
                 stream = watch.Watch().stream(
                     self.__custom_api.list_cluster_custom_object,
-                    "titus.netflix.com",
-                    "v1",
-                    "opportunistic-resources",
+                    group="titus.netflix.com",
+                    version="v1",
+                    plural="opportunistic-resources",
                     label_selector=label_selector)
 
                 for event in stream:
@@ -84,7 +84,7 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                         elif event_type == 'DELETED':
                             self.__opportunistic_resources.pop(event_metadata_name, None)
 
-            except:
+            except Exception:
                 log.exception("Watch of opportunistic resources failed")
 
     def is_window_active(self) -> bool:
@@ -107,7 +107,7 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                 log.info('configured to skip cleanup. opportunistic resource windows will not be deleted.')
                 return 0
             for item in self.__opportunistic_resources.values():
-                check_time = datetime.utcnow() + timedelta(seconds=-1 * check_secs)
+                check_time = datetime.utcnow() - timedelta(seconds=check_secs)
                 if check_time < self.__get_timestamp(item['object']['spec']['window']['end']):
                     continue
                 log.debug('deleting: %s', json.dumps(item))
@@ -116,7 +116,7 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                                                                          group=OPPORTUNISTIC_RESOURCE_GROUP,
                                                                          plural=OPPORTUNISTIC_RESOURCE_PLURAL,
                                                                          namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
-                                                                         name=item['object']['spec']['metadata']['name'],
+                                                                         name=item['object']['metadata']['name'],
                                                                          body=delete_opts)
                 log.debug('deleted: %s', json.dumps(resp))
                 clean_count += 1
