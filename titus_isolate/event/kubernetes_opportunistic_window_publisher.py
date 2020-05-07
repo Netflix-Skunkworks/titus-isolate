@@ -1,9 +1,12 @@
 import json
 from datetime import datetime, timedelta
+from threading import Thread, Lock
+
 from dateutil.parser import parse
 
 import kubernetes
 from kubernetes.client import V1Node, V1ObjectMeta, V1OwnerReference, V1DeleteOptions
+from kubernetes import watch
 
 from titus_isolate import log
 from titus_isolate.config.constants import EC2_INSTANCE_ID, OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
@@ -36,6 +39,12 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
         self.__custom_api = kubernetes.client.CustomObjectsApi(
             kubernetes.config.new_client_from_config(config_file=kubeconfig))
 
+        self.__lock = Lock()
+        self.__opportunistic_resources = {}
+
+        watch_thread = Thread(target=self.__watch)
+        watch_thread.start()
+
     @staticmethod
     def get_kubeconfig_path():
         with open(VIRTUAL_KUBELET_CONFIG_PATH) as file:
@@ -51,41 +60,68 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
         log.debug('node: %s', node)
         return node
 
+    def __watch(self):
+        label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
+                                        self.__node_name)
+        while True:
+            log.info("Starting opportunistic resource watch...")
+            try:
+                stream = watch.Watch().stream(
+                    self.__custom_api.list_cluster_custom_object,
+                    group="titus.netflix.com",
+                    version="v1",
+                    plural="opportunistic-resources",
+                    label_selector=label_selector)
+
+                for event in stream:
+                    log.info("Event: %s", event)
+                    event_type = event['type']
+                    event_metadata_name = event['object']['metadata']['name']
+
+                    with self.__lock:
+                        if event_type == 'ADDED':
+                            self.__opportunistic_resources[event_metadata_name] = event
+                        elif event_type == 'DELETED':
+                            self.__opportunistic_resources.pop(event_metadata_name, None)
+
+            except Exception:
+                log.exception("Watch of opportunistic resources failed")
+
     def is_window_active(self) -> bool:
-        oppo_list = self.__get_scoped_opportunistic_resources()
-        log.debug('is active: oppo list: %s', json.dumps(oppo_list))
-        for item in oppo_list['items']:
-            log.debug('checking for window: %s', json.dumps(item))
-            now = datetime.utcnow()
-            if now < self.__get_timestamp(item['spec']['window']['end']):
-                return True
-        return False
+        with self.__lock:
+            log.debug('is active: oppo list: %s', json.dumps(self.__opportunistic_resources))
+            for item in self.__opportunistic_resources.values():
+                log.debug('checking for window: %s', json.dumps(item))
+                now = datetime.utcnow()
+                if now < self.__get_timestamp(item['object']['spec']['window']['end']):
+                    return True
+            return False
 
     def cleanup(self):
-        oppo_list = self.__get_scoped_opportunistic_resources()
-        log.debug('cleanup: oppo list: %s', json.dumps(oppo_list))
-        clean_count = 0
-        check_secs = self.__config_manager.get_float(OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY,
-                                                     DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS)
-        if check_secs <= 0:
-            log.info('configured to skip cleanup. opportunistic resource windows will not be deleted.')
-            return 0
-        for item in oppo_list['items']:
-            check_time = datetime.utcnow() + timedelta(seconds=-1*check_secs)
-            if check_time < self.__get_timestamp(item['spec']['window']['end']):
-                continue
-            log.debug('deleting: %s', json.dumps(item))
-            delete_opts = V1DeleteOptions(grace_period_seconds=0, propagation_policy='Foreground')
-            resp = self.__custom_api.delete_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
-                                                                     group=OPPORTUNISTIC_RESOURCE_GROUP,
-                                                                     plural=OPPORTUNISTIC_RESOURCE_PLURAL,
-                                                                     namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
-                                                                     name=item['metadata']['name'],
-                                                                     body=delete_opts)
-            log.debug('deleted: %s', json.dumps(resp))
-            clean_count += 1
+        with self.__lock:
+            log.debug('cleanup: oppo list: %s', json.dumps(self.__opportunistic_resources))
+            clean_count = 0
+            check_secs = self.__config_manager.get_float(OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY,
+                                                         DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS)
+            if check_secs <= 0:
+                log.info('configured to skip cleanup. opportunistic resource windows will not be deleted.')
+                return 0
+            for item in self.__opportunistic_resources.values():
+                check_time = datetime.utcnow() - timedelta(seconds=check_secs)
+                if check_time < self.__get_timestamp(item['object']['spec']['window']['end']):
+                    continue
+                log.debug('deleting: %s', json.dumps(item))
+                delete_opts = V1DeleteOptions(grace_period_seconds=0, propagation_policy='Foreground')
+                resp = self.__custom_api.delete_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
+                                                                         group=OPPORTUNISTIC_RESOURCE_GROUP,
+                                                                         plural=OPPORTUNISTIC_RESOURCE_PLURAL,
+                                                                         namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
+                                                                         name=item['object']['metadata']['name'],
+                                                                         body=delete_opts)
+                log.debug('deleted: %s', json.dumps(resp))
+                clean_count += 1
 
-        return clean_count
+            return clean_count
 
     def add_window(self, start: datetime, end: datetime, free_cpu_count: int):
         node = self.__get_node()
@@ -115,15 +151,6 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                                                                  namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
                                                                  body=oppo_body)
         log.debug('created window: %s', json.dumps(oppo))
-
-    def __get_scoped_opportunistic_resources(self):
-        label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
-                                        self.__node_name)
-        return self.__custom_api.list_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
-                                                               group=OPPORTUNISTIC_RESOURCE_GROUP,
-                                                               plural=OPPORTUNISTIC_RESOURCE_PLURAL,
-                                                               namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
-                                                               label_selector=label_selector)
 
     @staticmethod
     def __get_timestamp(s: str) -> datetime:
