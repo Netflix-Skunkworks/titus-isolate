@@ -178,8 +178,14 @@ class KubernetesWorkload(Workload):
         }
 
     @staticmethod
-    def __get_serializable_pod(pod: V1Pod) -> str:
-        return json.dumps(pod.to_dict(), default=str)
+    def __json_default(obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.timestamp()
+
+        return str(obj)
+
+    def __get_serializable_pod(self, pod: V1Pod) -> dict:
+        return json.loads(json.dumps(pod.to_dict(), default=self.__json_default))
 
 
 def get_workload_from_pod(pod: V1Pod) -> KubernetesWorkload:
