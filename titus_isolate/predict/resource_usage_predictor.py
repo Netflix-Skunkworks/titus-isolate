@@ -163,7 +163,7 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
 
         running_pods = []
         for p in pods:
-            if p.metadata.name in resource_usage.get_workload_ids():
+            if self.is_running(p):
                 running_pods.append(p)
             else:
                 log.info("Pod is not yet running: %s", p.metadata.name)
