@@ -25,6 +25,10 @@ VIRTUAL_KUBELET_CONFIG_PATH = '/run/virtual-kubelet.config'
 KUBECONFIG_ENVVAR = 'KUBECONFIG'
 DEFAULT_KUBECONFIG_PATH = '/run/kubernetes/config'
 
+ADDED = "ADDED"
+DELETED = "DELETED"
+HANDLED_EVENTS = [ADDED, DELETED]
+
 
 class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
 
@@ -76,12 +80,15 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                 for event in stream:
                     log.info("Event: %s", event)
                     event_type = event['type']
-                    event_metadata_name = event['object']['metadata']['name']
+                    if event_type not in HANDLED_EVENTS:
+                        log.warning("Ignoring unhandled event: %s", event)
+                        continue
 
+                    event_metadata_name = event['object']['metadata']['name']
                     with self.__lock:
-                        if event_type == 'ADDED':
+                        if event_type == ADDED:
                             self.__opportunistic_resources[event_metadata_name] = event
-                        elif event_type == 'DELETED':
+                        elif event_type == DELETED:
                             self.__opportunistic_resources.pop(event_metadata_name, None)
 
             except Exception:
