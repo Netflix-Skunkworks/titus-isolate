@@ -36,7 +36,8 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 logging.getLogger('schedule').setLevel(logging.WARN)
 
-handler = logging.StreamHandler(sys.stdout)
+#handler = logging.StreamHandler(sys.stdout)
+handler = logging.FileHandler("/logs/debug")
 handler.setLevel(logging.DEBUG)
 LOG_FMT_STRING = '%(asctime)s,%(msecs)d %(levelname)s %(process)d [%(filename)s:%(lineno)d] %(message)s'
 formatter = logging.Formatter(LOG_FMT_STRING)

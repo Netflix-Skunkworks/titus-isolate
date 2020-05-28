@@ -296,6 +296,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             self.__call_meta['ip_solver_call_args']['use_per_workload'] = use_per_workload
 
         try:
+            log.info("__call_meta: %s", self.__call_meta)
             placement_solver = PlacementSolver(
                 total_available_cus=num_threads,
                 num_sockets=num_packages,
