@@ -5,7 +5,6 @@ from threading import Lock
 
 from flask import Flask, request, jsonify
 
-from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest, deserialize_allocate_request
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest, deserialize_allocate_threads_request
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
@@ -37,6 +36,9 @@ log.setLevel(logging.INFO)
 logging.getLogger('schedule').setLevel(logging.WARN)
 
 handler = logging.StreamHandler(sys.stdout)
+if os.getenv("TITUS_TASK_ID") is not None:
+    handler = logging.FileHandler("/logs/debug")
+
 handler.setLevel(logging.DEBUG)
 LOG_FMT_STRING = '%(asctime)s,%(msecs)d %(levelname)s %(process)d [%(filename)s:%(lineno)d] %(message)s'
 formatter = logging.Formatter(LOG_FMT_STRING)
