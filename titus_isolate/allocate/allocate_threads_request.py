@@ -3,6 +3,7 @@ import copy
 from titus_isolate.allocate.allocate_request import AllocateRequest, deserialize_allocate_request
 from titus_isolate.allocate.constants import WORKLOAD_ID
 from titus_isolate.model.processor.cpu import Cpu
+from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 
 
 class AllocateThreadsRequest(AllocateRequest):
@@ -11,6 +12,7 @@ class AllocateThreadsRequest(AllocateRequest):
                  cpu: Cpu,
                  workload_id: str,
                  workloads: dict,
+                 resource_usage: GlobalResourceUsage,
                  cpu_usage: dict,
                  mem_usage: dict,
                  net_recv_usage: dict,
@@ -29,6 +31,7 @@ class AllocateThreadsRequest(AllocateRequest):
         super().__init__(
             cpu=cpu,
             workloads=workloads,
+            resource_usage=resource_usage,
             cpu_usage=cpu_usage,
             mem_usage=mem_usage,
             net_recv_usage=net_recv_usage,
@@ -53,6 +56,7 @@ def deserialize_allocate_threads_request(serialized_request: dict) -> AllocateTh
         cpu=allocate_request.get_cpu(),
         workload_id=workload_id,
         workloads=allocate_request.get_workloads(),
+        resource_usage=allocate_request.get_resource_usage(),
         cpu_usage=allocate_request.get_cpu_usage(),
         mem_usage=allocate_request.get_mem_usage(),
         net_recv_usage=allocate_request.get_net_recv_usage(),

@@ -48,13 +48,6 @@ class GlobalResourceUsage:
 
         return s_map
 
-    def get_workload_ids(self) -> Set[str]:
-        ids = set()
-        for r_name, workload_usages in self.__map.items():
-            for w_id, _ in workload_usages.items():
-                ids.add(w_id)
-        return ids
-
     def get_all_usage_for_workload(self, workload_id) -> Dict[str, List[float]]:
         usages = {}
         for resource_name in RESOURCE_USAGE_NAMES:
@@ -64,38 +57,24 @@ class GlobalResourceUsage:
 
         return usages
 
+    # CPU
     def get_cpu_usage(self) -> Optional[Dict[str, List[float]]]:
         return self.__get_resource_usage(CPU_USAGE)
-
-    def get_cpu_usage_for_workload(self, workload_id: str) -> Optional[List[float]]:
-        return self.__get_resource_usage_for_workload(CPU_USAGE, workload_id)
 
     # MEM
     def get_mem_usage(self) -> Optional[Dict[str, List[float]]]:
         return self.__get_resource_usage(MEM_USAGE)
 
-    def get_mem_usage_for_workload(self, workload_id: str) -> Optional[List[float]]:
-        return self.__get_resource_usage_for_workload(MEM_USAGE, workload_id)
-
     # NET
     def get_net_recv_usage(self) -> Optional[Dict[str, List[float]]]:
         return self.__get_resource_usage(NET_RECV_USAGE)
 
-    def get_net_recv_usage_for_workload(self, workload_id: str) -> Optional[List[float]]:
-        return self.__get_resource_usage_for_workload(NET_RECV_USAGE, workload_id)
-
     def get_net_trans_usage(self) -> Optional[Dict[str, List[float]]]:
         return self.__get_resource_usage(NET_TRANS_USAGE)
 
-    def get_net_trans_usage_for_workload(self, workload_id: str) -> Optional[List[float]]:
-        return self.__get_resource_usage_for_workload(NET_TRANS_USAGE, workload_id)
-
     # DISK
-    def get_net_disk_usage(self) -> Optional[Dict[str, List[float]]]:
+    def get_disk_usage(self) -> Optional[Dict[str, List[float]]]:
         return self.__get_resource_usage(DISK_USAGE)
-
-    def get_net_disk_usage_for_workload(self, workload_id: str) -> Optional[List[float]]:
-        return self.__get_resource_usage_for_workload(DISK_USAGE, workload_id)
 
 
 def deserialize_global_resource_usage(s_map: Dict[str, Dict[str, List[str]]]) -> GlobalResourceUsage:

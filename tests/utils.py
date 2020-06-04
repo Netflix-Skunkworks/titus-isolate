@@ -23,6 +23,7 @@ from titus_isolate.model.pod_utils import parse_pod
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
+from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_config_manager
 
@@ -124,6 +125,7 @@ def get_no_usage_threads_request(cpu: Cpu, workloads: List[Workload]):
         cpu=cpu,
         workload_id=workloads[-1].get_id(),
         workloads=__workloads_list_to_map(workloads),
+        resource_usage=GlobalResourceUsage({}),
         cpu_usage={},
         mem_usage={},
         net_recv_usage={},
@@ -136,6 +138,7 @@ def get_no_usage_rebalance_request(cpu: Cpu, workloads: List[Workload]):
     return AllocateRequest(
         cpu=cpu,
         workloads=__workloads_list_to_map(workloads),
+        resource_usage=GlobalResourceUsage({}),
         cpu_usage={},
         mem_usage={},
         net_recv_usage={},

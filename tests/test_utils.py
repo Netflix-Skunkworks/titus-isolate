@@ -5,7 +5,7 @@ import schedule
 
 from tests.test_exit_handler import TestExitHandler
 from titus_isolate.constants import SCHEDULE_ONCE_FAILURE_EXIT_CODE
-from titus_isolate.utils import _schedule_once, SCHEDULING_SLEEP_INTERVAL
+from titus_isolate.utils import _schedule_once
 
 b = False
 exit_handler = TestExitHandler()
