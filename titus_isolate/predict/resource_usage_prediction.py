@@ -1,4 +1,7 @@
+import json
 from typing import List
+
+from titus_isolate import log
 
 MODEL_VERSION = 'model_version'
 MODEL_INSTANCE_ID = 'model_instance_id'
@@ -78,6 +81,10 @@ class ResourceUsagePredictions:
         self.metadata = raw.get(META_DATA, {})
 
         self.predictions = {}
-        for p in raw.get(PREDICTIONS, {}):
-            job_id = p.get(JOB_ID, "UNKNOWN_JOB_ID")
-            self.predictions[job_id] = ResourceUsagePrediction(p)
+        raw_predictions = raw.get(PREDICTIONS)
+        if raw_predictions is not None:
+            for p in raw_predictions:
+                job_id = p.get(JOB_ID, "UNKNOWN_JOB_ID")
+                self.predictions[job_id] = ResourceUsagePrediction(p)
+        else:
+            log.warning("No predictions present")
