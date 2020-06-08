@@ -31,9 +31,13 @@ class ConfigurableCpuUsagePredictorManager(CpuUsagePredictorManager):
         schedule.every(1).hour.do(self.__update_local_model)
 
     def __update_local_model(self):
-        download_latest_cpu_model()
-        with self.__lock:
-            self.__cpu_usage_predictor = CpuUsagePredictor(get_cpu_model_file_path())
+        cpu_predictor = get_config_manager().get_str(CPU_PREDICTOR, DEFAULT_CPU_PREDICTOR)
+        if cpu_predictor == LEGACY_CPU_PREDICTOR:
+            download_latest_cpu_model()
+            with self.__lock:
+                self.__cpu_usage_predictor = CpuUsagePredictor(get_cpu_model_file_path())
+        else:
+            log.info("Skipping model update.  CPU predictor: %s", cpu_predictor)
 
     def get_cpu_predictor(self) -> Optional[SimpleCpuPredictor]:
         config_manager = get_config_manager()
