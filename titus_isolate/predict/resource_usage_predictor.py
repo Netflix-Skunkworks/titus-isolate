@@ -15,7 +15,7 @@ from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 from titus_isolate.predict.resource_usage_prediction import ResourceUsagePrediction, ResourceUsagePredictions
 from titus_isolate.predict.simple_cpu_predictor import SimpleCpuPredictor
-from titus_isolate.utils import get_config_manager
+from titus_isolate.utils import get_config_manager, get_pod_manager
 
 CPU = "cpu"
 MEM = "mem"
@@ -130,14 +130,17 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
         return True
 
     def get_cpu_predictions(self, workloads: List[Workload], resource_usage: GlobalResourceUsage) -> Optional[Dict[str, float]]:
+        pod_manager = get_pod_manager()
+        if pod_manager is None:
+            return None
+
         pods = []
         for w in workloads:
-            if w.get_object_type() is not KubernetesWorkload:
-                log.warning("Cannot predict non Kubernetes workload %s: %s is not %s",
-                            w.get_id(), w.get_object_type(), KubernetesWorkload)
-                continue
-
-            pods.append(w.get_pod())
+            pod = pod_manager.get_pod(w.get_id())
+            if pod is None:
+                log.warning("Failed to get pod for workload: %s", w.get_id())
+            else:
+                pods.append(pod)
 
         resource_usage_predictions = self.get_predictions(pods, resource_usage)
 
