@@ -10,7 +10,7 @@ from kubernetes import watch
 
 from titus_isolate import log
 from titus_isolate.config.constants import EC2_INSTANCE_ID, OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
-    DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS
+    DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS, OVERSUBSCRIBE_FREQUENCY_KEY, DEFAULT_OVERSUBSCRIBE_FREQUENCY
 from titus_isolate.event.opportunistic_window_publisher import OpportunisticWindowPublisher
 from titus_isolate.event.utils import unix_time_millis, is_int
 from titus_isolate.model.opportunistic_resource import OPPORTUNISTIC_RESOURCE_NAMESPACE, \
@@ -39,15 +39,19 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
         kubeconfig = self.get_kubeconfig_path()
         self.__core_api = kubernetes.client.CoreV1Api(
             kubernetes.config.new_client_from_config(config_file=kubeconfig))
-        # NOTE[jigish]:  This API depends on the OpportunisticResource CRD. See the readme for how to create it.
         self.__custom_api = kubernetes.client.CustomObjectsApi(
             kubernetes.config.new_client_from_config(config_file=kubeconfig))
 
         self.__lock = Lock()
         self.__opportunistic_resources = {}
 
-        watch_thread = Thread(target=self.__watch)
-        watch_thread.start()
+        oversubscribe_frequency = self.__config_manager.get_float(OVERSUBSCRIBE_FREQUENCY_KEY,
+                                                                  DEFAULT_OVERSUBSCRIBE_FREQUENCY)
+        if oversubscribe_frequency > 0:
+            watch_thread = Thread(target=self.__watch)
+            watch_thread.start()
+        else:
+            log.info("Skipping opportunistic resource watch, as opportunistic publishing is not configured.")
 
     @staticmethod
     def get_kubeconfig_path():
