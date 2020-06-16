@@ -187,7 +187,8 @@ if __name__ != '__main__' and not is_testing():
     reconcile_event_handler = ReconcileEventHandler(reconciler)
     oversub_event_handler = None
     if is_kubernetes():
-        oversub_event_handler = OversubscribeEventHandler(workload_manager, KubernetesOpportunisticWindowPublisher())
+        oversub_event_handler = OversubscribeEventHandler(workload_manager,
+                                                          KubernetesOpportunisticWindowPublisher(exit_handler))
 
     event_handlers = [h for h in [create_event_handler,
                                   free_event_handler,

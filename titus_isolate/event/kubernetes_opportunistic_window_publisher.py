@@ -11,8 +11,10 @@ from kubernetes import watch
 from titus_isolate import log
 from titus_isolate.config.constants import EC2_INSTANCE_ID, OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
     DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS, OVERSUBSCRIBE_FREQUENCY_KEY, DEFAULT_OVERSUBSCRIBE_FREQUENCY
+from titus_isolate.constants import OPPORTUNISTIC_WATCH_FAILURE
 from titus_isolate.event.opportunistic_window_publisher import OpportunisticWindowPublisher
 from titus_isolate.event.utils import unix_time_millis, is_int
+from titus_isolate.exit_handler import ExitHandler
 from titus_isolate.model.opportunistic_resource import OPPORTUNISTIC_RESOURCE_NAMESPACE, \
     OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY, OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY, OpportunisticResource, \
     OPPORTUNISTIC_RESOURCE_VERSION, OPPORTUNISTIC_RESOURCE_GROUP, OPPORTUNISTIC_RESOURCE_PLURAL
@@ -32,7 +34,8 @@ HANDLED_EVENTS = [ADDED, DELETED]
 
 class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
 
-    def __init__(self):
+    def __init__(self, exit_handler: ExitHandler):
+        self.__exit_handler = exit_handler
         self.__config_manager = get_config_manager()
         self.__node_name = self.__config_manager.get_str(EC2_INSTANCE_ID)
 
@@ -71,32 +74,38 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
     def __watch(self):
         label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
                                         self.__node_name)
-        while True:
-            log.info("Starting opportunistic resource watch...")
-            try:
-                stream = watch.Watch().stream(
-                    self.__custom_api.list_cluster_custom_object,
-                    group="titus.netflix.com",
-                    version="v1",
-                    plural="opportunistic-resources",
-                    label_selector=label_selector)
+        log.info("Starting opportunistic resource watch...")
+        stream = None
+        try:
+            stream = watch.Watch().stream(
+                self.__custom_api.list_cluster_custom_object,
+                group="titus.netflix.com",
+                version="v1",
+                plural="opportunistic-resources",
+                label_selector=label_selector)
 
-                for event in stream:
-                    log.info("Event: %s", event)
-                    event_type = event['type']
-                    if event_type not in HANDLED_EVENTS:
-                        log.warning("Ignoring unhandled event: %s", event)
-                        continue
+            for event in stream:
+                log.info("Event: %s", event)
+                if self.__is_expired_error(event):
+                    raise Exception("Opportunistic resource expired")
 
-                    event_metadata_name = event['object']['metadata']['name']
-                    with self.__lock:
-                        if event_type == ADDED:
-                            self.__opportunistic_resources[event_metadata_name] = event
-                        elif event_type == DELETED:
-                            self.__opportunistic_resources.pop(event_metadata_name, None)
+                event_type = event['type']
+                if event_type not in HANDLED_EVENTS:
+                    log.warning("Ignoring unhandled event: %s", event)
+                    continue
 
-            except Exception:
-                log.exception("Watch of opportunistic resources failed")
+                event_metadata_name = event['object']['metadata']['name']
+                with self.__lock:
+                    if event_type == ADDED:
+                        self.__opportunistic_resources[event_metadata_name] = event
+                    elif event_type == DELETED:
+                        self.__opportunistic_resources.pop(event_metadata_name, None)
+
+        except Exception:
+            if stream is not None:
+                stream.close()
+            log.exception("Watch of opportunistic resources failed")
+            self.__exit_handler.exit(OPPORTUNISTIC_WATCH_FAILURE)
 
     def is_window_active(self) -> bool:
         with self.__lock:
@@ -169,3 +178,34 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
             return datetime.fromtimestamp(int(s) / 1000)
         else:
             return parse(s)
+
+    def __is_expired_error(self, event: dict) -> bool:
+        # {
+        # 	'type': 'ERROR',
+        # 	'object': {
+        # 		'kind': 'Status',
+        # 		'apiVersion': 'v1',
+        # 		'metadata': {},
+        # 		'status': 'Failure',
+        # 		'message': 'too old resource version: 43249758 (43249780)',
+        # 		'reason': 'Expired',
+        # 		'code': 410
+        # 	},
+        # 	'raw_object': {
+        # 		'kind': 'Status',
+        # 		'apiVersion': 'v1',
+        # 		'metadata': {},
+        # 		'status': 'Failure',
+        # 		'message': 'too old resource version: 43249758 (43249780)',
+        # 		'reason': 'Expired',
+        # 		'code': 410
+        # 	}
+        # }
+
+        is_error = event['type'] == 'ERROR'
+        is_expired = False
+        if 'code' in event['object']:
+            is_expired = event['object']['code'] == 410
+
+        return is_error and is_expired
+
