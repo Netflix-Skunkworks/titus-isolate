@@ -2,6 +2,7 @@ import datetime
 import uuid
 from queue import Queue
 from threading import Thread
+from typing import Optional
 
 from titus_isolate import log
 from titus_isolate.config.constants import EVENT_LOG_FORMAT_STR
@@ -14,7 +15,11 @@ from titus_isolate.utils import get_config_manager
 class KeystoneEventLogManager(EventLogManager):
 
     def __init__(self):
-        self.__set_address()
+        self.__address = self.__get_address()
+        log.info("Set keystone address to: {}".format(self.__address))
+
+        self.__enabled = self.__address is not None
+
         self.__q = Queue()
 
         self.__reg = None
@@ -50,6 +55,10 @@ class KeystoneEventLogManager(EventLogManager):
         while True:
             try:
                 msg = self.__q.get()
+                if not self.__enabled:
+                    log.warning("Dropping keystone event because keystone is disabled")
+                    continue
+
                 log.debug("Sending event log message: {}".format(msg))
                 response = send_event_msg(msg, self.__address)
 
@@ -63,12 +72,14 @@ class KeystoneEventLogManager(EventLogManager):
                 self.__failed_msg_count += 1
                 log.exception("Failed to process event log message.")
 
-    def __set_address(self):
+    def __get_address(self) -> Optional[str]:
         config_manager = get_config_manager()
         region = config_manager.get_region()
         env = config_manager.get_environment()
         format_str = config_manager.get_str(EVENT_LOG_FORMAT_STR)
-        stream = 'titus_isolate'
+        if format_str is None:
+            log.warning("Keystone is not enabled in this region env: %s %s", region, env)
+            return None
 
-        self.__address = format_str.format(region, env, stream)
-        log.info("Set keystone address to: {}".format(self.__address))
+        stream = 'titus_isolate'
+        return format_str.format(region, env, stream)
