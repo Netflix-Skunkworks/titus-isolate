@@ -1,8 +1,6 @@
 from abc import abstractmethod
 from datetime import datetime
 
-from kubernetes.client import V1Node
-
 
 class OpportunisticWindowPublisher:
 

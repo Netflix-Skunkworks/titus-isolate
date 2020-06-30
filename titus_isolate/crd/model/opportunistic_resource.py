@@ -1,18 +1,18 @@
 from pprint import pformat
 from six import iteritems
 
-OPPORTUNISTIC_RESOURCE_GROUP = 'titus.netflix.com'
-OPPORTUNISTIC_RESOURCE_VERSION = 'v1'
-OPPORTUNISTIC_RESOURCE_API_VERSION = OPPORTUNISTIC_RESOURCE_GROUP + '/' + OPPORTUNISTIC_RESOURCE_VERSION
+from titus_isolate.model.constants import CUSTOM_RESOURCE_GROUP, CUSTOM_RESOURCE_API_VERSION
+
 OPPORTUNISTIC_RESOURCE_KIND = 'OpportunisticResource'
 OPPORTUNISTIC_RESOURCE_NAMESPACE = 'default'
 OPPORTUNISTIC_RESOURCE_SINGULAR = 'opportunistic-resource'
 OPPORTUNISTIC_RESOURCE_PLURAL = 'opportunistic-resources'
-OPPORTUNISTIC_RESOURCE_NAME = OPPORTUNISTIC_RESOURCE_PLURAL + '.' + OPPORTUNISTIC_RESOURCE_GROUP
+OPPORTUNISTIC_RESOURCE_NAME = OPPORTUNISTIC_RESOURCE_PLURAL + '.' + CUSTOM_RESOURCE_GROUP
 OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY = 'node_name'
 OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY = 'node_uid'
 
-class OpportunisticResource():
+
+class OpportunisticResource:
     openapi_types = {
         'api_version': 'str',
         'kind': 'str',
@@ -27,7 +27,7 @@ class OpportunisticResource():
         'spec': 'spec'
     }
 
-    def __init__(self, api_version=OPPORTUNISTIC_RESOURCE_API_VERSION, kind=OPPORTUNISTIC_RESOURCE_KIND, metadata=None,
+    def __init__(self, api_version=CUSTOM_RESOURCE_API_VERSION, kind=OPPORTUNISTIC_RESOURCE_KIND, metadata=None,
                  spec=None):
         self._api_version = None
         self._kind = None

@@ -5,27 +5,28 @@ from threading import Thread, Lock
 from dateutil.parser import parse
 
 import kubernetes
-from kubernetes.client import V1Node, V1ObjectMeta, V1OwnerReference, V1DeleteOptions
+from kubernetes.client import V1ObjectMeta, V1OwnerReference, V1DeleteOptions
 from kubernetes import watch
 
 from titus_isolate import log
-from titus_isolate.config.constants import EC2_INSTANCE_ID, OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
+from titus_isolate.config.constants import OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY, \
     DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS, OVERSUBSCRIBE_FREQUENCY_KEY, DEFAULT_OVERSUBSCRIBE_FREQUENCY
-from titus_isolate.constants import OPPORTUNISTIC_WATCH_FAILURE
-from titus_isolate.event.opportunistic_window_publisher import OpportunisticWindowPublisher
+from titus_isolate.constants import DEFAULT_KUBECONFIG_PATH, OPPORTUNISTIC_WATCH_FAILURE
+from titus_isolate.crd.publish.opportunistic_window_publisher import OpportunisticWindowPublisher
 from titus_isolate.event.utils import unix_time_millis, is_int
 from titus_isolate.exit_handler import ExitHandler
-from titus_isolate.model.opportunistic_resource import OPPORTUNISTIC_RESOURCE_NAMESPACE, \
+from titus_isolate.kub.utils import get_node, get_node_name
+from titus_isolate.model.constants import CUSTOM_RESOURCE_VERSION
+from titus_isolate.crd.model.opportunistic_resource import OPPORTUNISTIC_RESOURCE_NAMESPACE, \
     OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY, OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY, OpportunisticResource, \
-    OPPORTUNISTIC_RESOURCE_VERSION, OPPORTUNISTIC_RESOURCE_GROUP, OPPORTUNISTIC_RESOURCE_PLURAL
-from titus_isolate.model.opportunistic_resource_capacity import OpportunisticResourceCapacity
-from titus_isolate.model.opportunistic_resource_spec import OpportunisticResourceSpec
-from titus_isolate.model.opportunistic_resource_window import OpportunisticResourceWindow
+    CUSTOM_RESOURCE_GROUP, OPPORTUNISTIC_RESOURCE_PLURAL
+from titus_isolate.crd.model.opportunistic_resource_capacity import OpportunisticResourceCapacity
+from titus_isolate.crd.model.opportunistic_resource_spec import OpportunisticResourceSpec
+from titus_isolate.crd.model.opportunistic_resource_window import OpportunisticResourceWindow
 from titus_isolate.utils import get_config_manager
 
 VIRTUAL_KUBELET_CONFIG_PATH = '/run/virtual-kubelet.config'
 KUBECONFIG_ENVVAR = 'KUBECONFIG'
-DEFAULT_KUBECONFIG_PATH = '/run/kubernetes/config'
 
 ADDED = "ADDED"
 DELETED = "DELETED"
@@ -37,13 +38,9 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
     def __init__(self, exit_handler: ExitHandler):
         self.__exit_handler = exit_handler
         self.__config_manager = get_config_manager()
-        self.__node_name = self.__config_manager.get_str(EC2_INSTANCE_ID)
 
-        kubeconfig = self.get_kubeconfig_path()
-        self.__core_api = kubernetes.client.CoreV1Api(
-            kubernetes.config.new_client_from_config(config_file=kubeconfig))
         self.__custom_api = kubernetes.client.CustomObjectsApi(
-            kubernetes.config.new_client_from_config(config_file=kubeconfig))
+            kubernetes.config.new_client_from_config(config_file=DEFAULT_KUBECONFIG_PATH))
 
         self.__lock = Lock()
         self.__opportunistic_resources = {}
@@ -56,56 +53,42 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
         else:
             log.info("Skipping opportunistic resource watch, as opportunistic publishing is not configured.")
 
-    @staticmethod
-    def get_kubeconfig_path():
-        with open(VIRTUAL_KUBELET_CONFIG_PATH) as file:
-            line = file.readline()
-            while line:
-                if line.startswith(KUBECONFIG_ENVVAR + '='):
-                    return line.strip()[len(KUBECONFIG_ENVVAR) + 1:]
-                line = file.readline()
-        return DEFAULT_KUBECONFIG_PATH
-
-    def __get_node(self) -> V1Node:
-        node = self.__core_api.read_node(self.__node_name)
-        log.debug('node: %s', node)
-        return node
-
     def __watch(self):
         label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
-                                        self.__node_name)
-        log.info("Starting opportunistic resource watch...")
-        stream = None
-        try:
-            stream = watch.Watch().stream(
-                self.__custom_api.list_cluster_custom_object,
-                group="titus.netflix.com",
-                version="v1",
-                plural="opportunistic-resources",
-                label_selector=label_selector)
+                                        get_node_name())
+        while True:
+            log.info("Starting opportunistic resource watch...")
+            stream = None
+            try:
+                stream = watch.Watch().stream(
+                    self.__custom_api.list_cluster_custom_object,
+                    group="titus.netflix.com",
+                    version="v1",
+                    plural="opportunistic-resources",
+                    label_selector=label_selector)
 
-            for event in stream:
-                log.info("Event: %s", event)
-                if self.__is_expired_error(event):
-                    raise Exception("Opportunistic resource expired")
+                for event in stream:
+                    log.info("Event: %s", event)
+                    if self.__is_expired_error(event):
+                        raise Exception("Opportunistic resource expired")
 
-                event_type = event['type']
-                if event_type not in HANDLED_EVENTS:
-                    log.warning("Ignoring unhandled event: %s", event)
-                    continue
+                    event_type = event['type']
+                    if event_type not in HANDLED_EVENTS:
+                        log.warning("Ignoring unhandled event: %s", event)
+                        continue
 
-                event_metadata_name = event['object']['metadata']['name']
-                with self.__lock:
-                    if event_type == ADDED:
-                        self.__opportunistic_resources[event_metadata_name] = event
-                    elif event_type == DELETED:
-                        self.__opportunistic_resources.pop(event_metadata_name, None)
+                    event_metadata_name = event['object']['metadata']['name']
+                    with self.__lock:
+                        if event_type == ADDED:
+                            self.__opportunistic_resources[event_metadata_name] = event
+                        elif event_type == DELETED:
+                            self.__opportunistic_resources.pop(event_metadata_name, None)
 
-        except Exception:
-            if stream is not None:
-                stream.close()
-            log.exception("Watch of opportunistic resources failed")
-            self.__exit_handler.exit(OPPORTUNISTIC_WATCH_FAILURE)
+            except Exception:
+                if stream is not None:
+                    stream.close()
+                log.exception("Watch of opportunistic resources failed")
+                self.__exit_handler.exit(OPPORTUNISTIC_WATCH_FAILURE)
 
     def is_window_active(self) -> bool:
         with self.__lock:
@@ -132,8 +115,8 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                     continue
                 log.debug('deleting: %s', json.dumps(item))
                 delete_opts = V1DeleteOptions(grace_period_seconds=0, propagation_policy='Foreground')
-                resp = self.__custom_api.delete_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
-                                                                         group=OPPORTUNISTIC_RESOURCE_GROUP,
+                resp = self.__custom_api.delete_namespaced_custom_object(version=CUSTOM_RESOURCE_VERSION,
+                                                                         group=CUSTOM_RESOURCE_GROUP,
                                                                          plural=OPPORTUNISTIC_RESOURCE_PLURAL,
                                                                          namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
                                                                          name=item['object']['metadata']['name'],
@@ -144,7 +127,7 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
             return clean_count
 
     def add_window(self, start: datetime, end: datetime, free_cpu_count: int):
-        node = self.__get_node()
+        node = get_node()
         log.debug('owner_kind:%s owner_name:%s owner_uid:%s', node.kind, node.metadata.name, node.metadata.uid)
         start_epoch_ms = int(unix_time_millis(start))
         end_epoch_ms = int(unix_time_millis(end))
@@ -165,8 +148,8 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                                               window=OpportunisticResourceWindow(start_epoch_ms, end_epoch_ms))
         oppo_body = OpportunisticResource(metadata=oppo_meta,
                                           spec=oppo_spec)
-        oppo = self.__custom_api.create_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
-                                                                 group=OPPORTUNISTIC_RESOURCE_GROUP,
+        oppo = self.__custom_api.create_namespaced_custom_object(version=CUSTOM_RESOURCE_VERSION,
+                                                                 group=CUSTOM_RESOURCE_GROUP,
                                                                  plural=OPPORTUNISTIC_RESOURCE_PLURAL,
                                                                  namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
                                                                  body=oppo_body)

@@ -5,14 +5,15 @@ from titus_isolate.event.event_handler import EventHandler
 class RebalanceEventHandler(EventHandler):
 
     def __init__(self, workload_manager):
-        super().__init__(workload_manager)
+        super().__init__()
+        self.__workload_manager = workload_manager
 
     def handle(self, event):
         if not self.__relevant(event):
             return
 
         self.handling_event(event, "rebalancing workloads")
-        self.workload_manager.rebalance()
+        self.__workload_manager.rebalance()
         self.handled_event(event, "rebalanced workloads")
 
     def __relevant(self, event):

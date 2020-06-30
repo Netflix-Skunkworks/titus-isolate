@@ -3,14 +3,17 @@ import time
 from queue import Queue, Empty
 from threading import Thread, Lock
 from datetime import datetime
+from random import randrange
 
 import schedule
 
 from titus_isolate import log
 from titus_isolate.config.constants import REBALANCE_FREQUENCY_KEY, DEFAULT_REBALANCE_FREQUENCY, \
     RECONCILE_FREQUENCY_KEY, DEFAULT_RECONCILE_FREQUENCY, \
-    OVERSUBSCRIBE_FREQUENCY_KEY, DEFAULT_OVERSUBSCRIBE_FREQUENCY
-from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT, OVERSUBSCRIBE_EVENT, ACTION, HANDLED_ACTIONS
+    OVERSUBSCRIBE_FREQUENCY_KEY, DEFAULT_OVERSUBSCRIBE_FREQUENCY, PREDICT_RESOURCE_USAGE_FREQUENCY_KEY, \
+    DEFAULT_PREDICT_RESOURCE_USAGE_FREQUENCY
+from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT, OVERSUBSCRIBE_EVENT, ACTION, \
+    HANDLED_ACTIONS, PREDICT_USAGE_EVENT
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY, \
     ENQUEUED_COUNT_KEY, DEQUEUED_COUNT_KEY, QUEUE_LATENCY_KEY
@@ -44,18 +47,28 @@ class EventManager(MetricsReporter):
 
         config_manager = get_config_manager()
 
+        # Every instance of titus-isolate getting restarted at once produces scheduling spikes of events like
+        # rebalance
+        random_jitter = randrange(10)  # 0-9 inclusive
+
         rebalance_frequency = config_manager.get_float(REBALANCE_FREQUENCY_KEY, DEFAULT_REBALANCE_FREQUENCY)
         if rebalance_frequency > 0:
-            schedule.every(rebalance_frequency).seconds.do(self.__rebalance)
+            schedule.every(rebalance_frequency + random_jitter).seconds.do(self.__rebalance)
 
         reconcile_frequency = config_manager.get_float(RECONCILE_FREQUENCY_KEY, DEFAULT_RECONCILE_FREQUENCY)
         if reconcile_frequency > 0:
-            schedule.every(reconcile_frequency).seconds.do(self.__reconcile)
+            schedule.every(reconcile_frequency + random_jitter).seconds.do(self.__reconcile)
 
         oversubscribe_frequency = config_manager.get_float(OVERSUBSCRIBE_FREQUENCY_KEY,
                                                            DEFAULT_OVERSUBSCRIBE_FREQUENCY)
         if oversubscribe_frequency > 0:
-            schedule.every(oversubscribe_frequency).seconds.do(self.__oversubscribe)
+            schedule.every(oversubscribe_frequency + random_jitter).seconds.do(self.__oversubscribe)
+
+        predict_resource_usage_frequency = config_manager.get_float(PREDICT_RESOURCE_USAGE_FREQUENCY_KEY,
+                                                                    DEFAULT_PREDICT_RESOURCE_USAGE_FREQUENCY)
+
+        if predict_resource_usage_frequency > 0:
+            schedule.every(predict_resource_usage_frequency + random_jitter).seconds.do(self.__predict_usage)
 
     def join(self):
         self.__pulling_thread.join()
@@ -89,6 +102,9 @@ class EventManager(MetricsReporter):
 
     def __oversubscribe(self):
         self.__put_event(OVERSUBSCRIBE_EVENT)
+
+    def __predict_usage(self):
+        self.__put_event(PREDICT_USAGE_EVENT)
 
     def __pull_events(self):
         for event in self.__events:

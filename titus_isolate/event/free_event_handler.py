@@ -7,7 +7,8 @@ class FreeEventHandler(EventHandler):
     FREE_ACTIONS = [DIE]
 
     def __init__(self, workload_manager):
-        super().__init__(workload_manager)
+        super().__init__()
+        self.__workload_manager = workload_manager
 
     def handle(self, event):
         if not self.__relevant(event):
@@ -15,7 +16,7 @@ class FreeEventHandler(EventHandler):
 
         workload_id = get_container_name(event)
         self.handling_event(event, "removing workload: '{}'".format(workload_id))
-        self.workload_manager.remove_workload(workload_id)
+        self.__workload_manager.remove_workload(workload_id)
         self.handled_event(event, "removed workload: '{}'".format(workload_id))
 
     def __relevant(self, event):

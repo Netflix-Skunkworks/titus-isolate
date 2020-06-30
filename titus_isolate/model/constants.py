@@ -58,3 +58,8 @@ WORKLOAD_TYPE_KEY = "type"
 OPPORTUNISTIC_THREAD_COUNT_KEY = "opportunistic_thread_count"
 DURATION_PREDICTIONS_KEY = "duration_predictions"
 POD = "pod"
+
+# Custom Resource Definitions
+CUSTOM_RESOURCE_GROUP = 'titus.netflix.com'
+CUSTOM_RESOURCE_VERSION = 'v1'
+CUSTOM_RESOURCE_API_VERSION = CUSTOM_RESOURCE_GROUP + '/' + CUSTOM_RESOURCE_VERSION

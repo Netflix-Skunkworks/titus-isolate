@@ -8,7 +8,7 @@ from titus_isolate.utils import get_workload_manager
 
 class ReconcileEventHandler(EventHandler):
     def __init__(self, reconciler: Reconciler):
-        super().__init__(None)
+        super().__init__()
         self.__reconciler = reconciler
 
     def handle(self, event):

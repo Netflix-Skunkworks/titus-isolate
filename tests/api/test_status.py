@@ -3,11 +3,14 @@ import logging
 import unittest
 import uuid
 
+from titus_isolate.api.testing import set_testing
+
+set_testing()
+
 from tests.allocate.test_allocate import TestWorkloadMonitorManager
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import MockEventProvider
-from tests.test_event_log_manager import TestEventLogManager
 from tests.utils import get_test_workload, config_logs
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.api import status

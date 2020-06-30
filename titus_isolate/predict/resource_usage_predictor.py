@@ -13,7 +13,7 @@ from titus_isolate.model.kubernetes_workload import KubernetesWorkload
 from titus_isolate.model.pod_utils import get_job_descriptor, get_start_time, get_main_container_status
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
-from titus_isolate.predict.resource_usage_prediction import ResourceUsagePrediction, ResourceUsagePredictions
+from titus_isolate.crd.model.resource_usage_prediction import ResourceUsagePrediction, ResourceUsagePredictions
 from titus_isolate.predict.simple_cpu_predictor import SimpleCpuPredictor
 from titus_isolate.utils import get_config_manager, get_pod_manager
 

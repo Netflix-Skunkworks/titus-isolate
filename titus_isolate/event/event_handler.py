@@ -5,8 +5,7 @@ from titus_isolate import log
 
 
 class EventHandler:
-    def __init__(self, workload_manager, log_level=logging.INFO):
-        self.workload_manager = workload_manager
+    def __init__(self, log_level=logging.INFO):
         self.__log_level = log_level
         self.__ignored_event_count = 0
         self.__handled_event_count = 0

@@ -8,6 +8,7 @@ from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.metrics.constants import BURST_POOL_USAGE_KEY, STATIC_POOL_USAGE_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
+from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 from titus_isolate.monitor.utils import resource_usages_to_dict
 from titus_isolate.utils import get_workload_manager, get_config_manager
 
@@ -43,6 +44,9 @@ class WorkloadMonitorManager(MetricsReporter):
 
     def get_pcp_usage(self) -> dict:
         return resource_usages_to_dict(self.__pcp_usage_provider.get_resource_usages())
+
+    def get_resource_usage(self) -> GlobalResourceUsage:
+        return GlobalResourceUsage(self.get_pcp_usage())
 
     def set_registry(self, registry, tags):
         self.__registry = registry

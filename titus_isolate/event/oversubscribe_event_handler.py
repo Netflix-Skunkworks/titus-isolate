@@ -10,13 +10,12 @@ from titus_isolate.config.constants import OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY
     DEFAULT_TOTAL_THRESHOLD
 from titus_isolate.event.constants import ACTION, OVERSUBSCRIBE
 from titus_isolate.event.event_handler import EventHandler
-from titus_isolate.event.opportunistic_window_publisher import OpportunisticWindowPublisher
+from titus_isolate.crd.publish.opportunistic_window_publisher import OpportunisticWindowPublisher
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import OVERSUBSCRIBE_FAIL_COUNT, OVERSUBSCRIBE_SKIP_COUNT, \
     OVERSUBSCRIBE_SUCCESS_COUNT, OVERSUBSCRIBE_RECLAIMED_CPU_COUNT
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.utils import get_duration
-from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 
 from titus_isolate.utils import get_config_manager, get_workload_monitor_manager, managers_are_initialized, \
     get_cpu_usage_predictor_manager
@@ -31,7 +30,8 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
                  workload_manager: WorkloadManager,
                  window_publisher: OpportunisticWindowPublisher):
 
-        super().__init__(workload_manager)
+        super().__init__()
+        self.__workload_manager = workload_manager
         self.__window_publisher = window_publisher
 
         self.__reg = None
@@ -77,8 +77,8 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             log.error("Failed to get cpu predictor")
             return {}
 
-        workloads = self.workload_manager.get_workloads()
-        resource_usage = GlobalResourceUsage(self.__workload_monitor_manager.get_pcp_usage())
+        workloads = self.__workload_manager.get_workloads()
+        resource_usage = self.__workload_monitor_manager.get_resource_usage()
 
         log.info("Getting simple cpu predictions...")
         cpu_predictions = cpu_predictor.get_cpu_predictions(workloads, resource_usage)
@@ -119,7 +119,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             # Resource usage prediction
             simple_cpu_usage_predictions = self.__get_simple_cpu_predictions()
 
-            for workload in self.workload_manager.get_workloads():
+            for workload in self.__workload_manager.get_workloads():
                 log.info('workload:%s job_type:%s cpu:%d', workload.get_app_name(), workload.get_job_type(),
                          workload.get_thread_count())
 
