@@ -183,7 +183,7 @@ if __name__ != '__main__' and not is_testing():
 
     # Setup the event handlers
     log.info("Setting up event handlers...")
-    reconciler = Reconciler(cgroup_manager, RealExitHandler())
+    reconciler = Reconciler(cgroup_manager, exit_handler)
     create_event_handler = CreateEventHandler(workload_manager)
     free_event_handler = FreeEventHandler(workload_manager)
     rebalance_event_handler = RebalanceEventHandler(workload_manager)
@@ -191,7 +191,7 @@ if __name__ != '__main__' and not is_testing():
     oversub_event_handler = None
     predicted_usage_handler = None
     if is_kubernetes():
-        oversub_event_handler = OversubscribeEventHandler(workload_manager, KubernetesOpportunisticWindowPublisher())
+        oversub_event_handler = OversubscribeEventHandler(workload_manager, KubernetesOpportunisticWindowPublisher(exit_handler))
         predicted_usage_handler = ResourceUsagePredictionHandler(
             KubernetesPredictedUsagePublisher(resource_usage_predictor=ResourceUsagePredictor(),
                                               pod_manager=get_pod_manager(),
