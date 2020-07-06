@@ -159,11 +159,13 @@ class ResourceUsagePredictions:
         self.model_instance_id = raw.get(MODEL_INSTANCE_ID, "UNKNOWN_MODEL_INSTANCE_ID")
         self.prediction_ts_ms = int(raw.get(PREDICTION_TS_MS, '0'))
         self.metadata = raw.get(META_DATA, {})
-
         self.__predictions = {}
-        for p in raw.get(PREDICTIONS, {}):
-            job_id = p.get(JOB_ID, "UNKNOWN_JOB_ID")
-            self.__predictions[job_id] = ResourceUsagePrediction(p)
+
+        preds = raw.get(PREDICTIONS)
+        if preds is not None:
+            for p in preds:
+                job_id = p.get(JOB_ID, "UNKNOWN_JOB_ID")
+                self.__predictions[job_id] = ResourceUsagePrediction(p)
 
     @property
     def predictions(self):
@@ -218,7 +220,7 @@ class CondensedResourceUsagePrediction:
     @staticmethod
     def __condense_predictions(predictions: List[ResourceUsagePrediction]) -> ResourceUsagePrediction:
         if len(predictions) < 1:
-            raise Exception("At least one prediction must exist in order to be condensed")
+            return ResourceUsagePrediction({})
 
         out = predictions[0]
         for i in range(1, len(predictions)):
