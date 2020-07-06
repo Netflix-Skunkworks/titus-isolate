@@ -78,6 +78,10 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             return {}
 
         workloads = self.__workload_manager.get_workloads()
+        if len(workloads) == 0:
+            log.warning("No workloads, skipping cpu usage prediction")
+            return {}
+
         resource_usage = self.__workload_monitor_manager.get_resource_usage()
 
         log.info("Getting simple cpu predictions...")
