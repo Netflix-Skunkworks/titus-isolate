@@ -175,6 +175,9 @@ class ResourceUsagePredictions:
     def predictions(self, predictions):
         self.__predictions = predictions
 
+    def set_prediction_ts_ms(self, prediction_ts_ms : int):
+        self.prediction_ts_ms = prediction_ts_ms
+
 
 class CondensedResourceUsagePrediction:
     openapi_types = {
