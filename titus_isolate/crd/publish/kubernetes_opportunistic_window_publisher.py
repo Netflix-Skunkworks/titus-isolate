@@ -32,6 +32,8 @@ ADDED = "ADDED"
 DELETED = "DELETED"
 HANDLED_EVENTS = [ADDED, DELETED]
 
+EPOCH = datetime.utcfromtimestamp(0)
+
 
 class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
 
@@ -50,45 +52,57 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
         if oversubscribe_frequency > 0:
             watch_thread = Thread(target=self.__watch)
             watch_thread.start()
+            Thread(target=self.__crash, args=[watch_thread]).start()
         else:
             log.info("Skipping opportunistic resource watch, as opportunistic publishing is not configured.")
 
+    def __crash(self, watch_thread: Thread):
+        log.info("Waiting for opportunistic watch thread to exit...")
+        watch_thread.join()
+        log.error("Opportunistic watch thread has failed. Exiting.")
+        self.__exit_handler.exit(OPPORTUNISTIC_WATCH_FAILURE)
+
     def __watch(self):
-        label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
-                                        get_node_name())
-        while True:
-            log.info("Starting opportunistic resource watch...")
-            stream = None
-            try:
-                stream = watch.Watch().stream(
-                    self.__custom_api.list_cluster_custom_object,
-                    group="titus.netflix.com",
-                    version="v1",
-                    plural="opportunistic-resources",
-                    label_selector=label_selector)
+        try:
+            label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
+                                            get_node_name())
+            while True:
+                log.info("Starting opportunistic resource watch...")
+                stream = None
+                try:
+                    stream = watch.Watch().stream(
+                        self.__custom_api.list_cluster_custom_object,
+                        group="titus.netflix.com",
+                        version="v1",
+                        plural="opportunistic-resources",
+                        label_selector=label_selector)
 
-                for event in stream:
-                    log.info("Event: %s", event)
-                    if self.__is_expired_error(event):
-                        raise Exception("Opportunistic resource expired")
+                    for event in stream:
+                        log.info("Event: %s", event)
+                        if self.__is_expired_error(event):
+                            raise Exception("Opportunistic resource expired")
 
-                    event_type = event['type']
-                    if event_type not in HANDLED_EVENTS:
-                        log.warning("Ignoring unhandled event: %s", event)
-                        continue
+                        event_type = event['type']
+                        if event_type not in HANDLED_EVENTS:
+                            log.warning("Ignoring unhandled event: %s", event)
+                            continue
 
-                    event_metadata_name = event['object']['metadata']['name']
-                    with self.__lock:
-                        if event_type == ADDED:
-                            self.__opportunistic_resources[event_metadata_name] = event
-                        elif event_type == DELETED:
-                            self.__opportunistic_resources.pop(event_metadata_name, None)
+                        event_metadata_name = event['object']['metadata']['name']
+                        with self.__lock:
+                            if event_type == ADDED:
+                                self.__opportunistic_resources[event_metadata_name] = event
+                            elif event_type == DELETED:
+                                self.__opportunistic_resources.pop(event_metadata_name, None)
 
-            except Exception:
-                if stream is not None:
-                    stream.close()
-                log.exception("Watch of opportunistic resources failed")
-                self.__exit_handler.exit(OPPORTUNISTIC_WATCH_FAILURE)
+                except Exception:
+                        log.exception("Watch of opportunistic resources failed")
+                        if stream is not None:
+                            log.error("Attempting to close opportunistic stream")
+                            stream.close()
+        except Exception:
+            log.exception("Opportunistic watch encountered unhandled exception")
+
+        log.error("Opportunistic watch thread is unexpectedly exiting.")
 
     def is_window_active(self) -> bool:
         with self.__lock:
@@ -100,19 +114,30 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                     return True
             return False
 
+    def _is_old_enough_for_gc(self, cleanup_after_seconds: float, end_time: int) -> bool:
+        check_secs = self.__config_manager.get_float(OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY,
+                                                     DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS)
+        check_time = datetime.utcnow() - timedelta(seconds=check_secs)
+        check_time = (check_time - EPOCH).total_seconds() * 1000
+        log.debug("checking check_time < end_time, %s < %s", check_time, end_time)
+        return check_time > end_time
+
     def cleanup(self):
         with self.__lock:
             log.debug('cleanup: oppo list: %s', json.dumps(self.__opportunistic_resources))
             clean_count = 0
-            check_secs = self.__config_manager.get_float(OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY,
+            cleanup_after_seconds = self.__config_manager.get_float(OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY,
                                                          DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS)
-            if check_secs <= 0:
-                log.info('configured to skip cleanup. opportunistic resource windows will not be deleted.')
+            if cleanup_after_seconds <= 0:
+                log.warning('configured to skip cleanup. opportunistic resource windows will not be deleted.')
                 return 0
+
             for item in self.__opportunistic_resources.values():
-                check_time = datetime.utcnow() - timedelta(seconds=check_secs)
-                if check_time < self.__get_timestamp(item['object']['spec']['window']['end']):
+                end_time = item['object']['spec']['window']['end']
+                if not self._is_old_enough_for_gc(cleanup_after_seconds, end_time):
+                    log.info("skipping gc of opportunistic resource: %s", item['object']['metadata']['name'])
                     continue
+
                 log.debug('deleting: %s', json.dumps(item))
                 delete_opts = V1DeleteOptions(grace_period_seconds=0, propagation_policy='Foreground')
                 resp = self.__custom_api.delete_namespaced_custom_object(version=CUSTOM_RESOURCE_VERSION,
