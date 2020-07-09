@@ -1,3 +1,4 @@
+from datetime import datetime as dt
 import json
 import time
 from typing import Optional
@@ -40,7 +41,7 @@ class KubernetesPredictedUsagePublisher:
         if len(self.__pod_manager.get_pods()) == 0:
             log.warning("No pods, skipping resource usage prediction")
             predictions = ResourceUsagePredictions({})
-            predictions.set_prediction_ts_ms(1000*int(time.time()))
+            predictions.set_prediction_ts_ms(1000*int(time.mktime(dt.utcnow().timetuple())))
         else:
             predictions = self.__resource_usage_predictor.get_predictions(
                 self.__pod_manager.get_pods(),
