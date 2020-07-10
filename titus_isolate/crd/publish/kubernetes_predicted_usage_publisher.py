@@ -49,7 +49,7 @@ class KubernetesPredictedUsagePublisher:
                 self.__pod_manager.get_pods(),
                 self.__wmm.get_resource_usage())
 
-        condensed_predictions = CondensedResourceUsagePrediction(predictions)
+        condensed_predictions = CondensedResourceUsagePrediction(predictions, self.__resources_capacity)
 
         node = get_node()
         log.debug('owner_kind:%s owner_name:%s owner_uid:%s', node.kind, node.metadata.name, node.metadata.uid)
