@@ -5,6 +5,7 @@ from typing import List
 from six import iteritems
 
 from titus_isolate.model.constants import CUSTOM_RESOURCE_API_VERSION
+from .resources_capacity import ResourcesCapacity
 
 MODEL_VERSION = 'model_version'
 MODEL_INSTANCE_ID = 'model_instance_id'
@@ -185,6 +186,7 @@ class CondensedResourceUsagePrediction:
         'model_version': 'str',
         'model_instance_id': 'str',
         'prediction_ts_ms': 'int',
+        'resources_capacity': 'dict(str,int)',
         'metadata': 'dict(str, str)'
     }
 
@@ -193,12 +195,14 @@ class CondensedResourceUsagePrediction:
         'model_version': 'model_version',
         'model_instance_id': 'model_instance_id',
         'prediction_ts_ms': 'prediction_ts_ms',
+        'resources_capacity': 'resources_capacity',
         'metadata': 'metadata'
     }
 
-    def __init__(self, resource_usage_predictions: ResourceUsagePredictions):
+    def __init__(self, resource_usage_predictions: ResourceUsagePredictions, resources_capacity: ResourcesCapacity):
         self.__prediction = self.__condense_predictions(list(resource_usage_predictions.predictions.values()))
         self.__resource_usage_predictions = resource_usage_predictions
+        self.__resources_capacity = resources_capacity
 
     @property
     def prediction(self):
@@ -215,6 +219,10 @@ class CondensedResourceUsagePrediction:
     @property
     def prediction_ts_ms(self):
         return self.__resource_usage_predictions.prediction_ts_ms
+
+    @property
+    def resources_capacity(self):
+        return self.__resources_capacity.to_dict()
 
     @property
     def metadata(self):

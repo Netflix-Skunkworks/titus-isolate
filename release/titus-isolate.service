@@ -1,13 +1,14 @@
 [Unit]
 Description=Titus container isolation
-Wants=docker.service
-After=docker.service
+Wants=docker.service titus-kube-config.service
+After=docker.service titus-kube-config.service
 Requires=titus-isolate.socket
 
 [Service]
 Type=notify
 NotifyAccess=all
 EnvironmentFile=/run/titus.env
+EnvironmentFile=/run/virtual-kubelet.config
 Environment=PYTHONPATH=/opt/venvs/titus-isolate/lib/python3.6/site-packages:/usr/lib/python3/dist-packages/
 ExecStartPre=/bin/systemctl is-active docker
 ExecStartPre=/bin/systemctl is-active titus-isolate.socket
