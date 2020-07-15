@@ -82,8 +82,8 @@ def get_workload_from_disk(identifier) -> LegacyWorkload:
         workload_type = BURST
 
     opportunistic_cpus = 0
-    if WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in passthrough_data:
-        opportunistic_cpus = passthrough_data[WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY]
+    if FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in passthrough_data:
+        opportunistic_cpus = passthrough_data[FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY]
 
     duration_predictions = []
     if WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY in passthrough_data:

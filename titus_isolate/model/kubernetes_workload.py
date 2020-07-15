@@ -8,10 +8,11 @@ from kubernetes.client import V1Pod
 from titus_isolate import log
 from titus_isolate.event.constants import STATIC, BURST, BATCH, SERVICE
 from titus_isolate.model.constants import CPU, MEMORY, TITUS_NETWORK, EPHEMERAL_STORAGE, TITUS_DISK, \
-    WORKLOAD_JSON_JOB_TYPE_KEY, OWNER_EMAIL, CPU_BURSTING, WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, \
+    WORKLOAD_JSON_JOB_TYPE_KEY, OWNER_EMAIL, CPU_BURSTING, FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, \
     WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY, CREATION_TIME_KEY, LAUNCH_TIME_KEY, ID_KEY, THREAD_COUNT_KEY, MEM_KEY, \
     DISK_KEY, NETWORK_KEY, APP_NAME_KEY, OWNER_EMAIL_KEY, IMAGE_KEY, COMMAND_KEY, ENTRY_POINT_KEY, JOB_TYPE_KEY, \
-    WORKLOAD_TYPE_KEY, OPPORTUNISTIC_THREAD_COUNT_KEY, DURATION_PREDICTIONS_KEY, POD
+    WORKLOAD_TYPE_KEY, OPPORTUNISTIC_THREAD_COUNT_KEY, DURATION_PREDICTIONS_KEY, POD, \
+    KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY
 from titus_isolate.model.duration_prediction import DurationPrediction
 from titus_isolate.model.pod_utils import get_main_container, parse_kubernetes_value, get_job_descriptor, get_app_name, \
     get_image, get_cmd, get_entrypoint
@@ -66,8 +67,10 @@ class KubernetesWorkload(Workload):
             workload_type = BURST
 
         opportunistic_cpus = 0
-        if WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in metadata.annotations.keys():
-            opportunistic_cpus = metadata.annotations.get(WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY)
+        if FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in metadata.annotations.keys():
+            opportunistic_cpus = metadata.annotations.get(FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY)
+        if KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in metadata.annotations.keys():
+            opportunistic_cpus = metadata.annotations.get(KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY)
 
         duration_predictions = []
         if WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY in metadata.annotations.keys():
