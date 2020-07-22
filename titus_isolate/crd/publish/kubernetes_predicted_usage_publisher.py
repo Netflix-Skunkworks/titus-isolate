@@ -1,9 +1,7 @@
 from datetime import datetime as dt
 import json
 import time
-from typing import Optional
 
-import schedule
 from kubernetes.client import V1ObjectMeta, V1OwnerReference
 from kubernetes.client.rest import ApiException
 
@@ -18,7 +16,7 @@ from titus_isolate.crd.publish.kubernetes_opportunistic_window_publisher import 
 import kubernetes
 
 from titus_isolate.kub.utils import get_node
-from titus_isolate.model.constants import CUSTOM_RESOURCE_VERSION, CUSTOM_RESOURCE_GROUP
+from titus_isolate.model.constants import CUSTOM_RESOURCE_GROUP, PREDICTED_USAGE_RESOURCE_VERSION
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.pod.pod_manager import PodManager
 from titus_isolate.predict.resource_usage_predictor import ResourceUsagePredictor
@@ -72,7 +70,7 @@ class KubernetesPredictedUsagePublisher:
 
         obj = "UNINITIALIZED_RESOURCE_PREDICTION_OBJECT"
         try:
-            obj = self.__custom_api.patch_namespaced_custom_object(version=CUSTOM_RESOURCE_VERSION,
+            obj = self.__custom_api.patch_namespaced_custom_object(version=PREDICTED_USAGE_RESOURCE_VERSION,
                                                                    group=CUSTOM_RESOURCE_GROUP,
                                                                    plural=PREDICTED_RESOURCE_USAGE_PLURAL,
                                                                    namespace=PREDICTED_RESOURCE_USAGE_NAMESPACE,
@@ -81,7 +79,7 @@ class KubernetesPredictedUsagePublisher:
         except ApiException as e:
             log.info("ApiException status: %s", e.status)
             if e.status == 404:
-                obj = self.__custom_api.create_namespaced_custom_object(version=CUSTOM_RESOURCE_VERSION,
+                obj = self.__custom_api.create_namespaced_custom_object(version=PREDICTED_USAGE_RESOURCE_VERSION,
                                                                         group=CUSTOM_RESOURCE_GROUP,
                                                                         plural=PREDICTED_RESOURCE_USAGE_PLURAL,
                                                                         namespace=PREDICTED_RESOURCE_USAGE_NAMESPACE,

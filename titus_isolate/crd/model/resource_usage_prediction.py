@@ -4,8 +4,8 @@ from typing import List
 
 from six import iteritems
 
-from titus_isolate.model.constants import CUSTOM_RESOURCE_API_VERSION
 from .resources_capacity import ResourcesCapacity
+from ...model.constants import PREDICTED_USAGE_RESOURCE_API_VERSION
 
 MODEL_VERSION = 'model_version'
 MODEL_INSTANCE_ID = 'model_instance_id'
@@ -257,7 +257,7 @@ class ResourceUsagePredictionsResource:
     }
 
     def __init__(self,
-                 api_version=CUSTOM_RESOURCE_API_VERSION,
+                 api_version=PREDICTED_USAGE_RESOURCE_API_VERSION,
                  kind=PREDICTED_RESOURCE_USAGE_KIND,
                  metadata=None,
                  spec=None):

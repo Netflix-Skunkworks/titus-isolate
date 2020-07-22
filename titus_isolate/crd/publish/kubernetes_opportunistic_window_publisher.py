@@ -16,13 +16,13 @@ from titus_isolate.crd.publish.opportunistic_window_publisher import Opportunist
 from titus_isolate.event.utils import unix_time_millis, is_int
 from titus_isolate.exit_handler import ExitHandler
 from titus_isolate.kub.utils import get_node, get_node_name
-from titus_isolate.model.constants import CUSTOM_RESOURCE_VERSION
 from titus_isolate.crd.model.opportunistic_resource import OPPORTUNISTIC_RESOURCE_NAMESPACE, \
     OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY, OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY, OpportunisticResource, \
     CUSTOM_RESOURCE_GROUP, OPPORTUNISTIC_RESOURCE_PLURAL
 from titus_isolate.crd.model.opportunistic_resource_capacity import OpportunisticResourceCapacity
 from titus_isolate.crd.model.opportunistic_resource_spec import OpportunisticResourceSpec
 from titus_isolate.crd.model.opportunistic_resource_window import OpportunisticResourceWindow
+from titus_isolate.model.constants import OPPORTUNISTIC_RESOURCE_VERSION
 from titus_isolate.utils import get_config_manager
 
 VIRTUAL_KUBELET_CONFIG_PATH = '/run/virtual-kubelet.config'
@@ -71,9 +71,10 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                 stream = None
                 try:
                     stream = watch.Watch().stream(
-                        self.__custom_api.list_cluster_custom_object,
+                        self.__custom_api.list_namespaced_custom_object,
                         group="titus.netflix.com",
                         version="v1",
+                        namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
                         plural="opportunistic-resources",
                         label_selector=label_selector)
 
@@ -95,10 +96,10 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                                 self.__opportunistic_resources.pop(event_metadata_name, None)
 
                 except Exception:
-                        log.exception("Watch of opportunistic resources failed")
-                        if stream is not None:
-                            log.error("Attempting to close opportunistic stream")
-                            stream.close()
+                    log.exception("Watch of opportunistic resources failed")
+                    if stream is not None:
+                        log.error("Attempting to close opportunistic stream")
+                        stream.close()
         except Exception:
             log.exception("Opportunistic watch encountered unhandled exception")
 
@@ -127,7 +128,7 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
             log.debug('cleanup: oppo list: %s', json.dumps(self.__opportunistic_resources))
             clean_count = 0
             cleanup_after_seconds = self.__config_manager.get_float(OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY,
-                                                         DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS)
+                                                                    DEFAULT_OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS)
             if cleanup_after_seconds <= 0:
                 log.warning('configured to skip cleanup. opportunistic resource windows will not be deleted.')
                 return 0
@@ -140,7 +141,7 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
 
                 log.debug('deleting: %s', json.dumps(item))
                 delete_opts = V1DeleteOptions(grace_period_seconds=0, propagation_policy='Foreground')
-                resp = self.__custom_api.delete_namespaced_custom_object(version=CUSTOM_RESOURCE_VERSION,
+                resp = self.__custom_api.delete_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
                                                                          group=CUSTOM_RESOURCE_GROUP,
                                                                          plural=OPPORTUNISTIC_RESOURCE_PLURAL,
                                                                          namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
@@ -173,7 +174,7 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
                                               window=OpportunisticResourceWindow(start_epoch_ms, end_epoch_ms))
         oppo_body = OpportunisticResource(metadata=oppo_meta,
                                           spec=oppo_spec)
-        oppo = self.__custom_api.create_namespaced_custom_object(version=CUSTOM_RESOURCE_VERSION,
+        oppo = self.__custom_api.create_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
                                                                  group=CUSTOM_RESOURCE_GROUP,
                                                                  plural=OPPORTUNISTIC_RESOURCE_PLURAL,
                                                                  namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
@@ -216,4 +217,3 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
             is_expired = event['object']['code'] == 410
 
         return is_error and is_expired
-
