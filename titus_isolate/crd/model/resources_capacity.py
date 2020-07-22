@@ -9,6 +9,7 @@ RESOURCE_CPU_CAPACITY_KEY = 'cpu'
 RESOURCE_MEM_CAPACITY_KEY = 'memMB'
 RESOURCE_NET_CAPACITY_KEY = 'netMbps'
 
+
 class ResourcesCapacity:
     def __init__(self):
         self.cpu = int(os.environ.get(RESOURCE_CPU_CAPACITY_ENV, '0'))

@@ -1,7 +1,7 @@
 from pprint import pformat
 from six import iteritems
 
-from titus_isolate.model.constants import CUSTOM_RESOURCE_GROUP, CUSTOM_RESOURCE_API_VERSION
+from titus_isolate.model.constants import CUSTOM_RESOURCE_GROUP, OPPORTUNISTIC_RESOURCE_API_VERSION
 
 OPPORTUNISTIC_RESOURCE_KIND = 'OpportunisticResource'
 OPPORTUNISTIC_RESOURCE_NAMESPACE = 'default'
@@ -27,7 +27,7 @@ class OpportunisticResource:
         'spec': 'spec'
     }
 
-    def __init__(self, api_version=CUSTOM_RESOURCE_API_VERSION, kind=OPPORTUNISTIC_RESOURCE_KIND, metadata=None,
+    def __init__(self, api_version=OPPORTUNISTIC_RESOURCE_API_VERSION, kind=OPPORTUNISTIC_RESOURCE_KIND, metadata=None,
                  spec=None):
         self._api_version = None
         self._kind = None
