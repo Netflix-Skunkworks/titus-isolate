@@ -86,7 +86,7 @@ class TestOversubscribeEventHandler(unittest.TestCase):
         window_publisher = TestOpportunisticWindowPublisher(
             is_window_active_func=lambda: True,
             add_window_func=lambda: None,
-            cleanup_func=lambda: None
+            cleanup_func=lambda: 0
         )
 
         oeh = OversubscribeEventHandler(TestWorkloadManager([]), window_publisher)
@@ -101,7 +101,7 @@ class TestOversubscribeEventHandler(unittest.TestCase):
         window_publisher = TestOpportunisticWindowPublisher(
             is_window_active_func=lambda: False,
             add_window_func=lambda: None,
-            cleanup_func=lambda: None
+            cleanup_func=lambda: 0
         )
 
         w_id = str(uuid.uuid4())

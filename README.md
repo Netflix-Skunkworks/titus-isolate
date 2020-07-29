@@ -288,10 +288,3 @@ $ /usr/share/python/titus-isolate/bin/titus-isolate
 05-11-2018:19:01:21,307 INFO [titus-isolate:26] Setting up the workload manager...
 ...
 ```
-
-## Create the OpportunisticResource CRD in Kubernetes
-
-Copy `./opportunistic-resources.yaml` to an instance that has the appropriate kubeconfig. Then run:
-```bash
-$ sudo kubectl --kubeconfig /run/kubernetes/config apply -f opportunistic-resources.yaml
-```
