@@ -1,8 +1,10 @@
 from abc import abstractmethod
 from datetime import datetime
 
+from titus_isolate.metrics.metrics_reporter import MetricsReporter
 
-class OpportunisticWindowPublisher:
+
+class OpportunisticWindowPublisher(MetricsReporter):
 
     @abstractmethod
     def is_window_active(self) -> bool:

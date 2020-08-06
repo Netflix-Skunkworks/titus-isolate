@@ -13,7 +13,7 @@ from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.crd.publish.opportunistic_window_publisher import OpportunisticWindowPublisher
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import OVERSUBSCRIBE_FAIL_COUNT, OVERSUBSCRIBE_SKIP_COUNT, \
-    OVERSUBSCRIBE_SUCCESS_COUNT, OVERSUBSCRIBE_RECLAIMED_CPU_COUNT
+    OVERSUBSCRIBE_SUCCESS_COUNT
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.utils import get_duration
 
@@ -48,13 +48,13 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
     def set_registry(self, registry, tags):
         self.__reg = registry
+        self.__window_publisher.set_registry(registry, tags)
 
     def report_metrics(self, tags):
         self.__reg.gauge(OVERSUBSCRIBE_FAIL_COUNT, tags).set(self.get_fail_count())
         self.__reg.gauge(OVERSUBSCRIBE_SKIP_COUNT, tags).set(self.get_skip_count())
         self.__reg.gauge(OVERSUBSCRIBE_SUCCESS_COUNT, tags).set(self.get_success_count())
-        if self.get_reclaimed_cpu_count() is not None:
-            self.__reg.gauge(OVERSUBSCRIBE_RECLAIMED_CPU_COUNT, tags).set(self.get_reclaimed_cpu_count())
+        self.__window_publisher.report_metrics(tags)
 
     def get_fail_count(self):
         return self.__fail_count
@@ -163,7 +163,6 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
                 self.__window_publisher.add_window(start, end, free_cpu_count)
 
             self.__success_count += 1
-            self.__reclaimed_cpu_count = underutilized_cpu_count
             self.handled_event(event,
                                'oversubscribed {} cpus from {} workloads, {} total cpus are oversubscribed'.format(
                                    free_cpu_count, workload_count, underutilized_cpu_count))

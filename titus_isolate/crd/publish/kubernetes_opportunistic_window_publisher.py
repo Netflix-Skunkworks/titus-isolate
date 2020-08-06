@@ -22,6 +22,8 @@ from titus_isolate.crd.model.opportunistic_resource import OPPORTUNISTIC_RESOURC
 from titus_isolate.crd.model.opportunistic_resource_capacity import OpportunisticResourceCapacity
 from titus_isolate.crd.model.opportunistic_resource_spec import OpportunisticResourceSpec
 from titus_isolate.crd.model.opportunistic_resource_window import OpportunisticResourceWindow
+from titus_isolate.metrics.constants import OVERSUBSCRIBE_RECLAIMED_CPU_COUNT
+from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.constants import OPPORTUNISTIC_RESOURCE_VERSION
 from titus_isolate.utils import get_config_manager
 
@@ -35,11 +37,12 @@ HANDLED_EVENTS = [ADDED, DELETED]
 EPOCH = datetime.utcfromtimestamp(0)
 
 
-class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
+class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher, MetricsReporter):
 
     def __init__(self, exit_handler: ExitHandler):
         self.__exit_handler = exit_handler
         self.__config_manager = get_config_manager()
+        self.__registry = None
 
         self.__custom_api = kubernetes.client.CustomObjectsApi(
             kubernetes.config.new_client_from_config(config_file=DEFAULT_KUBECONFIG_PATH))
@@ -106,14 +109,17 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
         log.error("Opportunistic watch thread is unexpectedly exiting.")
 
     def is_window_active(self) -> bool:
+        return self.__get_active_window() is not None
+
+    def __get_active_window(self):
         with self.__lock:
             log.debug('is active: oppo list: %s', json.dumps(self.__opportunistic_resources))
             for item in self.__opportunistic_resources.values():
                 log.debug('checking for window: %s', json.dumps(item))
                 now = datetime.utcnow()
                 if now < self.__get_timestamp(item['object']['spec']['window']['end']):
-                    return True
-            return False
+                    return item
+            return None
 
     def _is_old_enough_for_gc(self, cleanup_after_seconds: float, end_time: int) -> bool:
         check_secs = self.__config_manager.get_float(OVERSUBSCRIBE_CLEANUP_AFTER_SECONDS_KEY,
@@ -217,3 +223,15 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher):
             is_expired = event['object']['code'] == 410
 
         return is_error and is_expired
+
+    def set_registry(self, registry, tags):
+        self.__registry = registry
+
+    def report_metrics(self, tags):
+        active_window = self.__get_active_window()
+        if active_window is None:
+            return
+
+        opp_capacity = int(active_window['object']['spec']['capacity']['cpu'])
+        self.__registry.gauge(OVERSUBSCRIBE_RECLAIMED_CPU_COUNT, tags).set(opp_capacity)
+
