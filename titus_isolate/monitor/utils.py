@@ -21,7 +21,7 @@ from titus_isolate.monitor.resource_usage import ResourceUsage
 from titus_isolate.utils import is_kubernetes
 
 CPU_USAGE_HEADING = 'cgroup.cpuacct.usage'
-MEM_USAGE_HEADING = 'cgroup.memory.usage'
+MEM_USAGE_HEADING = 'titus.memory.usage'
 NET_RECV_USAGE_HEADING = 'titus.network.in.bytes'
 NET_TRANS_USAGE_HEADING = 'titus.network.out.bytes'
 DISK_USAGE_HEADING = 'titus.disk.bytes_used'

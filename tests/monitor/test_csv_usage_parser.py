@@ -4,7 +4,7 @@ from titus_isolate.allocate.constants import CPU_USAGE
 from titus_isolate.monitor.utils import parse_usage_csv, pad_usage, parse_kubernetes_csv_usage_heading, get_resource_usage, \
     resource_usages_to_dict, parse_mesos_csv_usage_heading
 
-simple_csv = """Time,"cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service","cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service","cgroup.memory.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service","cgroup.memory.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service"
+simple_csv = """Time,"cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service","cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service","titus.memory.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service","titus.memory.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service"
 2020-01-29 19:46:32,,,8343552,10649600
 2020-01-29 19:47:32,1.000,1.991,8343552,10649600
 2020-01-29 19:48:32,1.000,1.988,8343552,10649600
@@ -15,7 +15,7 @@ simple_csv = """Time,"cgroup.cpuacct.usage-/containers.slice/titus-executor@defa
 class TestCsvUsage(unittest.TestCase):
 
     def test_simple_parse_usage_csv(self):
-        expected_headings = ["Time", "cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service", "cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service", "cgroup.memory.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service", "cgroup.memory.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service"]
+        expected_headings = ["Time", "cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service", "cgroup.cpuacct.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service", "titus.memory.usage-/containers.slice/titus-executor@default__7b1c435b-9473-40be-b944-2b0b26e2a703.service", "titus.memory.usage-/containers.slice/titus-executor@default__7aad3fa0-b172-496e-87cd-032bff7daba1.service"]
 
         parsed = parse_usage_csv(simple_csv)
         self.assertEqual(5, len(parsed))

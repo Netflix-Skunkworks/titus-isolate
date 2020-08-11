@@ -56,7 +56,7 @@ class PcpResourceUsageProvider:
                     -o csv \
                     -i {3} \
                     cgroup.cpuacct.usage \
-                    cgroup.memory.usage \
+                    titus.memory.usage \
                     titus.network.in.bytes \
                     titus.network.out.bytes \
                     titus.disk.bytes_used """
