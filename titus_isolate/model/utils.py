@@ -34,7 +34,7 @@ def get_workload_from_kubernetes(identifier) -> Optional[KubernetesWorkload]:
         return None
 
     retry_count = get_config_manager().get_int(GET_WORKLOAD_RETRY_COUNT, DEFAULT_GET_WORKLOAD_RETRY_COUNT)
-    retry_interval = get_config_manager().get_int(GET_WORKLOAD_RETRY_INTERVAL_SEC, DEFAULT_GET_WORKLOAD_RETRY_INTERVAL_SEC)
+    retry_interval = get_config_manager().get_float(GET_WORKLOAD_RETRY_INTERVAL_SEC, DEFAULT_GET_WORKLOAD_RETRY_INTERVAL_SEC)
 
     pod_manager = get_pod_manager()
     for i in range(retry_count):

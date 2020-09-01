@@ -24,13 +24,17 @@ def __get_value(dictionary, key, default=''):
 def get_current_workloads(docker_client):
     workloads = []
     for container in docker_client.containers.list():
+        workload = None
         try:
             if is_kubernetes():
-                workloads.append(get_workload_from_kubernetes(container.name))
+                workload = get_workload_from_kubernetes(container.name)
             else:
-                workloads.append(get_workload_from_disk(container.name))
+                workload = get_workload_from_disk(container.name)
         except:
             log.exception("Failed to read environment for container: '%s'", container.name)
+
+        if workload is not None:
+            workloads.append(workload)
 
     return workloads
 
