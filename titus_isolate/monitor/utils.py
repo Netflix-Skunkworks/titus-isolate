@@ -192,7 +192,7 @@ def get_resource_usage(raw_csv_usage: str, value_count: int, interval_sec: int) 
 
 
 def get_pcp_archive_path() -> str:
-    return "/var/log/pcp/pmlogger/{}/".format(socket.gethostname())
+    return "/mnt/pcp/pmlogger/{}/".format(socket.gethostname())
 
 
 def resource_usages_to_dict(usages: List[ResourceUsage]) -> dict:
