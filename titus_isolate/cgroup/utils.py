@@ -61,6 +61,24 @@ def get_cpuset_path(container_name):
     return "{}/cpuset{}/cpuset.cpus".format(ROOT_CGROUP_PATH, cgroup_path)
 
 
+def get_memory_migrate_path(container_name):
+    file_path = get_info_path(container_name)
+    cgroup_path = get_cgroup_path_from_file(file_path, CPUSET)
+    return "{}/cpuset{}/cpuset.memory_migrate".format(ROOT_CGROUP_PATH, cgroup_path)
+
+
+def get_memory_spread_page_path(container_name):
+    file_path = get_info_path(container_name)
+    cgroup_path = get_cgroup_path_from_file(file_path, CPUSET)
+    return "{}/cpuset{}/cpuset.memory_spread_page".format(ROOT_CGROUP_PATH, cgroup_path)
+
+
+def get_memory_spread_slab_path(container_name):
+    file_path = get_info_path(container_name)
+    cgroup_path = get_cgroup_path_from_file(file_path, CPUSET)
+    return "{}/cpuset{}/cpuset.memory_spread_slab".format(ROOT_CGROUP_PATH, cgroup_path)
+
+
 def get_quota_path(container_name):
     file_path = get_info_path(container_name)
     cgroup_path = get_cgroup_path_from_file(file_path, CPU_CPUACCT)
@@ -87,6 +105,36 @@ def set_cpuset(container_name, threads_str):
 
 def get_cpuset(container_name):
     path = get_cpuset_path(container_name)
+    return __read(path)
+
+
+def set_memory_migrate(container_name, on):
+    path = get_memory_migrate_path(container_name)
+    __write(path, on)
+
+
+def get_memory_migrate(container_name):
+    path = get_memory_migrate_path(container_name)
+    return __read(path)
+
+
+def set_memory_spread_page(container_name, on):
+    path = get_memory_spread_page_path(container_name)
+    __write(path, on)
+
+
+def get_memory_spread_page(container_name):
+    path = get_memory_spread_page_path(container_name)
+    return __read(path)
+
+
+def set_memory_spread_slab(container_name, on):
+    path = get_memory_spread_slab_path(container_name)
+    __write(path, on)
+
+
+def get_memory_spread_slab(container_name):
+    path = get_memory_spread_slab_path(container_name)
     return __read(path)
 
 

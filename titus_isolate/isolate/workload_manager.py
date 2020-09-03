@@ -158,15 +158,26 @@ class WorkloadManager(MetricsReporter):
             thread_ids = w_alloc.get_thread_ids()
             quota = w_alloc.get_cpu_quota()
             shares = w_alloc.get_cpu_shares()
+            memory_migrate = w_alloc.get_memory_migrate()
+            memory_spread_page = w_alloc.get_memory_spread_page()
+            memory_spread_slab = w_alloc.get_memory_spread_slab()
 
-            log.info("updating workload: '{}' cpuset: '{}', quota: '{}', shares: '{}'".format(
-                workload_id, thread_ids, quota, shares))
+            log.info(f'updating workload: {workload_id} '
+                     f'cpuset: {thread_ids}, '
+                     f'quota: {quota}, '
+                     f'shares: {shares}, '
+                     f'memory_migrate: {memory_migrate}, '
+                     f'memory_spread_page: {memory_spread_page}, '
+                     f'memory_spread_slab: {memory_spread_slab}')
 
             # This ordering is important for reporting whether a workload is isolated.
             # We must always set the "cpuset" first.
             self.__cgroup_manager.set_cpuset(workload_id, thread_ids)
             self.__cgroup_manager.set_quota(workload_id, quota)
             self.__cgroup_manager.set_shares(workload_id, shares)
+            self.__cgroup_manager.set_memory_migrate(workload_id, memory_migrate)
+            self.__cgroup_manager.set_memory_spread_page(workload_id, memory_spread_page)
+            self.__cgroup_manager.set_memory_spread_slab(workload_id, memory_spread_slab)
 
     @staticmethod
     def __get_workload_allocation_dict(response: AllocateResponse) -> Dict[str, WorkloadAllocateResponse]:
