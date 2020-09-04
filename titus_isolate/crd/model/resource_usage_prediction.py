@@ -4,7 +4,7 @@ from typing import List
 
 from six import iteritems
 
-from .resources_capacity import ResourcesCapacity
+from .resources import Resources
 from ...model.constants import PREDICTED_USAGE_RESOURCE_API_VERSION
 
 MODEL_VERSION = 'model_version'
@@ -199,7 +199,7 @@ class CondensedResourceUsagePrediction:
         'metadata': 'metadata'
     }
 
-    def __init__(self, resource_usage_predictions: ResourceUsagePredictions, resources_capacity: ResourcesCapacity):
+    def __init__(self, resource_usage_predictions: ResourceUsagePredictions, resources_capacity: Resources):
         self.__prediction = self.__condense_predictions(list(resource_usage_predictions.predictions.values()))
         self.__resource_usage_predictions = resource_usage_predictions
         self.__resources_capacity = resources_capacity

@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 
 import requests
 from kubernetes.client import V1Pod
+from kubernetes.utils.quantity import parse_quantity
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE
@@ -13,7 +14,7 @@ from titus_isolate.model.kubernetes_workload import KubernetesWorkload
 from titus_isolate.model.pod_utils import get_job_descriptor, get_start_time, get_main_container_status
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
-from titus_isolate.crd.model.resource_usage_prediction import ResourceUsagePrediction, ResourceUsagePredictions
+from titus_isolate.crd.model.resource_usage_prediction import ResourceUsagePrediction, ResourceUsagePredictions, Resources
 from titus_isolate.predict.simple_cpu_predictor import SimpleCpuPredictor
 from titus_isolate.utils import get_config_manager, get_pod_manager
 
@@ -191,5 +192,27 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
         if predictions is None:
             log.error("Failed to get predictions")
             return None
+
+        requested_resources = Resources()
+        for pod in pods:
+            r = pod.spec.containers[0].resources.requests
+            requested_resources += Resources(
+                int(parse_quantity(r['cpu'])),
+                int(parse_quantity(r['memory'])),
+                int(parse_quantity(r['ephemeral-storage'])),
+                int(parse_quantity(r['titus/network'])),
+                int(parse_quantity(r['nvidia.com/gpu']))
+            )
+        meta = predictions.get('meta_data', {})
+        if meta is None:
+            meta = {}
+        meta['allocated_resources'] = {
+            'cpu': requested_resources.cpu,
+            'mem_MB': requested_resources.mem_MB,
+            'disk_MB': requested_resources.disk_MB,
+            'net_Mbps': requested_resources.net_Mbps,
+            'gpu': requested_resources.gpu
+        }
+        predictions['meta_data'] = meta
 
         return ResourceUsagePredictions(predictions)
