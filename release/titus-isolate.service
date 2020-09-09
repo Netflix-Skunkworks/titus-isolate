@@ -1,7 +1,7 @@
 [Unit]
 Description=Titus container isolation
-Wants=docker.service titus-kube-config.service
-After=docker.service titus-kube-config.service
+Wants=docker.service titus-kube-config.service virtual-kubelet-config.service
+After=docker.service titus-kube-config.service virtual-kubelet-config.service
 Requires=titus-isolate.socket
 
 [Service]
