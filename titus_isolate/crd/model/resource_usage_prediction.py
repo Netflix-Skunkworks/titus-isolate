@@ -20,6 +20,7 @@ META_DATA = 'meta_data'
 QUANTILE = 'quantile'
 HORIZON_MINUTES = 'horizon_minutes'
 PREDS = 'preds'
+PRED_TIME2EMPTY_BATCH = 'pred_time2empty_batch'
 
 RESOURCE_KEYS = [
     CPU,
@@ -161,12 +162,20 @@ class ResourceUsagePredictions:
         self.prediction_ts_ms = int(raw.get(PREDICTION_TS_MS, '0'))
         self.metadata = raw.get(META_DATA, {})
         self.__predictions = {}
+        self.__pred_time2empty_batch = []
 
         preds = raw.get(PREDICTIONS)
         if preds is not None:
             for p in preds:
                 job_id = p.get(JOB_ID, "UNKNOWN_JOB_ID")
                 self.__predictions[job_id] = ResourceUsagePrediction(p)
+
+        if PRED_TIME2EMPTY_BATCH in self.metadata:
+            try:
+                self.__pred_time2empty_batch = [float(e) for e in self.metadata[PRED_TIME2EMPTY_BATCH].split(',')]
+            except:
+                pass
+            self.metadata.pop(PRED_TIME2EMPTY_BATCH)
 
     @property
     def predictions(self):
@@ -179,6 +188,9 @@ class ResourceUsagePredictions:
     def set_prediction_ts_ms(self, prediction_ts_ms : int):
         self.prediction_ts_ms = prediction_ts_ms
 
+    def get_pred_time2empty_batch(self):
+        return self.__pred_time2empty_batch
+
 
 class CondensedResourceUsagePrediction:
     openapi_types = {
@@ -187,6 +199,11 @@ class CondensedResourceUsagePrediction:
         'model_instance_id': 'str',
         'prediction_ts_ms': 'int',
         'resources_capacity': 'dict(str,int)',
+        'resources_allocated': 'dict(str, int)',
+        'instance_type': 'str',
+        'pred_time2empty_batch': 'list[float]',
+        'num_batch_containers': 'int',
+        'num_service_containers': 'int',
         'metadata': 'dict(str, str)'
     }
 
@@ -196,12 +213,27 @@ class CondensedResourceUsagePrediction:
         'model_instance_id': 'model_instance_id',
         'prediction_ts_ms': 'prediction_ts_ms',
         'resources_capacity': 'resources_capacity',
+        'resources_allocated': 'resources_allocated',
+        'instance_type': 'instance_type',
+        'pred_time2empty_batch': 'pred_time2empty_batch',
+        'num_batch_containers': 'num_batch_containers',
+        'num_service_containers': 'num_service_containers',
         'metadata': 'metadata'
     }
 
-    def __init__(self, resource_usage_predictions: ResourceUsagePredictions, resources_capacity: Resources):
+    def __init__(self, resource_usage_predictions: ResourceUsagePredictions,
+                 resources_allocated : Resources,
+                 instance_type : str,
+                 num_batch_containers : int,
+                 num_service_containers : int,
+                 resources_capacity: Resources):
         self.__prediction = self.__condense_predictions(list(resource_usage_predictions.predictions.values()))
+        self.__pred_time2empty_batch = resource_usage_predictions.get_pred_time2empty_batch()
         self.__resource_usage_predictions = resource_usage_predictions
+        self.__resources_allocated = resources_allocated
+        self.__instance_type = instance_type
+        self.__num_batch_containers = num_batch_containers
+        self.__num_service_containers = num_service_containers
         self.__resources_capacity = resources_capacity
 
     @property
@@ -223,6 +255,26 @@ class CondensedResourceUsagePrediction:
     @property
     def resources_capacity(self):
         return self.__resources_capacity.to_dict()
+
+    @property
+    def resources_allocated(self):
+        return self.__resources_allocated.to_dict()
+
+    @property
+    def instance_type(self):
+        return self.__instance_type
+
+    @property
+    def num_batch_containers(self):
+        return self.__num_batch_containers
+
+    @property
+    def num_service_containers(self):
+        return self.__num_service_containers
+
+    @property
+    def pred_time2empty_batch(self):
+        return self.__pred_time2empty_batch
 
     @property
     def metadata(self):

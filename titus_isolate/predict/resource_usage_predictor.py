@@ -4,7 +4,6 @@ from typing import Dict, List, Optional
 
 import requests
 from kubernetes.client import V1Pod
-from kubernetes.utils.quantity import parse_quantity
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE
@@ -158,19 +157,12 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
         return predictions
 
     def get_predictions(self,
-                        pods: List[V1Pod],
+                        running_pods: List[V1Pod],
                         resource_usage: GlobalResourceUsage) -> Optional[ResourceUsagePredictions]:
         config_manager = get_config_manager()
         if config_manager is None:
             log.warning("Config manager not yet set.")
             return None
-
-        running_pods = []
-        for p in pods:
-            if self.is_running(p):
-                running_pods.append(p)
-            else:
-                log.info("Pod is not yet running: %s", p.metadata.name)
 
         client_crt = get_client_cert_path(config_manager)
         client_key = get_client_key_path(config_manager)
@@ -192,27 +184,5 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
         if predictions is None:
             log.error("Failed to get predictions")
             return None
-
-        requested_resources = Resources()
-        for pod in pods:
-            r = pod.spec.containers[0].resources.requests
-            requested_resources += Resources(
-                int(parse_quantity(r['cpu'])),
-                int(parse_quantity(r['memory'])),
-                int(parse_quantity(r['ephemeral-storage'])),
-                int(parse_quantity(r['titus/network'])),
-                int(parse_quantity(r['nvidia.com/gpu']))
-            )
-        meta = predictions.get('meta_data', {})
-        if meta is None:
-            meta = {}
-        meta['allocated_resources'] = {
-            'cpu': requested_resources.cpu,
-            'memMB': requested_resources.mem_MB,
-            'diskMB': requested_resources.disk_MB,
-            'netMbps': requested_resources.net_Mbps,
-            'gpu': requested_resources.gpu
-        }
-        predictions['meta_data'] = meta
 
         return ResourceUsagePredictions(predictions)

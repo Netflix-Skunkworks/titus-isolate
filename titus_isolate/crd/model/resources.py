@@ -5,9 +5,11 @@ RESOURCE_MEM_CAPACITY_ENV = 'MEMORY_CAPACITY'
 RESOURCE_NET_CAPACITY_ENV = 'NETWORK_CAPACITY'
 RESOURCE_DISK_CAPACITY_ENV = 'DISK_CAPACITY'
 
-RESOURCE_CPU_CAPACITY_KEY = 'cpu'
-RESOURCE_MEM_CAPACITY_KEY = 'memMB'
-RESOURCE_NET_CAPACITY_KEY = 'netMbps'
+RESOURCE_CPU_KEY = 'cpu'
+RESOURCE_MEM_KEY = 'memMB'
+RESOURCE_NET_KEY = 'netMbps'
+RESOURCE_DISK_KEY = 'diskMB'
+RESOURCE_GPU_KEY = 'gpu'
 
 
 class Resources:
@@ -35,7 +37,9 @@ class Resources:
 
     def to_dict(self):
         return {
-            RESOURCE_CPU_CAPACITY_KEY: self.cpu,
-            RESOURCE_MEM_CAPACITY_KEY: self.mem_MB,
-            RESOURCE_NET_CAPACITY_KEY: self.net_Mbps
+            RESOURCE_CPU_KEY: self.cpu,
+            RESOURCE_MEM_KEY: self.mem_MB,
+            RESOURCE_NET_KEY: self.net_Mbps,
+            RESOURCE_DISK_KEY: self.disk_MB,
+            RESOURCE_GPU_KEY: self.gpu
         }
