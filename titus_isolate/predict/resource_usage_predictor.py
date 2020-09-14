@@ -208,9 +208,9 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
             meta = {}
         meta['allocated_resources'] = {
             'cpu': requested_resources.cpu,
-            'mem_MB': requested_resources.mem_MB,
-            'disk_MB': requested_resources.disk_MB,
-            'net_Mbps': requested_resources.net_Mbps,
+            'memMB': requested_resources.mem_MB,
+            'diskMB': requested_resources.disk_MB,
+            'netMbps': requested_resources.net_Mbps,
             'gpu': requested_resources.gpu
         }
         predictions['meta_data'] = meta
