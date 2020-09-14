@@ -31,6 +31,30 @@ class CgroupManager(MetricsReporter):
         pass
 
     @abstractmethod
+    def set_memory_migrate(self, container_name, on: bool):
+        pass
+
+    @abstractmethod
+    def get_memory_migrate(self, container_name) -> bool:
+        pass
+
+    @abstractmethod
+    def set_memory_spread_page(self, container_name, on: bool):
+        pass
+
+    @abstractmethod
+    def get_memory_spread_page(self, container_name) -> bool:
+        pass
+
+    @abstractmethod
+    def set_memory_spread_slab(self, container_name, on: bool):
+        pass
+
+    @abstractmethod
+    def get_memory_spread_slab(self, container_name) -> bool:
+        pass
+
+    @abstractmethod
     def release_container(self, container_name):
         pass
 

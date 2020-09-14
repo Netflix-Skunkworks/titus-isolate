@@ -5,7 +5,9 @@ from typing import List
 
 from titus_isolate import log
 from titus_isolate.cgroup.cgroup_manager import CgroupManager
-from titus_isolate.cgroup.utils import set_cpuset, get_cpuset, parse_cpuset, set_quota, get_quota, set_shares, get_shares
+from titus_isolate.cgroup.utils import set_cpuset, get_cpuset, parse_cpuset, set_quota, get_quota, set_shares, \
+    get_shares, set_memory_migrate, set_memory_spread_page, set_memory_spread_slab, get_memory_migrate, \
+    get_memory_spread_page, get_memory_spread_slab
 from titus_isolate.metrics.constants import WRITE_CPUSET_FAILED_KEY, WRITE_CPUSET_SUCCEEDED_KEY, ISOLATED_WORKLOAD_COUNT, CPUSET_THREAD_COUNT
 
 
@@ -43,6 +45,24 @@ class FileCgroupManager(CgroupManager):
 
     def get_shares(self, container_name: str) -> int:
         return self.__get_shares(container_name)
+
+    def set_memory_migrate(self, container_name, on: bool):
+        self.__set(set_memory_migrate, container_name, str(int(on)))
+
+    def get_memory_migrate(self, container_name) -> bool:
+        return bool(int(self.__get(get_memory_migrate, container_name)))
+
+    def set_memory_spread_page(self, container_name, on: bool):
+        self.__set(set_memory_spread_page, container_name, str(int(on)))
+
+    def get_memory_spread_page(self, container_name) -> bool:
+        return bool(int(self.__get(get_memory_spread_page, container_name)))
+
+    def set_memory_spread_slab(self, container_name, on: bool):
+        self.__set(set_memory_spread_slab, container_name, str(int(on)))
+
+    def get_memory_spread_slab(self, container_name) -> bool:
+        return bool(int(self.__get(get_memory_spread_slab, container_name)))
 
     def release_container(self, container_name):
         self.__remove_isolated_workload(container_name)

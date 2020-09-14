@@ -15,7 +15,8 @@ from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.config.constants import DEFAULT_TOTAL_THRESHOLD
+from titus_isolate.config.constants import DEFAULT_TOTAL_THRESHOLD, TITUS_ISOLATE_MEMORY_MIGRATE, \
+    TITUS_ISOLATE_MEMORY_SPREAD_PAGE, TITUS_ISOLATE_MEMORY_SPREAD_SLAB
 from titus_isolate.event.constants import STATIC, BURST
 from titus_isolate.isolate.detect import get_cross_package_violations
 from titus_isolate.isolate.workload_manager import WorkloadManager
@@ -298,3 +299,36 @@ class TestWorkloadManager(unittest.TestCase):
             self.assertTrue(gauge_value_equals(registry, BURST_ALLOCATED_SIZE_KEY, total_thread_count))
             self.assertTrue(gauge_value_equals(registry, BURST_REQUESTED_SIZE_KEY, burst_thread_count))
             self.assertTrue(gauge_value_equals(registry, OVERSUBSCRIBED_THREADS_KEY, static_thread_count))
+
+    def test_single_workload_memory_settings(self):
+        for allocator in ALLOCATORS:
+            thread_count = 2
+            workload = get_test_workload(uuid.uuid4(), thread_count, STATIC)
+
+            cgroup_manager = MockCgroupManager()
+            workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
+
+            # With an empty configuration we should expect default False behavior
+            # for all memory flags
+            set_config_manager(ConfigManager(TestPropertyProvider({})))
+
+            workload_manager.add_workload(workload)
+            self.assertFalse(cgroup_manager.get_memory_migrate(workload.get_id()))
+            self.assertFalse(cgroup_manager.get_memory_spread_page(workload.get_id()))
+            self.assertFalse(cgroup_manager.get_memory_spread_slab(workload.get_id()))
+            workload_manager.remove_workload(workload.get_id())
+
+            # With all memory configuration options set to True we should expect all memory
+            # flags to be set to True
+            set_config_manager(ConfigManager(TestPropertyProvider({
+                TITUS_ISOLATE_MEMORY_MIGRATE: True,
+                TITUS_ISOLATE_MEMORY_SPREAD_PAGE: True,
+                TITUS_ISOLATE_MEMORY_SPREAD_SLAB: True,
+            })))
+
+            workload_manager.add_workload(workload)
+            self.assertTrue(cgroup_manager.get_memory_migrate(workload.get_id()))
+            self.assertTrue(cgroup_manager.get_memory_spread_page(workload.get_id()))
+            self.assertTrue(cgroup_manager.get_memory_spread_slab(workload.get_id()))
+            workload_manager.remove_workload(workload.get_id())
+
