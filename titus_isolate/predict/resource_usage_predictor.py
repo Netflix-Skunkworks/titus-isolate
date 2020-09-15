@@ -13,7 +13,7 @@ from titus_isolate.model.kubernetes_workload import KubernetesWorkload
 from titus_isolate.model.pod_utils import get_job_descriptor, get_start_time, get_main_container_status
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
-from titus_isolate.crd.model.resource_usage_prediction import ResourceUsagePrediction, ResourceUsagePredictions
+from titus_isolate.crd.model.resource_usage_prediction import ResourceUsagePrediction, ResourceUsagePredictions, Resources
 from titus_isolate.predict.simple_cpu_predictor import SimpleCpuPredictor
 from titus_isolate.utils import get_config_manager, get_pod_manager
 
@@ -157,19 +157,12 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
         return predictions
 
     def get_predictions(self,
-                        pods: List[V1Pod],
+                        running_pods: List[V1Pod],
                         resource_usage: GlobalResourceUsage) -> Optional[ResourceUsagePredictions]:
         config_manager = get_config_manager()
         if config_manager is None:
             log.warning("Config manager not yet set.")
             return None
-
-        running_pods = []
-        for p in pods:
-            if self.is_running(p):
-                running_pods.append(p)
-            else:
-                log.info("Pod is not yet running: %s", p.metadata.name)
 
         client_crt = get_client_cert_path(config_manager)
         client_key = get_client_key_path(config_manager)
