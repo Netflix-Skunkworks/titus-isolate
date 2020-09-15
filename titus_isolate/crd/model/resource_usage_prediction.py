@@ -4,6 +4,7 @@ from typing import List
 
 from six import iteritems
 
+from titus_isolate import log
 from .resources import Resources
 from ...model.constants import PREDICTED_USAGE_RESOURCE_API_VERSION
 
@@ -161,6 +162,8 @@ class ResourceUsagePredictions:
         self.model_instance_id = raw.get(MODEL_INSTANCE_ID, "UNKNOWN_MODEL_INSTANCE_ID")
         self.prediction_ts_ms = int(raw.get(PREDICTION_TS_MS, '0'))
         self.metadata = raw.get(META_DATA, {})
+        if self.metadata is None:
+            self.metadata = {}
         self.__predictions = {}
         self.__pred_time2empty_batch = []
 
@@ -171,11 +174,12 @@ class ResourceUsagePredictions:
                 self.__predictions[job_id] = ResourceUsagePrediction(p)
 
         if PRED_TIME2EMPTY_BATCH in self.metadata:
+            content = self.metadata[PRED_TIME2EMPTY_BATCH]
             try:
-                self.__pred_time2empty_batch = [float(e) for e in self.metadata[PRED_TIME2EMPTY_BATCH].split(',')]
+                self.__pred_time2empty_batch = [float(e) for e in content.split(',')]
+                self.metadata.pop(PRED_TIME2EMPTY_BATCH)
             except:
-                pass
-            self.metadata.pop(PRED_TIME2EMPTY_BATCH)
+                log.exception("Error parsing pred_time2empty_batch str: " + content)
 
     @property
     def predictions(self):

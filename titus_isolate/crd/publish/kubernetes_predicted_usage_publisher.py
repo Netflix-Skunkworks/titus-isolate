@@ -42,6 +42,7 @@ class KubernetesPredictedUsagePublisher:
     def publish(self):
         log.info("Predicting resource usage")
 
+        allocated_resources = Resources()
         num_batch_containers = 0
         num_service_containers = 0
         if len(self.__pod_manager.get_pods()) == 0:
