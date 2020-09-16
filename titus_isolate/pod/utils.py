@@ -6,6 +6,7 @@ from titus_isolate.crd.model.resources import Resources
 SPEC_RESOURCE_CPU_KEY = 'cpu'
 SPEC_RESOURCE_MEM_KEY = 'memory'
 SPEC_RESOURCE_DISK_KEY = 'ephemeral-storage'
+SPEC_RESOURCE_DISK_DEPRECATED_KEY = 'titus/disk'
 SPEC_RESOURCE_NET_KEY = 'titus/network'
 SPEC_RESOURCE_GPU_KEY = 'nvidia.com/gpu'
 ANNOTATION_KEY_JOB_TYPE = 'titus.agent.jobType'
@@ -14,10 +15,14 @@ JOB_TYPE_SERVICE = 'SERVICE'
 
 def get_requested_resources(pod : V1Pod) -> Resources:
     r = pod.spec.containers[0].resources.requests
+    disk_str = r.get(SPEC_RESOURCE_DISK_KEY, '')
+    if disk_str == '':
+        disk_str = r[SPEC_RESOURCE_DISK_DEPRECATED_KEY]
+
     return Resources(
         int(parse_quantity(r[SPEC_RESOURCE_CPU_KEY])),
         int(parse_quantity(r[SPEC_RESOURCE_MEM_KEY])),
-        int(parse_quantity(r[SPEC_RESOURCE_DISK_KEY])),
+        int(parse_quantity(disk_str)),
         int(parse_quantity(r[SPEC_RESOURCE_NET_KEY])),
         int(parse_quantity(r[SPEC_RESOURCE_GPU_KEY]))
     )
