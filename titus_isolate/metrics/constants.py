@@ -72,3 +72,5 @@ OVERSUBSCRIBE_SKIP_COUNT = 'titus-isolate.oversubscribeSkipCount'
 OVERSUBSCRIBE_SUCCESS_COUNT = 'titus-isolate.oversubscribeSuccessCount'
 OVERSUBSCRIBE_RECLAIMED_CPU_COUNT = 'titus-isolate.oversubscribeReclaimedCpuCount'
 OVERSUBSCRIBE_CONSUMED_CPU_COUNT = 'titus-isolate.oversubscribeConsumedCpuCount'
+
+PARSE_POD_REQUESTED_RESOURCES_FAIL_COUNT = 'titus-isolate.parsePodRequestedResourcesFailCount'
