@@ -18,6 +18,7 @@ from titus_isolate.crd.publish.kubernetes_opportunistic_window_publisher import 
 import kubernetes
 
 from titus_isolate.kub.utils import get_node, get_instance_type
+from titus_isolate.metrics.constants import PARSE_POD_REQUESTED_RESOURCES_FAIL_COUNT
 from titus_isolate.model.constants import CUSTOM_RESOURCE_GROUP, PREDICTED_USAGE_RESOURCE_VERSION
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.pod.pod_manager import PodManager
@@ -38,6 +39,8 @@ class KubernetesPredictedUsagePublisher:
         self.__wmm = workload_monitor_manager
         self.__custom_api = kubernetes.client.CustomObjectsApi(
             kubernetes.config.new_client_from_config(config_file=DEFAULT_KUBECONFIG_PATH))
+        self.__registry = None
+        self.__parse_pod_req_resources_fail_count = 0
 
     def publish(self):
         log.info("Predicting resource usage")
@@ -51,7 +54,12 @@ class KubernetesPredictedUsagePublisher:
             predictions.set_prediction_ts_ms(1000*int(time.mktime(dt.utcnow().timetuple())))
         else:
             running_pods = [p for p in self.__pod_manager.get_pods() if self.__resource_usage_predictor.is_running(p)]
-            allocated_resources = self.__compute_allocated_resources(running_pods)
+            try:
+                allocated_resources = self.__compute_allocated_resources(running_pods)
+            except Exception as e:
+                self.__parse_pod_req_resources_fail_count += 1
+                log.exception("Failed to parse pod requested resources. Aborting: %s", e)
+                raise e
             predictions = self.__resource_usage_predictor.get_predictions(
                 running_pods,
                 self.__wmm.get_resource_usage())
@@ -120,3 +128,10 @@ class KubernetesPredictedUsagePublisher:
             elif is_service_pod(pod):
                 num_service += 1
         return (num_batch, num_service)
+
+    def set_registry(self, registry, tags):
+        self.__registry = registry
+
+    def report_metrics(self, tags):
+        self.__registry.counter(PARSE_POD_REQUESTED_RESOURCES_FAIL_COUNT, tags).increment(self.__parse_pod_req_resources_fail_count)
+        self.__parse_pod_req_resources_fail_count = 0

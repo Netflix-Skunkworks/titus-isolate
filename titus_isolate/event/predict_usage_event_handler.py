@@ -46,6 +46,7 @@ class ResourceUsagePredictionHandler(EventHandler, MetricsReporter):
 
     def set_registry(self, registry, tags):
         self.__reg = registry
+        self.__publisher.set_registry(registry, tags)
 
     def report_metrics(self, tags):
         with self.__lock:
@@ -53,3 +54,4 @@ class ResourceUsagePredictionHandler(EventHandler, MetricsReporter):
             self.__reg.counter(PUBLISH_FAILURE_COUNT, tags).increment(self.__publish_failure_count)
             self.__publish_success_count = 0
             self.__publish_failure_count = 0
+            self.__publisher.report_metrics(tags)
