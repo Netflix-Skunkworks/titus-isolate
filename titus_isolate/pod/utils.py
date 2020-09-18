@@ -19,12 +19,17 @@ def get_requested_resources(pod : V1Pod) -> Resources:
     if disk_str == '':
         disk_str = r[SPEC_RESOURCE_DISK_DEPRECATED_KEY]
 
+    gpu = 0
+    gpu_str = r.get(SPEC_RESOURCE_GPU_KEY, '')
+    if gpu_str != '':
+        gpu = int(parse_quantity(gpu_str))
+
     return Resources(
         int(parse_quantity(r[SPEC_RESOURCE_CPU_KEY])),
         int(parse_quantity(r[SPEC_RESOURCE_MEM_KEY])),
         int(parse_quantity(disk_str)),
         int(parse_quantity(r[SPEC_RESOURCE_NET_KEY])),
-        int(parse_quantity(r[SPEC_RESOURCE_GPU_KEY]))
+        gpu
     )
 
 def is_batch_pod(pod : V1Pod) -> bool:
