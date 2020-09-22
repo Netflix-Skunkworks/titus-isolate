@@ -170,6 +170,9 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher, Metri
                                      OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY: node.metadata.name,
                                      OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY: node.metadata.uid
                                  },
+                                 annotations={
+                                    OPPORTUNISTIC_RESOURCE_TTL: '1h',
+                                 },
                                  owner_references=[
                                      V1OwnerReference(api_version=node.api_version,
                                                       kind=node.kind,
