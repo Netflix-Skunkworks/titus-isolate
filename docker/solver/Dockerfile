@@ -43,4 +43,5 @@ COPY init_900.py /opt/gurobi900/linux64/lib/python3.5_utf32/gurobipy/__init__.py
 ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/gurobi900/linux64/bin"
 ENV LD_LIBRARY_PATH="/opt/gurobi900/linux64/lib"
 
+WORKDIR /home/nfsuper
 CMD /usr/bin/gunicorn3 -w 4 --log-level=info --worker-tmp-dir /dev/shm titus_isolate.api.solve:app
