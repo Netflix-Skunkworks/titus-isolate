@@ -1,4 +1,4 @@
-FROM dockerregistry.test.netflix.net:7002/engtools/bionicbase
+FROM ubuntu:bionic
 
 HEALTHCHECK --interval=1m --timeout=3s CMD curl -f $EC2_LOCAL_IPV4 || exit 1
 
