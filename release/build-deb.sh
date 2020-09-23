@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-rm -rf cvxpy_test
-
 echo "Removing old tox files"
 rm -rf .tox
 
@@ -20,17 +18,6 @@ virtualenv --python=/usr/bin/python3 env
 
 echo "Activating virtualenv (env)"
 . env/bin/activate
-
-echo "Cloning cvxpy fork"
-mkdir -p ~/.ssh
-touch ~/.ssh/known_hosts
-ssh-keyscan github.com >> ~/.ssh/known_hosts
-git clone -b optimal_inaccurate https://github.com/rostyboost/cvxpy.git cvxpy_test
-
-echo "Installing cvxpy"
-pushd cvxpy_test
-python3 setup.py sdist
-popd
 
 echo "Creating source distribution"
 python3 setup.py sdist
@@ -71,5 +58,3 @@ deactivate
 
 echo "Removing virtualenv (env)"
 rm -rf env
-
-rm -rf cvxpy_test

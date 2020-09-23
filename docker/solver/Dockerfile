@@ -37,7 +37,6 @@ RUN pip3 install -r prerequirements.txt
 
 COPY requirements.txt .
 COPY titus-isolate-0.SNAPSHOT.tar.gz .
-COPY cvxpy-1.1.0a1.tar.gz .
 
 RUN pip3 install -r requirements.txt
 ENV PYTHONPATH="/usr/local/lib/python3.6/dist-packages:/opt/gurobi900/linux64/lib/python3.5_utf32"

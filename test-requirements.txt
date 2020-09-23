@@ -4,7 +4,6 @@ docker
 flask
 requests
 schedule
-cvxpy
-titus-optimize==0.6.0
+titus-optimize==0.7.1
 netflix-spectator-py
 kubernetes

@@ -3,7 +3,7 @@ from collections import defaultdict
 import time
 from typing import Optional
 
-from titus_optimize.compute_v3 import IPSolverParameters, IP_SOLUTION_TIME_BOUND, PlacementSolver
+from titus_optimize.compute_v4 import IPSolverParameters, IP_SOLUTION_TIME_BOUND, PlacementSolver
 
 from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
@@ -121,7 +121,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             self.__call_meta)
 
     def __compute_allocation(self, cpu, workload_id, workloads, curr_ids_per_workload, cpu_usage, is_add):
-        predicted_usage = self.__predict_usage(workloads, cpu_usage)
+        predicted_usage = {} # self.__predict_usage(workloads, cpu_usage)
         cpu = self.__place_threads(cpu, workload_id, workloads, curr_ids_per_workload, predicted_usage, is_add)
 
         # Burst workload computation
@@ -263,7 +263,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
         release_all_threads(cpu, workloads.values())
         self.__assign_new_mapping(cpu, thread_id2workload_ids)
 
-        # TODO: log what's in print_statistics of compute_v2
         return cpu
 
     def __compute_new_placement(
@@ -319,6 +318,10 @@ class ForecastIPCpuAllocator(CpuAllocator):
             internal_solver_time = prob.solution.attr.get('solve_time', None)
             if internal_solver_time is not None:
                 self.__call_meta['ip_internal_solver_call_dur_secs'] = internal_solver_time
+            try:
+                mip_gap = self.__call_meta['ip_solver_sol_mip_gap'] = prob.solver_stats.extra_stats.MIPGap
+            except:
+                pass
 
             if status == IP_SOLUTION_TIME_BOUND:
                 self.__time_bound_call_count += 1
