@@ -44,4 +44,4 @@ ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/guro
 ENV LD_LIBRARY_PATH="/opt/gurobi900/linux64/lib"
 
 WORKDIR /home/nfsuper
-CMD /usr/bin/gunicorn3 -w 4 --log-level=info --worker-tmp-dir /dev/shm titus_isolate.api.solve:app
+CMD /usr/bin/gunicorn3 -w 4 --log-level=info --worker-tmp-dir /dev/shm titus_isolate.api.dummy:app
