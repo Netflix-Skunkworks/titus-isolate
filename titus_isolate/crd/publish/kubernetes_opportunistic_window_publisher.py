@@ -24,7 +24,7 @@ from titus_isolate.crd.model.opportunistic_resource_spec import OpportunisticRes
 from titus_isolate.crd.model.opportunistic_resource_window import OpportunisticResourceWindow
 from titus_isolate.metrics.constants import OVERSUBSCRIBE_RECLAIMED_CPU_COUNT
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
-from titus_isolate.model.constants import OPPORTUNISTIC_RESOURCE_VERSION
+from titus_isolate.model.constants import OPPORTUNISTIC_RESOURCE_VERSION, OPPORTUNISTIC_RESOURCE_TTL
 from titus_isolate.utils import get_config_manager
 
 VIRTUAL_KUBELET_CONFIG_PATH = '/run/virtual-kubelet.config'
