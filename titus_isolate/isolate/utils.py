@@ -12,7 +12,9 @@ from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAULT_ALLOCATOR, \
     IP, GREEDY, NOOP, FORECAST_CPU_IP, \
     FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER, EMPTY, DEFAULT_TOTAL_THRESHOLD, \
-    TOTAL_THRESHOLD, REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, OVERSUBSCRIBE, NAIVE, NOOP_RESET
+    TOTAL_THRESHOLD, REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, OVERSUBSCRIBE, NAIVE, NOOP_RESET, \
+    EMPTY_CORES
+from titus_isolate.monitor.empty_core_free_thread_provider import EmptyCoreFreeThreadProvider
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
@@ -34,7 +36,9 @@ def get_free_thread_provider(config_manager: ConfigManager) -> FreeThreadProvide
 
     total_threshold = config_manager.get_float(TOTAL_THRESHOLD, DEFAULT_TOTAL_THRESHOLD)
 
-    if free_thread_provider_str == EMPTY:
+    if free_thread_provider_str == EMPTY_CORES:
+        free_thread_provider = EmptyCoreFreeThreadProvider()
+    elif free_thread_provider_str == EMPTY:
         free_thread_provider = EmptyFreeThreadProvider()
     elif free_thread_provider_str == OVERSUBSCRIBE:
         free_thread_provider = OversubscribeFreeThreadProvider(total_threshold)
