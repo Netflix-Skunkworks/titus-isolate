@@ -1,5 +1,3 @@
-from functools import reduce
-
 from titus_isolate.model.processor.utils import get_packages_with_workload, get_workload_ids
 
 
