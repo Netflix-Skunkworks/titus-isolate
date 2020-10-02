@@ -141,9 +141,6 @@ class TestAllocation(unittest.TestCase):
             for r in ids_per_socket:
                 # each workload should be on a different socket
                 self.assertEqual(1, len(set([e[0] for e in r])))
-                # assigned threads should be on different coreds
-                core_ids = [e[1] for e in r]
-                self.assertEqual(len(set(core_ids)), len(core_ids))
 
     def test_assign_two_workloads_empty_cpu_greedy(self):
         """
