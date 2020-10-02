@@ -6,6 +6,5 @@ netflix-spectator-py
 netflix-spectator-pyconf
 requests
 schedule
-titus-optimize==0.6.0
-/cvxpy-1.1.0a1.tar.gz
+titus-optimize==0.7.2
 /titus-isolate-0.SNAPSHOT.tar.gz
