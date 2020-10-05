@@ -319,7 +319,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
             if internal_solver_time is not None:
                 self.__call_meta['ip_internal_solver_call_dur_secs'] = internal_solver_time
             try:
-                mip_gap = self.__call_meta['ip_solver_sol_mip_gap'] = prob.solver_stats.extra_stats.MIPGap
+                mip_gap = self.__call_meta['ip_solver_sol_mip_gap'] = str(prob.solver_stats.extra_stats.MIPGap)
             except:
                 pass
 
