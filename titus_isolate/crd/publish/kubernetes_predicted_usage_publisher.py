@@ -19,7 +19,8 @@ import kubernetes
 
 from titus_isolate.kub.utils import get_node, get_instance_type
 from titus_isolate.metrics.constants import PARSE_POD_REQUESTED_RESOURCES_FAIL_COUNT
-from titus_isolate.model.constants import CUSTOM_RESOURCE_GROUP, PREDICTED_USAGE_RESOURCE_VERSION
+from titus_isolate.model.constants import CUSTOM_RESOURCE_GROUP, PREDICTED_USAGE_RESOURCE_VERSION, \
+    OPPORTUNISTIC_RESOURCE_TTL
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.pod.pod_manager import PodManager
 from titus_isolate.pod.utils import get_requested_resources, is_batch_pod, is_service_pod
