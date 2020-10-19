@@ -16,7 +16,7 @@ ExecStartPre=/opt/venvs/titus-isolate/bin/pip3 install 'netflix-spectator-pyconf
 ExecStart=/usr/bin/gunicorn3 -w 1 --log-level=info titus_isolate.api.status:app
 KillMode=mixed
 Restart=on-failure
-WatchdogSec=30
+WatchdogSec=60
 TimeoutStartSec=600
 
 [Install]
