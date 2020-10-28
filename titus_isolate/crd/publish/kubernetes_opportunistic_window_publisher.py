@@ -46,13 +46,13 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher, Metri
     def get_current_end(self) -> datetime:
         label_selector = "{}={}".format(OPPORTUNISTIC_RESOURCE_NODE_NAME_LABEL_KEY,
                                         get_node_name())
-        items = self.__custom_api.list_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
-                                                                group=CUSTOM_RESOURCE_GROUP,
-                                                                plural=OPPORTUNISTIC_RESOURCE_PLURAL,
-                                                                namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
-                                                                label_selector=label_selector)
-        if len(items) == 0:
-            return EPOCH
+        response = self.__custom_api.list_namespaced_custom_object(version=OPPORTUNISTIC_RESOURCE_VERSION,
+                                                                   group=CUSTOM_RESOURCE_GROUP,
+                                                                   plural=OPPORTUNISTIC_RESOURCE_PLURAL,
+                                                                   namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
+                                                                   label_selector=label_selector)
+        items = response["items"]
+        if not items: return EPOCH
 
         return max([self.__get_timestamp(x) for x in items])
 
