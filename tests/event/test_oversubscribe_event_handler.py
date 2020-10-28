@@ -1,7 +1,7 @@
 import json
 import unittest
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict
 
 from tests.config.test_property_provider import TestPropertyProvider
@@ -16,9 +16,6 @@ from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorManager
 from titus_isolate.predict.simple_cpu_predictor import SimpleCpuPredictor
 from titus_isolate.utils import set_config_manager, set_cpu_usage_predictor_manager, set_workload_monitor_manager
-
-EPOCH = datetime.utcfromtimestamp(0)
-
 
 class TestWorkloadManager:
     def __init__(self, workloads: List[Workload]):
@@ -80,7 +77,7 @@ class TestOversubscribeEventHandler(unittest.TestCase):
     def test_skip_active_window(self):
         set_config_manager(ConfigManager(TestPropertyProvider({})))
         window_publisher = TestOpportunisticWindowPublisher(
-            get_current_end_func=lambda: EPOCH,
+            get_current_end_func=lambda: datetime.now() + timedelta(minutes=5),
             add_window_func=lambda: None,
         )
 
@@ -94,7 +91,7 @@ class TestOversubscribeEventHandler(unittest.TestCase):
         set_config_manager(ConfigManager(TestPropertyProvider({})))
         set_workload_monitor_manager(TestWorkloadMonitorManager())
         window_publisher = TestOpportunisticWindowPublisher(
-            get_current_end_func=lambda: EPOCH,
+            get_current_end_func=lambda: datetime.now() - timedelta(minutes=1),
             add_window_func=lambda: None,
         )
 
