@@ -52,7 +52,8 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher, Metri
                                                                    namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
                                                                    label_selector=label_selector)
         items = response["items"]
-        if not items: return EPOCH
+        if not items:
+            return EPOCH
 
         return max([self.__get_timestamp(x) for x in items])
 
@@ -91,7 +92,7 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher, Metri
 
     @staticmethod
     def __get_timestamp(item: dict) -> datetime:
-        s = item['object']['spec']['window']['end']
+        s = item['spec']['window']['end']
         if is_int(s):
             return datetime.fromtimestamp(int(s) / 1000)
         else:
@@ -104,5 +105,5 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher, Metri
         if self.__oppo is None:
             return
 
-        opp_capacity = int(self.__oppo['object']['spec']['capacity']['cpu'])
+        opp_capacity = int(self.__oppo['spec']['capacity']['cpu'])
         self.__registry.gauge(OVERSUBSCRIBE_RECLAIMED_CPU_COUNT, tags).set(opp_capacity)
