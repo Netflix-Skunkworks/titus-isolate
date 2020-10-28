@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import kubernetes
 from dateutil.parser import parse
@@ -63,6 +63,9 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher, Metri
         start_epoch_ms = int(unix_time_millis(start))
         end_epoch_ms = int(unix_time_millis(end))
 
+        # set ttl so the window is deleted 1 hour after it ends
+        ttl = end - start + timedelta(hours=1)
+
         oppo_meta = V1ObjectMeta(namespace=OPPORTUNISTIC_RESOURCE_NAMESPACE,
                                  name="{}-{}-{}".format(node.metadata.name, start_epoch_ms, end_epoch_ms),
                                  labels={
@@ -70,7 +73,7 @@ class KubernetesOpportunisticWindowPublisher(OpportunisticWindowPublisher, Metri
                                      OPPORTUNISTIC_RESOURCE_NODE_UID_LABEL_KEY: node.metadata.uid
                                  },
                                  annotations={
-                                     OPPORTUNISTIC_RESOURCE_TTL: '1h',
+                                     OPPORTUNISTIC_RESOURCE_TTL: '{}s'.format(ttl.seconds),
                                  },
                                  owner_references=[
                                      V1OwnerReference(api_version=node.api_version,
