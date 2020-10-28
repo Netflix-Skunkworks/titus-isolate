@@ -77,7 +77,7 @@ class TestOversubscribeEventHandler(unittest.TestCase):
     def test_skip_active_window(self):
         set_config_manager(ConfigManager(TestPropertyProvider({})))
         window_publisher = TestOpportunisticWindowPublisher(
-            get_current_end_func=lambda: datetime.now() + timedelta(minutes=5),
+            get_current_end_func=lambda: datetime.utcnow() + timedelta(minutes=5),
             add_window_func=lambda: None,
         )
 
@@ -91,7 +91,7 @@ class TestOversubscribeEventHandler(unittest.TestCase):
         set_config_manager(ConfigManager(TestPropertyProvider({})))
         set_workload_monitor_manager(TestWorkloadMonitorManager())
         window_publisher = TestOpportunisticWindowPublisher(
-            get_current_end_func=lambda: datetime.now() - timedelta(minutes=1),
+            get_current_end_func=lambda: datetime.utcnow() - timedelta(minutes=1),
             add_window_func=lambda: None,
         )
 

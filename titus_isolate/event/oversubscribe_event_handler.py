@@ -105,25 +105,25 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
             self.handling_event(event, 'oversubscribing workloads')
 
-            # we calculate the window before we send the request to ensure we're not going over our 10 minute mark
-            start = datetime.utcnow()
-            end = start + timedelta(minutes=self.__config_manager.get_int(OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY,
-                                                                          DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES))
-
             with self.__window_lock:
-                if end < self.__window_end_time:
+                if datetime.utcnow() < self.__window_end_time:
                     self.__skip_count += 1
                     self.handled_event(event, 'skipping oversubscribe - a window is currently active')
                     return
 
-                self.__publish_window(start, end, event)
+                self.__publish_window(event)
 
         except:
             self.__fail_count += 1
             log.exception("Event handler: '{}' failed to handle event: '{}'".format(
                 self.__class__.__name__, event))
 
-    def __publish_window(self, start, end, event):
+    def __publish_window(self, event):
+        # we calculate the window before we send the request to ensure we're not going over our 10 minute mark
+        start = datetime.utcnow()
+        end = start + timedelta(minutes=self.__config_manager.get_int(OVERSUBSCRIBE_WINDOW_SIZE_MINUTES_KEY,
+                                                                      DEFAULT_OVERSUBSCRIBE_WINDOW_SIZE_MINUTES))
+
         simple_cpu_usage_predictions = self.__get_simple_cpu_predictions()
 
         workload_count = 0
