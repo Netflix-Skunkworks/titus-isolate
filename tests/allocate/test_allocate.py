@@ -23,6 +23,7 @@ from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
+from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_workload_monitor_manager
 
@@ -34,6 +35,9 @@ class TestWorkloadMonitorManager:
     @staticmethod
     def get_pcp_usage() -> dict:
         return {}
+
+    def get_resource_usage(self) -> GlobalResourceUsage:
+        return GlobalResourceUsage(self.get_pcp_usage())
 
 
 class TestPodManager:
