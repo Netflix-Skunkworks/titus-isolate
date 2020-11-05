@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional, Dict
 
 from tests.config.test_property_provider import TestPropertyProvider
-from tests.utils import get_test_workload
+from tests.utils import get_test_workload, TestWorkloadMonitorManager
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import DEFAULT_TOTAL_THRESHOLD
 from titus_isolate.event.constants import OVERSUBSCRIBE_EVENT, STATIC
@@ -62,14 +62,6 @@ class TestCpuUsagePredictorManager(CpuUsagePredictorManager):
         return self.predictor
 
 
-class TestWorkloadMonitorManager:
-
-    @staticmethod
-    def get_pcp_usage() -> dict:
-        return {}
-
-    def get_resource_usage(self) -> GlobalResourceUsage:
-        return GlobalResourceUsage(self.get_pcp_usage())
 
 
 class TestOversubscribeEventHandler(unittest.TestCase):

@@ -200,35 +200,51 @@ class WorkloadManager(MetricsReporter):
             "environment": config_manager.get_environment()
         }
 
+
+    @staticmethod
+    def __get_optional_default(func, default):
+        opt = func()
+        if opt is None:
+            return default
+        return opt
+
     def __get_threads_request(self, workload_id, workload_map, request_type):
-        pcp_usage = self.__wmm.get_pcp_usage()
-        resource_usage = GlobalResourceUsage(pcp_usage)
+        resource_usage = self.__wmm.get_resource_usage()
+        cpu_usage = self.__get_optional_default(resource_usage.get_cpu_usage, {})
+        mem_usage = self.__get_optional_default(resource_usage.get_mem_usage, {})
+        net_recv_usage = self.__get_optional_default(resource_usage.get_net_recv_usage, {})
+        net_trans_usage = self.__get_optional_default(resource_usage.get_net_trans_usage, {})
+        disk_usage = self.__get_optional_default(resource_usage.get_disk_usage, {})
 
         return AllocateThreadsRequest(
             cpu=self.get_cpu_copy(),
             workload_id=workload_id,
             workloads=workload_map,
             resource_usage=resource_usage,
-            cpu_usage=pcp_usage.get(CPU_USAGE, {}),
-            mem_usage=pcp_usage.get(MEM_USAGE, {}),
-            net_recv_usage=pcp_usage.get(NET_RECV_USAGE, {}),
-            net_trans_usage=pcp_usage.get(NET_TRANS_USAGE, {}),
-            disk_usage=pcp_usage.get(DISK_USAGE, {}),
+            cpu_usage=cpu_usage,
+            mem_usage=mem_usage,
+            net_recv_usage=net_recv_usage,
+            net_trans_usage=net_trans_usage,
+            disk_usage=disk_usage,
             metadata=self.__get_request_metadata(request_type))
 
     def __get_rebalance_request(self):
-        pcp_usage = self.__wmm.get_pcp_usage()
-        resource_usage = GlobalResourceUsage(pcp_usage)
+        resource_usage = self.__wmm.get_resource_usage()
+        cpu_usage = self.__get_optional_default(resource_usage.get_cpu_usage, {})
+        mem_usage = self.__get_optional_default(resource_usage.get_mem_usage, {})
+        net_recv_usage = self.__get_optional_default(resource_usage.get_net_recv_usage, {})
+        net_trans_usage = self.__get_optional_default(resource_usage.get_net_trans_usage, {})
+        disk_usage = self.__get_optional_default(resource_usage.get_disk_usage, {})
 
         return AllocateRequest(
             cpu=self.get_cpu_copy(),
             workloads=self.get_workload_map_copy(),
             resource_usage=resource_usage,
-            cpu_usage=pcp_usage.get(CPU_USAGE, {}),
-            mem_usage=pcp_usage.get(MEM_USAGE, {}),
-            net_recv_usage=pcp_usage.get(NET_RECV_USAGE, {}),
-            net_trans_usage=pcp_usage.get(NET_TRANS_USAGE, {}),
-            disk_usage=pcp_usage.get(DISK_USAGE, {}),
+            cpu_usage=cpu_usage,
+            mem_usage=mem_usage,
+            net_recv_usage=net_recv_usage,
+            net_trans_usage=net_trans_usage,
+            disk_usage=disk_usage,
             metadata=self.__get_request_metadata("rebalance"))
 
     def get_workloads(self) -> List[Workload]:

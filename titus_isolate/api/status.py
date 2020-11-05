@@ -9,7 +9,8 @@ from flask import Flask
 from titus_isolate import log
 from titus_isolate.api.testing import is_testing
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.config.constants import RESTART_PROPERTIES
+from titus_isolate.config.constants import RESTART_PROPERTIES, METRICS_QUERY_TIMEOUT_KEY, \
+    DEFAULT_METRICS_QUERY_TIMEOUT_SEC, DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.crd.publish.kubernetes_predicted_usage_publisher import KubernetesPredictedUsagePublisher
 from titus_isolate.event.create_event_handler import CreateEventHandler
@@ -29,6 +30,7 @@ from titus_isolate.metrics.constants import ISOLATE_LATENCY_KEY
 from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
 from titus_isolate.metrics.metrics_manager import MetricsManager, registry
 from titus_isolate.model.processor.config import get_cpu_from_env
+from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.pod.pod_manager import PodManager
 from titus_isolate.predict.cpu_usage_predictor_manager import ConfigurableCpuUsagePredictorManager
@@ -168,7 +170,16 @@ if __name__ != '__main__' and not is_testing():
 
     # Start performance monitoring
     log.info("Starting performance monitoring...")
-    workload_monitor_manager = WorkloadMonitorManager()
+    metrics_query_timeout_sec = get_config_manager().get_int(
+        METRICS_QUERY_TIMEOUT_KEY,
+        DEFAULT_METRICS_QUERY_TIMEOUT_SEC)
+    pcp_extra_time_sec = 2 * 60  # Two extra minutes to ensure full metrics buckets and no trailing nan
+    resource_usage_provider = PcpResourceUsageProvider(
+        relative_start_sec=3600 + pcp_extra_time_sec,
+        interval_sec=60,
+        sample_interval_sec=DEFAULT_SAMPLE_FREQUENCY_SEC,
+        query_timeout_sec=metrics_query_timeout_sec)
+    workload_monitor_manager = WorkloadMonitorManager(resource_usage_provider)
     set_workload_monitor_manager(workload_monitor_manager)
 
     # Setup the workload manager

@@ -306,7 +306,6 @@ class ForecastIPCpuAllocator(CpuAllocator):
             placement, status, prob, _ = placement_solver.optimize(
                 requested_cus=requested_units,
                 previous_allocation=current_placement,
-                use_per_workload=predicted_usage,
                 verbose=False,
                 max_runtime_secs=self.__solver_max_runtime_secs,
                 mip_gap=self.__solver_mip_gap)
