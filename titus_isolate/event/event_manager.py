@@ -109,6 +109,7 @@ class EventManager(MetricsReporter):
     def __pull_events(self):
         for event in self.__events:
             self.__put_event(event)
+            time.sleep(0)
 
     def __put_event(self, event):
         event = json.loads(event.decode("utf-8"))
@@ -144,6 +145,7 @@ class EventManager(MetricsReporter):
                         type(event_handler).__name__, event))
                     self.__report_failed_event(event_handler)
 
+            time.sleep(0)
             self.__q.task_done()
             self.__reg.counter(EVENT_PROCESSED_KEY, self.__tags).increment()
             self.__reg.gauge(QUEUE_DEPTH_KEY, self.__tags).set(self.get_queue_depth())
