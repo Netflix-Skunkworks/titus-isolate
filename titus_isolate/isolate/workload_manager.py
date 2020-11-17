@@ -1,4 +1,5 @@
 import copy
+import json
 from threading import Lock
 import time
 from typing import List, Dict
@@ -22,7 +23,6 @@ from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.utils import visualize_cpu_comparison
 from titus_isolate.model.workload_interface import Workload
-from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 from titus_isolate.numa.utils import update_numa_balancing
 from titus_isolate.utils import get_workload_monitor_manager, get_config_manager
 
@@ -200,7 +200,6 @@ class WorkloadManager(MetricsReporter):
             "environment": config_manager.get_environment()
         }
 
-
     @staticmethod
     def __get_optional_default(func, default):
         opt = func()
@@ -209,7 +208,8 @@ class WorkloadManager(MetricsReporter):
         return opt
 
     def __get_threads_request(self, workload_id, workload_map, request_type):
-        resource_usage = self.__wmm.get_resource_usage()
+        resource_usage = self.__wmm.get_resource_usage(workload_map.keys())
+        log.debug("resource_usage: %s", json.dumps(resource_usage.serialize()))
         cpu_usage = self.__get_optional_default(resource_usage.get_cpu_usage, {})
         mem_usage = self.__get_optional_default(resource_usage.get_mem_usage, {})
         net_recv_usage = self.__get_optional_default(resource_usage.get_net_recv_usage, {})
@@ -229,7 +229,9 @@ class WorkloadManager(MetricsReporter):
             metadata=self.__get_request_metadata(request_type))
 
     def __get_rebalance_request(self):
-        resource_usage = self.__wmm.get_resource_usage()
+        workload_map = self.get_workload_map_copy()
+        resource_usage = self.__wmm.get_resource_usage(workload_map.keys())
+        log.debug("resource_usage: %s", json.dumps(resource_usage.serialize()))
         cpu_usage = self.__get_optional_default(resource_usage.get_cpu_usage, {})
         mem_usage = self.__get_optional_default(resource_usage.get_mem_usage, {})
         net_recv_usage = self.__get_optional_default(resource_usage.get_net_recv_usage, {})
@@ -238,7 +240,7 @@ class WorkloadManager(MetricsReporter):
 
         return AllocateRequest(
             cpu=self.get_cpu_copy(),
-            workloads=self.get_workload_map_copy(),
+            workloads=workload_map,
             resource_usage=resource_usage,
             cpu_usage=cpu_usage,
             mem_usage=mem_usage,

@@ -1,11 +1,18 @@
-from datetime import datetime
-from typing import List, Optional
+from datetime import datetime, timedelta
+from typing import List
 
 import requests
 
 from titus_isolate import log
+from titus_isolate.allocate.constants import CPU_USAGE
 from titus_isolate.monitor.resource_usage import ResourceUsage
 from titus_isolate.monitor.resource_usage_provider import ResourceUsageProvider
+from titus_isolate.utils import get_config_manager
+
+
+query_format = {
+    'cpu': 'rate(titus_cpu_cpuacct_usage{{instance="{}",v3_job_titus_netflix_com_task_id=~"{}"}}[1m])'
+}
 
 
 def dt2str(dt: datetime) -> str:
@@ -16,25 +23,35 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
 
     def __init__(self):
         self.__prom_url = 'http://internal-titusprometheus-dev09cell001-24889838.us-east-1.elb.amazonaws.com/api/v1/query_range'
+        self.__instance_id = get_config_manager().get_instance()
 
-    def get_resource_usages(self) -> List[ResourceUsage]:
-        pass
+    def get_resource_usages(self, workload_ids: List[str]) -> List[ResourceUsage]:
+        now = datetime.utcnow()
+        end = dt2str(now)
+        start = dt2str(now - timedelta(hours=1, minutes=2))
 
-    def _get_cpu(self, start: str, end: str) -> List[ResourceUsage]:
+        return self._get_cpu(workload_ids, start, end)
+
+    def _get_cpu(self, workload_ids: List[str], start: str, end: str) -> List[ResourceUsage]:
+        ids = '|'.join(workload_ids)
+        cpu_query = query_format['cpu'].format(self.__instance_id, ids)
+        return self.__get_usages(cpu_query, CPU_USAGE, start, end)
+
+    def __get_usages(self, query: str, type_name: str, start: str, end: str) -> List[ResourceUsage]:
         resp = requests.get(
             self.__prom_url,
             params={
-                'query': 'rate(titus_cpu_cpuacct_usage[1m])',
+                'query': query,
                 'start': start,
                 'end': end,
                 'step': "1m"
             })
 
         if resp.status_code != 200:
-            log.error("Failed to query prometheus.  status: %s, text: %s", resp.status_code, resp.text)
+            log.error("Failed to query prometheus. query: %s, status: %s, text: %s", query, resp.status_code, resp.text)
             return []
 
-        return self._parse_prom_response("cpu", resp.json())
+        return self._parse_prom_response(type_name, resp.json())
 
     @staticmethod
     def __validate_prom_response(resp) -> bool:

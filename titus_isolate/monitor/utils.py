@@ -203,6 +203,3 @@ def resource_usages_to_dict(usages: List[ResourceUsage]) -> dict:
         d[u.resource_name][u.workload_id] = [str(v) for v in u.values]
 
     return d
-
-
-def get_

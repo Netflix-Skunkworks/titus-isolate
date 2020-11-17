@@ -1,3 +1,4 @@
+import math
 import unittest
 import uuid
 
@@ -11,61 +12,63 @@ class TestResourceUsage(unittest.TestCase):
         w_id0 = str(uuid.uuid4())
         w_id1 = str(uuid.uuid4())
 
-        expected_usage0 = [0.0, 1.0, 2.0]
-        expected_usage1 = [3.0, 4.0, 5.0]
+        input_usage0 = [0.0, 1.0, 2.0]
+        padded_usage0 = [float('nan'), float('nan'), 0.0, 1.0, 2.0]
+        input_usage1 = [3.0, 4.0, 5.0]
+        padded_usage1 = [float('nan'), float('nan'), 3.0, 4.0, 5.0]
 
         raw_usage = {
             CPU_USAGE: {
-                w_id0: expected_usage0,
-                w_id1: expected_usage1
+                w_id0: input_usage0,
+                w_id1: input_usage1
             },
             MEM_USAGE: {
-                w_id0: expected_usage0,
-                w_id1: expected_usage1
+                w_id0: input_usage0,
+                w_id1: input_usage1
             },
             NET_RECV_USAGE: {
-                w_id0: expected_usage0,
-                w_id1: expected_usage1
+                w_id0: input_usage0,
+                w_id1: input_usage1
             },
             NET_TRANS_USAGE: {
-                w_id0: expected_usage0,
-                w_id1: expected_usage1
+                w_id0: input_usage0,
+                w_id1: input_usage1
             },
             DISK_USAGE: {
-                w_id0: expected_usage0,
-                w_id1: expected_usage1
+                w_id0: input_usage0,
+                w_id1: input_usage1
             }
         }
 
-        ru = GlobalResourceUsage(raw_usage)
+        ru = GlobalResourceUsage(raw_usage, 5)
 
         def __assert_expected(expected_usage, w_id):
-            self.assertEqual(expected_usage, ru.get_cpu_usage()[w_id])
-            self.assertEqual(expected_usage, ru.get_mem_usage()[w_id])
-            self.assertEqual(expected_usage, ru.get_net_trans_usage()[w_id])
-            self.assertEqual(expected_usage, ru.get_net_recv_usage()[w_id])
-            self.assertEqual(expected_usage, ru.get_disk_usage()[w_id])
+            self.__assert_list_equal_with_nans(expected_usage, ru.get_cpu_usage()[w_id])
+            self.__assert_list_equal_with_nans(expected_usage, ru.get_mem_usage()[w_id])
+            self.__assert_list_equal_with_nans(expected_usage, ru.get_net_trans_usage()[w_id])
+            self.__assert_list_equal_with_nans(expected_usage, ru.get_net_recv_usage()[w_id])
+            self.__assert_list_equal_with_nans(expected_usage, ru.get_disk_usage()[w_id])
 
         def __assert_all_expected(expected_usage, all_usage):
-            self.assertEqual(expected_usage, all_usage[CPU_USAGE])
-            self.assertEqual(expected_usage, all_usage[MEM_USAGE])
-            self.assertEqual(expected_usage, all_usage[NET_RECV_USAGE])
-            self.assertEqual(expected_usage, all_usage[NET_TRANS_USAGE])
-            self.assertEqual(expected_usage, all_usage[DISK_USAGE])
+            self.__assert_list_equal_with_nans(expected_usage, all_usage[CPU_USAGE])
+            self.__assert_list_equal_with_nans(expected_usage, all_usage[MEM_USAGE])
+            self.__assert_list_equal_with_nans(expected_usage, all_usage[NET_RECV_USAGE])
+            self.__assert_list_equal_with_nans(expected_usage, all_usage[NET_TRANS_USAGE])
+            self.__assert_list_equal_with_nans(expected_usage, all_usage[DISK_USAGE])
 
-        __assert_expected(expected_usage0, w_id0)
-        __assert_expected(expected_usage1, w_id1)
-        __assert_all_expected(expected_usage0, ru.get_all_usage_for_workload(w_id0))
-        __assert_all_expected(expected_usage1, ru.get_all_usage_for_workload(w_id1))
+        __assert_expected(padded_usage0, w_id0)
+        __assert_expected(padded_usage1, w_id1)
+        __assert_all_expected(padded_usage0, ru.get_all_usage_for_workload(w_id0))
+        __assert_all_expected(padded_usage1, ru.get_all_usage_for_workload(w_id1))
 
         # serialize/deserialize and assert again
         serial_ru = ru.serialize()
         ru = deserialize_global_resource_usage(serial_ru)
 
-        __assert_expected(expected_usage0, w_id0)
-        __assert_expected(expected_usage1, w_id1)
-        __assert_all_expected(expected_usage0, ru.get_all_usage_for_workload(w_id0))
-        __assert_all_expected(expected_usage1, ru.get_all_usage_for_workload(w_id1))
+        __assert_expected(padded_usage0, w_id0)
+        __assert_expected(padded_usage1, w_id1)
+        __assert_all_expected(padded_usage0, ru.get_all_usage_for_workload(w_id0))
+        __assert_all_expected(padded_usage1, ru.get_all_usage_for_workload(w_id1))
 
     def test_empty_usage(self):
         ru = GlobalResourceUsage({})
@@ -87,3 +90,12 @@ class TestResourceUsage(unittest.TestCase):
         ru = deserialize_global_resource_usage(serial_du)
         __assert_empty()
 
+    def __assert_list_equal_with_nans(self, l0, l1):
+        self.assertEqual(len(l0), len(l1))
+        for i in range(len(l0)):
+            e0 = l0[i]
+            e1 = l1[i]
+            if math.isnan(e0):
+                self.assertTrue(math.isnan(e1))
+            else:
+                self.assertEqual(e0, e1)

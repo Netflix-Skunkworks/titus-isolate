@@ -57,9 +57,10 @@ class KubernetesPredictedUsagePublisher:
                 self.__parse_pod_req_resources_fail_count += 1
                 log.exception("Failed to parse pod requested resources. Aborting: %s", e)
                 raise e
+            workload_ids = [p.metadata.name for p in running_pods]
             predictions = self.__resource_usage_predictor.get_predictions(
                 running_pods,
-                self.__wmm.get_resource_usage())
+                self.__wmm.get_resource_usage(workload_ids))
             num_batch_containers, num_service_containers = self.__compute_num_containers(running_pods)
 
 

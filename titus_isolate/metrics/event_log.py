@@ -1,3 +1,4 @@
+import json
 import socket
 
 import requests
@@ -9,7 +10,7 @@ from titus_isolate.utils import get_event_log_manager
 
 
 def send_event_msg(msg, address):
-    log.debug("Sending to keystone address: '{}' msg: '{}'".format(address, msg))
+    log.debug("Sending to keystone address: '{}' msg: '{}'".format(address, json.dumps(msg)))
     r = requests.post(address, json=msg)
     log.debug("Received response: '{}'".format(r))
     return r

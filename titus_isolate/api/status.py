@@ -24,7 +24,7 @@ from titus_isolate.event.oversubscribe_event_handler import OversubscribeEventHa
 from titus_isolate.event.utils import get_current_workloads
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.reconciler import Reconciler
-from titus_isolate.isolate.utils import get_fallback_allocator
+from titus_isolate.isolate.utils import get_fallback_allocator, get_resource_usage_provider
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import ISOLATE_LATENCY_KEY
 from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
@@ -170,15 +170,7 @@ if __name__ != '__main__' and not is_testing():
 
     # Start performance monitoring
     log.info("Starting performance monitoring...")
-    metrics_query_timeout_sec = get_config_manager().get_int(
-        METRICS_QUERY_TIMEOUT_KEY,
-        DEFAULT_METRICS_QUERY_TIMEOUT_SEC)
-    pcp_extra_time_sec = 2 * 60  # Two extra minutes to ensure full metrics buckets and no trailing nan
-    resource_usage_provider = PcpResourceUsageProvider(
-        relative_start_sec=3600 + pcp_extra_time_sec,
-        interval_sec=60,
-        sample_interval_sec=DEFAULT_SAMPLE_FREQUENCY_SEC,
-        query_timeout_sec=metrics_query_timeout_sec)
+    resource_usage_provider = get_resource_usage_provider(get_config_manager())
     workload_monitor_manager = WorkloadMonitorManager(resource_usage_provider)
     set_workload_monitor_manager(workload_monitor_manager)
 

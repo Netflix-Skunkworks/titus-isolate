@@ -1,4 +1,5 @@
 from threading import Lock
+from typing import List
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE
@@ -22,11 +23,11 @@ class WorkloadMonitorManager(MetricsReporter):
         self.__lock = Lock()
         self.__usage_lock = Lock()
 
-    def __get_usage_dict(self) -> dict:
-        return resource_usages_to_dict(self.__resource_usage_provider.get_resource_usages())
+    def __get_usage_dict(self, workload_ids: List[str]) -> dict:
+        return resource_usages_to_dict(self.__resource_usage_provider.get_resource_usages(workload_ids))
 
-    def get_resource_usage(self) -> GlobalResourceUsage:
-        return GlobalResourceUsage(self.__get_usage_dict())
+    def get_resource_usage(self, workload_ids: List[str]) -> GlobalResourceUsage:
+        return GlobalResourceUsage(self.__get_usage_dict(workload_ids))
 
     def set_registry(self, registry, tags):
         self.__registry = registry
@@ -41,9 +42,10 @@ class WorkloadMonitorManager(MetricsReporter):
             log.debug("Not reporting metrics because there's no workload manager available yet.")
             return
 
-        usage_dict = self.__get_usage_dict()
-        if CPU_USAGE not in usage_dict .keys():
-            log.warning("No CPU usage in PCP usage.")
+        workload_ids = wm.get_workload_map_copy().keys()
+        usage_dict = self.__get_usage_dict(workload_ids)
+        if CPU_USAGE not in usage_dict.keys():
+            log.warning("No CPU usage in usage: %s", usage_dict)
             return
 
         usage = usage_dict[CPU_USAGE]
