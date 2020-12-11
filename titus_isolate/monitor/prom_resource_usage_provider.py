@@ -35,11 +35,12 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
     def _get_cpu(self, workload_ids: List[str], start: str, end: str) -> List[ResourceUsage]:
         ids = '|'.join(workload_ids)
         cpu_query = query_format['cpu'].format(self.__instance_id, ids)
-        return self.__get_usages(cpu_query, CPU_USAGE, start, end)
+        return self.__get_usages(cpu_query, CPU_USAGE, start, end, 0.000000001)  # scale nanoseconds to seconds
 
-    def __get_usages(self, query: str, type_name: str, start: str, end: str) -> List[ResourceUsage]:
+    def __get_usages(self, query: str, type_name: str, start: str, end: str, scale: float = 1.0) -> List[ResourceUsage]:
         resp = requests.get(
             self.__prom_url,
+            timeout=1,
             params={
                 'query': query,
                 'start': start,
@@ -51,7 +52,7 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
             log.error("Failed to query prometheus. query: %s, status: %s, text: %s", query, resp.status_code, resp.text)
             return []
 
-        return self._parse_prom_response(type_name, resp.json())
+        return self._parse_prom_response(type_name, resp.json(), scale)
 
     @staticmethod
     def __validate_prom_response(resp) -> bool:
@@ -93,7 +94,7 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
 
         return True
 
-    def _parse_prom_response(self, resource_name: str, resp: dict) -> List[ResourceUsage]:
+    def _parse_prom_response(self, resource_name: str, resp: dict, scale: float = 1.0) -> List[ResourceUsage]:
         # {
         # 	"status": "success",
         # 	"data": {
@@ -135,7 +136,7 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
             task_id = r["metric"]["v3_job_titus_netflix_com_task_id"]
             raw_values = r["values"]
             start_ts = raw_values[0][0]
-            values = [ts_val[1] for ts_val in raw_values]
+            values = [float(ts_val[1]) * scale for ts_val in raw_values]
 
             usages.append(ResourceUsage(task_id, resource_name, start_ts, 60, values))
 

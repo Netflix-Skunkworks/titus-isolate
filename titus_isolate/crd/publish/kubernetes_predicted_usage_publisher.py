@@ -63,7 +63,6 @@ class KubernetesPredictedUsagePublisher:
                 self.__wmm.get_resource_usage(workload_ids))
             num_batch_containers, num_service_containers = self.__compute_num_containers(running_pods)
 
-
         node = get_node()
         log.debug('owner_kind:%s owner_name:%s owner_uid:%s', node.kind, node.metadata.name, node.metadata.uid)
         instance_type = get_instance_type(node)
