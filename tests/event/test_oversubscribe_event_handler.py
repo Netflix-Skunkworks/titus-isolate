@@ -1,7 +1,7 @@
 import json
 import unittest
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict
 
 from tests.config.test_property_provider import TestPropertyProvider
@@ -17,7 +17,6 @@ from titus_isolate.predict.cpu_usage_predictor_manager import CpuUsagePredictorM
 from titus_isolate.predict.simple_cpu_predictor import SimpleCpuPredictor
 from titus_isolate.utils import set_config_manager, set_cpu_usage_predictor_manager, set_workload_monitor_manager
 
-
 class TestWorkloadManager:
     def __init__(self, workloads: List[Workload]):
         self.workloads = workloads
@@ -28,26 +27,20 @@ class TestWorkloadManager:
 
 class TestOpportunisticWindowPublisher(OpportunisticWindowPublisher):
 
-    def __init__(self, is_window_active_func, add_window_func, cleanup_func):
-        self.is_window_active_func = is_window_active_func
+    def __init__(self, get_current_end_func, add_window_func):
+        self.get_current_end_func = get_current_end_func
         self.add_window_func = add_window_func
-        self.cleanup_func = cleanup_func
 
-        self.is_window_active_count = 0
+        self.get_current_end_count = 0
         self.add_window_count = 0
-        self.cleanup_count = 0
 
-    def is_window_active(self) -> bool:
-        self.is_window_active_count += 1
-        return self.is_window_active_func()
+    def get_current_end(self):
+        self.get_current_end_count += 1
+        return self.get_current_end_func()
 
     def add_window(self, start: datetime, end: datetime, free_cpu_count: int):
         self.add_window_count += 1
         return self.add_window_func()
-
-    def cleanup(self):
-        self.cleanup_count += 1
-        return self.cleanup_func()
 
 
 class TestSimpleCpuPredictor(SimpleCpuPredictor):
@@ -84,24 +77,22 @@ class TestOversubscribeEventHandler(unittest.TestCase):
     def test_skip_active_window(self):
         set_config_manager(ConfigManager(TestPropertyProvider({})))
         window_publisher = TestOpportunisticWindowPublisher(
-            is_window_active_func=lambda: True,
+            get_current_end_func=lambda: datetime.utcnow() + timedelta(minutes=5),
             add_window_func=lambda: None,
-            cleanup_func=lambda: 0
         )
 
         oeh = OversubscribeEventHandler(TestWorkloadManager([]), window_publisher)
         oeh._handle(json.loads(OVERSUBSCRIBE_EVENT.decode("utf-8")))
 
         self.assertEqual(1, oeh.get_skip_count())
-        self.assertEqual(1, window_publisher.is_window_active_count)
+        self.assertEqual(1, window_publisher.get_current_end_count)
 
     def test_publish_window(self):
         set_config_manager(ConfigManager(TestPropertyProvider({})))
         set_workload_monitor_manager(TestWorkloadMonitorManager())
         window_publisher = TestOpportunisticWindowPublisher(
-            is_window_active_func=lambda: False,
+            get_current_end_func=lambda: datetime.utcnow() - timedelta(minutes=1),
             add_window_func=lambda: None,
-            cleanup_func=lambda: 0
         )
 
         w_id = str(uuid.uuid4())
@@ -118,5 +109,5 @@ class TestOversubscribeEventHandler(unittest.TestCase):
 
         self.assertEqual(0, oeh.get_skip_count())
         self.assertEqual(1, oeh.get_success_count())
-        self.assertEqual(1, window_publisher.is_window_active_count)
+        self.assertEqual(1, window_publisher.get_current_end_count)
         self.assertEqual(1, window_publisher.add_window_count)
