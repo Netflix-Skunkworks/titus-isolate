@@ -30,7 +30,6 @@ from titus_isolate.metrics.constants import ISOLATE_LATENCY_KEY
 from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
 from titus_isolate.metrics.metrics_manager import MetricsManager, registry
 from titus_isolate.model.processor.config import get_cpu_from_env
-from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
 from titus_isolate.pod.pod_manager import PodManager
 from titus_isolate.predict.cpu_usage_predictor_manager import ConfigurableCpuUsagePredictorManager
