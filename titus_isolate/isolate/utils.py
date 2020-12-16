@@ -78,6 +78,8 @@ def get_allocator(allocator_str, config_manager):
 def get_resource_usage_provider(config_manager):
     rup_str = config_manager.get_cached_str(RESOURCE_USAGE_PROVIDER, DEFAULT_RESOURCE_USAGE_PROVIDER)
 
+    log.info("ResourceUsageProvider: %s", rup_str)
+
     if rup_str == PROMETHEUS:
         return PrometheusResourceUsageProvider()
 
