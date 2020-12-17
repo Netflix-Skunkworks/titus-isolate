@@ -25,7 +25,9 @@ class WorkloadMonitorManager(MetricsReporter):
 
     def __get_usage_dict(self, workload_ids: List[str]) -> dict:
         log.info("Getting resource usage from resource usage provider: %s", self.__resource_usage_provider.get_name())
-        return resource_usages_to_dict(self.__resource_usage_provider.get_resource_usages(workload_ids))
+        usages_dict = resource_usages_to_dict(self.__resource_usage_provider.get_resource_usages(workload_ids))
+        log.debug("Got resource usages: %s", usages_dict)
+        return usages_dict
 
     def get_resource_usage(self, workload_ids: List[str]) -> GlobalResourceUsage:
         return GlobalResourceUsage(self.__get_usage_dict(workload_ids))
