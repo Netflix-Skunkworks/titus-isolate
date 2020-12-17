@@ -9,7 +9,8 @@ from kubernetes.client import V1Pod
 
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, get_test_workload, get_threads_with_workload, get_no_usage_threads_request, \
-    get_no_usage_rebalance_request, TestCpuUsagePredictorManager, TestPredictor, TestCpuUsagePredictor
+    get_no_usage_rebalance_request, TestCpuUsagePredictorManager, TestPredictor, TestCpuUsagePredictor, \
+    TestWorkloadMonitorManager
 from titus_isolate import log
 from titus_isolate.allocate.forecast_ip_cpu_allocator import ForecastIPCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
@@ -27,13 +28,6 @@ from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_workload_monitor_manager
 
 config_logs(logging.INFO)
-
-
-class TestWorkloadMonitorManager:
-
-    @staticmethod
-    def get_pcp_usage() -> dict:
-        return {}
 
 
 class TestPodManager:

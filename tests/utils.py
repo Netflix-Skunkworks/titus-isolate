@@ -322,3 +322,6 @@ class TestCpuUsagePredictorManager:
         self.__predictor = predictor
 
 
+class TestWorkloadMonitorManager:
+    def get_resource_usage(self, workload_ids: List[str]) -> GlobalResourceUsage:
+        return GlobalResourceUsage({})

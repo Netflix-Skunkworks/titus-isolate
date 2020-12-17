@@ -83,7 +83,8 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
             log.warning("No workloads, skipping cpu usage prediction")
             return {}
 
-        resource_usage = self.__workload_monitor_manager.get_resource_usage()
+        workload_ids = [w.get_id() for w in workloads]
+        resource_usage = self.__workload_monitor_manager.get_resource_usage(workload_ids)
 
         log.info("Getting simple cpu predictions...")
         cpu_predictions = cpu_predictor.get_cpu_predictions(workloads, resource_usage)

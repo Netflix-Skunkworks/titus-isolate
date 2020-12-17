@@ -8,11 +8,12 @@ import schedule
 from titus_isolate import log
 from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC, DEFAULT_METRICS_QUERY_TIMEOUT_SEC
 from titus_isolate.monitor.resource_usage import ResourceUsage
+from titus_isolate.monitor.resource_usage_provider import ResourceUsageProvider
 from titus_isolate.monitor.utils import get_resource_usage, get_pcp_archive_path
 from titus_isolate.utils import get_workload_manager, is_kubernetes
 
 
-class PcpResourceUsageProvider:
+class PcpResourceUsageProvider(ResourceUsageProvider):
 
     def __init__(
             self,
@@ -82,10 +83,10 @@ class PcpResourceUsageProvider:
         with self.__lock:
             return copy.deepcopy(self.__usages)
 
-    def get_resource_usages(self) -> List[ResourceUsage]:
+    def get_resource_usages(self, workload_ids: List[str]) -> List[ResourceUsage]:
         usages_copy = self.__get_usages_copy()
         if usages_copy is None:
             log.warning("No usage snapshot")
             return []
         else:
-            return usages_copy
+            return [u for u in usages_copy if u.workload_id in workload_ids]

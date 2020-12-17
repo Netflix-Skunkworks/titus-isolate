@@ -9,7 +9,8 @@ from flask import Flask
 from titus_isolate import log
 from titus_isolate.api.testing import is_testing
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.config.constants import RESTART_PROPERTIES
+from titus_isolate.config.constants import RESTART_PROPERTIES, METRICS_QUERY_TIMEOUT_KEY, \
+    DEFAULT_METRICS_QUERY_TIMEOUT_SEC, DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.crd.publish.kubernetes_predicted_usage_publisher import KubernetesPredictedUsagePublisher
 from titus_isolate.event.create_event_handler import CreateEventHandler
@@ -23,7 +24,7 @@ from titus_isolate.event.oversubscribe_event_handler import OversubscribeEventHa
 from titus_isolate.event.utils import get_current_workloads
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.reconciler import Reconciler
-from titus_isolate.isolate.utils import get_fallback_allocator
+from titus_isolate.isolate.utils import get_fallback_allocator, get_resource_usage_provider
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import ISOLATE_LATENCY_KEY
 from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogManager
@@ -168,7 +169,8 @@ if __name__ != '__main__' and not is_testing():
 
     # Start performance monitoring
     log.info("Starting performance monitoring...")
-    workload_monitor_manager = WorkloadMonitorManager()
+    resource_usage_provider = get_resource_usage_provider(get_config_manager())
+    workload_monitor_manager = WorkloadMonitorManager(resource_usage_provider)
     set_workload_monitor_manager(workload_monitor_manager)
 
     # Setup the workload manager

@@ -1,4 +1,5 @@
 from threading import Lock
+from typing import List
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE
@@ -9,44 +10,25 @@ from titus_isolate.metrics.constants import BURST_POOL_USAGE_KEY, STATIC_POOL_US
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
 from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
+from titus_isolate.monitor.resource_usage_provider import ResourceUsageProvider
 from titus_isolate.monitor.utils import resource_usages_to_dict
 from titus_isolate.utils import get_workload_manager, get_config_manager
 
 
 class WorkloadMonitorManager(MetricsReporter):
 
-    def __init__(
-            self,
-            seconds: int = 3600,
-            agg_granularity_seconds: int = 60,
-            sample_interval=DEFAULT_SAMPLE_FREQUENCY_SEC):
-
-        self.__seconds = seconds
-        self.__agg_granularity_seconds = agg_granularity_seconds
-        self.__sample_interval = sample_interval
-
+    def __init__(self, resource_usage_provider: ResourceUsageProvider):
+        self.__resource_usage_provider = resource_usage_provider
         self.__registry = None
-
         self.__lock = Lock()
-
         self.__usage_lock = Lock()
 
-        metrics_query_timeout_sec = get_config_manager().get_int(
-            METRICS_QUERY_TIMEOUT_KEY,
-            DEFAULT_METRICS_QUERY_TIMEOUT_SEC)
+    def __get_usage_dict(self, workload_ids: List[str]) -> dict:
+        log.info("Getting resource usage from resource usage provider: %s", self.__resource_usage_provider.get_name())
+        return resource_usages_to_dict(self.__resource_usage_provider.get_resource_usages(workload_ids))
 
-        pcp_extra_time_sec = 2 * 60  # Two extra minutes to ensure full metrics buckets and no trailing nan
-        self.__pcp_usage_provider = PcpResourceUsageProvider(
-            relative_start_sec=seconds + pcp_extra_time_sec,
-            interval_sec=agg_granularity_seconds,
-            sample_interval_sec=sample_interval,
-            query_timeout_sec=metrics_query_timeout_sec)
-
-    def get_pcp_usage(self) -> dict:
-        return resource_usages_to_dict(self.__pcp_usage_provider.get_resource_usages())
-
-    def get_resource_usage(self) -> GlobalResourceUsage:
-        return GlobalResourceUsage(self.get_pcp_usage())
+    def get_resource_usage(self, workload_ids: List[str]) -> GlobalResourceUsage:
+        return GlobalResourceUsage(self.__get_usage_dict(workload_ids))
 
     def set_registry(self, registry, tags):
         self.__registry = registry
@@ -61,12 +43,13 @@ class WorkloadMonitorManager(MetricsReporter):
             log.debug("Not reporting metrics because there's no workload manager available yet.")
             return
 
-        pcp_usage = self.get_pcp_usage()
-        if CPU_USAGE not in pcp_usage.keys():
-            log.warning("No CPU usage in PCP usage.")
+        workload_ids = wm.get_workload_map_copy().keys()
+        usage_dict = self.__get_usage_dict(workload_ids)
+        if CPU_USAGE not in usage_dict.keys():
+            log.warning("No CPU usage in usage: %s", usage_dict)
             return
 
-        usage = pcp_usage[CPU_USAGE]
+        usage = usage_dict[CPU_USAGE]
         static_pool_cpu_usage = self.__get_pool_usage(STATIC, usage)
         burst_pool_cpu_usage = self.__get_pool_usage(BURST, usage)
 

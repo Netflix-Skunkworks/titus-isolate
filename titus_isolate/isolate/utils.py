@@ -13,11 +13,14 @@ from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAUL
     IP, GREEDY, NOOP, FORECAST_CPU_IP, \
     FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER, EMPTY, DEFAULT_TOTAL_THRESHOLD, \
     TOTAL_THRESHOLD, REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, OVERSUBSCRIBE, NAIVE, NOOP_RESET, \
-    EMPTY_CORES
+    EMPTY_CORES, RESOURCE_USAGE_PROVIDER, DEFAULT_RESOURCE_USAGE_PROVIDER, PCP, PROMETHEUS, METRICS_QUERY_TIMEOUT_KEY, \
+    DEFAULT_METRICS_QUERY_TIMEOUT_SEC, DEFAULT_SAMPLE_FREQUENCY_SEC
 from titus_isolate.monitor.empty_core_free_thread_provider import EmptyCoreFreeThreadProvider
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
+from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
+from titus_isolate.monitor.prom_resource_usage_provider import PrometheusResourceUsageProvider
 from titus_isolate.utils import get_cpu_usage_predictor_manager
 
 CPU_ALLOCATOR_NAME_TO_CLASS_MAP = {
@@ -70,3 +73,23 @@ def get_allocator(allocator_str, config_manager):
         cpu_usage_predictor_manager=get_cpu_usage_predictor_manager(),
         config_manager=config_manager,
         free_thread_provider=free_thread_provider)
+
+
+def get_resource_usage_provider(config_manager):
+    rup_str = config_manager.get_cached_str(RESOURCE_USAGE_PROVIDER, DEFAULT_RESOURCE_USAGE_PROVIDER)
+
+    log.info("ResourceUsageProvider: %s", rup_str)
+
+    if rup_str == PROMETHEUS:
+        return PrometheusResourceUsageProvider()
+
+    if rup_str == PCP:
+        metrics_query_timeout_sec = config_manager.get_int(
+            METRICS_QUERY_TIMEOUT_KEY,
+            DEFAULT_METRICS_QUERY_TIMEOUT_SEC)
+        pcp_extra_time_sec = 2 * 60  # Two extra minutes to ensure full metrics buckets and no trailing nan
+        return PcpResourceUsageProvider(
+            relative_start_sec=3600 + pcp_extra_time_sec,
+            interval_sec=60,
+            sample_interval_sec=DEFAULT_SAMPLE_FREQUENCY_SEC,
+            query_timeout_sec=metrics_query_timeout_sec)

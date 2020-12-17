@@ -1,3 +1,4 @@
+from collections import deque
 from typing import List, Dict, Set, Optional
 
 from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE, \
@@ -6,7 +7,8 @@ from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAG
 
 class ResourceUsage:
 
-    def __init__(self, workload_id: str, resource_name: str, start_time_epoch_sec: float, interval_sec: int, values: List[float]):
+    def __init__(self, workload_id: str, resource_name: str, start_time_epoch_sec: float, interval_sec: int,
+                 values: List[float]):
         self.workload_id = workload_id
         self.resource_name = resource_name
         self.start_time_epoch_sec = start_time_epoch_sec
@@ -18,7 +20,7 @@ class ResourceUsage:
 
 
 class GlobalResourceUsage:
-    def __init__(self, resource_usages: Dict[str, Dict[str, List[float]]]):
+    def __init__(self, resource_usages: Dict[str, Dict[str, List[float]]], usage_length: int = 62):
         """
         {
             <resource_name>: {
@@ -28,7 +30,7 @@ class GlobalResourceUsage:
             ...
         }
         """
-        self.__map = resource_usages
+        self.__map = self.pad_usage(resource_usages, usage_length)
 
     def __get_resource_usage(self, resource_name: str) -> Optional[Dict[str, List[float]]]:
         return self.__map.get(resource_name, None)
@@ -38,6 +40,24 @@ class GlobalResourceUsage:
         if usage is None:
             return None
         return usage.get(workload_id, None)
+
+    @staticmethod
+    def pad_usage(usage: Dict[str, Dict[str, List[float]]], usage_length):
+        padded_usage = {}
+        for resource_name, workload_usage in usage.items():
+            padded_usage[resource_name] = {}
+            for w_id, _ in workload_usage.items():
+                padded_usage[resource_name][w_id] = []
+
+        for resource_name, workload_usage in usage.items():
+            for w_id, usage in workload_usage.items():
+                pad_size = usage_length - len(usage)
+                pad = [float('nan') for _ in range(pad_size)]
+                d = deque(usage, maxlen=usage_length)
+                d.extendleft(pad)
+                padded_usage[resource_name][w_id] = list(d)
+
+        return padded_usage
 
     def serialize(self) -> Dict[str, Dict[str, List[str]]]:
         s_map = {}
@@ -79,12 +99,11 @@ class GlobalResourceUsage:
 
 def deserialize_global_resource_usage(s_map: Dict[str, Dict[str, List[str]]]) -> GlobalResourceUsage:
     d_map = {}
+    usage_length = 60
     for r_type, workload_usages in s_map.items():
         d_map[r_type] = {}
         for w_id, values in workload_usages.items():
+            usage_length = len(values)
             d_map[r_type][w_id] = [float(v) for v in values]
 
-    return GlobalResourceUsage(d_map)
-
-
-
+    return GlobalResourceUsage(d_map, usage_length)
