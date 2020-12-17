@@ -5,6 +5,7 @@ import requests
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE
+from titus_isolate.config.constants import PROMETHEUS_HOST_OVERRIDE
 from titus_isolate.monitor.resource_usage import ResourceUsage
 from titus_isolate.monitor.resource_usage_provider import ResourceUsageProvider
 from titus_isolate.utils import get_config_manager
@@ -19,13 +20,20 @@ def dt2str(dt: datetime) -> str:
     return dt.isoformat("T") + "Z"
 
 
+def get_prom_url() -> str:
+    cm = get_config_manager()
+
+    # e.g. titusprometheus.us-east-1.staging01cell001.test.netflix.net
+    default_host = f'titusprometheus.{cm.get_region()}.{cm.get_stack()}.{cm.get_environment()}.netflix.net'
+    host = cm.get_cached_str(PROMETHEUS_HOST_OVERRIDE, default_host)
+    return f'http://{host}/api/v1/query_range'
+
+
 class PrometheusResourceUsageProvider(ResourceUsageProvider):
 
     def __init__(self):
-        cm = get_config_manager()
-
-        # titusprometheus.us-east-1.staging01cell001.test.netflix.net
-        self.__prom_url = f'http://titusprometheus.{cm.get_region()}.{cm.get_stack()}.{cm.get_environment()}.netflix.net/api/v1/query_range'
+        self.__prom_url = get_prom_url()
+        log.info(f'Prometheus URL: {self.__prom_url}')
         self.__instance_id = get_config_manager().get_instance()
 
     def get_resource_usages(self, workload_ids: List[str]) -> List[ResourceUsage]:

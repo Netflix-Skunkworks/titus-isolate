@@ -323,7 +323,5 @@ class TestCpuUsagePredictorManager:
 
 
 class TestWorkloadMonitorManager:
-
-    @staticmethod
-    def get_resource_usage() -> GlobalResourceUsage:
+    def get_resource_usage(self, workload_ids: List[str]) -> GlobalResourceUsage:
         return GlobalResourceUsage({})
