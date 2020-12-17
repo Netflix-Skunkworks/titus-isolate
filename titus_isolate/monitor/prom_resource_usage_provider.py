@@ -22,7 +22,10 @@ def dt2str(dt: datetime) -> str:
 class PrometheusResourceUsageProvider(ResourceUsageProvider):
 
     def __init__(self):
-        self.__prom_url = 'http://internal-titusprometheus-dev09cell001-24889838.us-east-1.elb.amazonaws.com/api/v1/query_range'
+        cm = get_config_manager()
+
+        # titusprometheus.us-east-1.staging01cell001.test.netflix.net
+        self.__prom_url = f'http://titusprometheus.{cm.get_region()}.{cm.get_stack()}.{cm.get_environment()}.netflix.net/api/v1/query_range'
         self.__instance_id = get_config_manager().get_instance()
 
     def get_resource_usages(self, workload_ids: List[str]) -> List[ResourceUsage]:
