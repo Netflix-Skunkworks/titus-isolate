@@ -4,7 +4,7 @@ from typing import List
 import requests
 
 from titus_isolate import log
-from titus_isolate.allocate.constants import CPU_USAGE
+from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE
 from titus_isolate.config.constants import PROMETHEUS_HOST_OVERRIDE
 from titus_isolate.monitor.resource_usage import ResourceUsage
 from titus_isolate.monitor.resource_usage_provider import ResourceUsageProvider
@@ -12,7 +12,11 @@ from titus_isolate.utils import get_config_manager
 
 
 query_format = {
-    'cpu': 'rate(titus_cpu_cpuacct_usage{{instance="{}",v3_job_titus_netflix_com_task_id=~"{}"}}[1m])'
+    CPU_USAGE: 'rate(titus_cpu_cpuacct_usage{{instance="{}",v3_job_titus_netflix_com_task_id=~"{}"}}[1m])',
+    MEM_USAGE: 'titus_memory_usage_in_bytes{{instance="{}",v3_job_titus_netflix_com_task_id=~"{}"}}',
+    NET_RECV_USAGE: 'rate(titus_network_in_stat_bytes{{instance="{}",v3_job_titus_netflix_com_task_id=~"{}"}}[1m])',
+    NET_TRANS_USAGE: 'rate(titus_network_out_stat_bytes{{instance="{}",v3_job_titus_netflix_com_task_id=~"{}"}}[1m])',
+    DISK_USAGE: 'titus_disk_bytes_used{{instance="{}",v3_job_titus_netflix_com_task_id=~"{}"}}',
 }
 
 
@@ -41,14 +45,19 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
         end = dt2str(now)
         start = dt2str(now - timedelta(hours=1, minutes=2))
 
-        return self._get_cpu(workload_ids, start, end)
+        usages = self.__get_resource(CPU_USAGE, workload_ids, start, end, 0.000000001)  # scale nanoseconds to seconds
+        usages += self.__get_resource(MEM_USAGE, workload_ids, start, end)
+        usages += self.__get_resource(NET_RECV_USAGE, workload_ids, start, end)
+        usages += self.__get_resource(NET_TRANS_USAGE, workload_ids, start, end)
+        usages += self.__get_resource(DISK_USAGE, workload_ids, start, end)
+        return usages
 
-    def _get_cpu(self, workload_ids: List[str], start: str, end: str) -> List[ResourceUsage]:
+    def __get_resource(self, resource: str, workload_ids: List[str], start: str, end: str, scale: float = 1.0) -> List[ResourceUsage]:
         ids = '|'.join(workload_ids)
-        cpu_query = query_format['cpu'].format(self.__instance_id, ids)
-        return self.__get_usages(cpu_query, CPU_USAGE, start, end, 0.000000001)  # scale nanoseconds to seconds
+        query = query_format[resource].format(self.__instance_id, ids)
+        return self.__get_usages(query, resource, start, end, scale)
 
-    def __get_usages(self, query: str, type_name: str, start: str, end: str, scale: float = 1.0) -> List[ResourceUsage]:
+    def __get_usages(self, query: str, resource: str, start: str, end: str, scale: float = 1.0) -> List[ResourceUsage]:
         resp = requests.get(
             self.__prom_url,
             timeout=1,
@@ -63,7 +72,7 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
             log.error("Failed to query prometheus. query: %s, status: %s, text: %s", query, resp.status_code, resp.text)
             return []
 
-        return self._parse_prom_response(type_name, resp.json(), scale)
+        return self._parse_prom_response(resource, resp.json(), scale)
 
     @staticmethod
     def __validate_prom_response(resp) -> bool:
@@ -105,7 +114,7 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
 
         return True
 
-    def _parse_prom_response(self, resource_name: str, resp: dict, scale: float = 1.0) -> List[ResourceUsage]:
+    def _parse_prom_response(self, resource: str, resp: dict, scale: float = 1.0) -> List[ResourceUsage]:
         # {
         # 	"status": "success",
         # 	"data": {
@@ -149,6 +158,6 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
             start_ts = raw_values[0][0]
             values = [float(ts_val[1]) * scale for ts_val in raw_values]
 
-            usages.append(ResourceUsage(task_id, resource_name, start_ts, 60, values))
+            usages.append(ResourceUsage(task_id, resource, start_ts, 60, values))
 
         return usages
