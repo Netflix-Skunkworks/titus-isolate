@@ -20,7 +20,7 @@ class ResourceUsage:
 
 
 class GlobalResourceUsage:
-    def __init__(self, resource_usages: Dict[str, Dict[str, List[float]]], usage_length: int = 62):
+    def __init__(self, resource_usages: Dict[str, Dict[str, List[float]]], usage_length: int = 60):
         """
         {
             <resource_name>: {
