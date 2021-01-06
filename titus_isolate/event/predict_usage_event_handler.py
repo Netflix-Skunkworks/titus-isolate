@@ -16,7 +16,8 @@ class ResourceUsagePredictionHandler(EventHandler, MetricsReporter):
         super().__init__()
         self.__publisher = kubernetes_predicted_usage_publisher
         self.__reg = None
-        self.__lock = Lock()
+        self.__publish_lock = Lock()
+        self.__metric_lock = Lock()
 
         self.__publish_success_count = 0
         self.__publish_failure_count = 0
@@ -25,17 +26,20 @@ class ResourceUsagePredictionHandler(EventHandler, MetricsReporter):
         Thread(target=self._handle, args=[event]).start()
 
     def _handle(self, event):
-        with self.__lock:
-            try:
-                if not self.__relevant(event):
-                    self.ignored_event(event, "irrelevant")
-                    return
+        try:
+            if not self.__relevant(event):
+                self.ignored_event(event, "irrelevant")
+                return
 
+            with self.__publish_lock:
                 self.__publisher.publish()
+
+            with self.__metric_lock:
                 self.__publish_success_count += 1
-            except Exception:
+        except Exception:
+            with self.__metric_lock:
                 self.__publish_failure_count += 1
-                log.exception("Failed to publish resource usage predictions")
+            log.exception("Failed to publish resource usage predictions")
 
     def __relevant(self, event):
         if not event[ACTION] == PREDICT_USAGE:
@@ -49,7 +53,7 @@ class ResourceUsagePredictionHandler(EventHandler, MetricsReporter):
         self.__publisher.set_registry(registry, tags)
 
     def report_metrics(self, tags):
-        with self.__lock:
+        with self.__metric_lock:
             self.__reg.counter(PUBLISH_SUCCESS_COUNT, tags).increment(self.__publish_success_count)
             self.__reg.counter(PUBLISH_FAILURE_COUNT, tags).increment(self.__publish_failure_count)
             self.__publish_success_count = 0
