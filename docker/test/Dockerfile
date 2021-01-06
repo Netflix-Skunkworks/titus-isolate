@@ -2,6 +2,7 @@ FROM ubuntu:18.04
 
 RUN apt update && apt install -y \
     build-essential \
+    cmake \
     git \
     python3-all \
     python3-dev \
