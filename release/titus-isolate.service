@@ -1,7 +1,7 @@
 [Unit]
 Description=Titus container isolation
-Wants=titus-kube-config.service virtual-kubelet-config.service
-After=titus-kube-config.service virtual-kubelet-config.service
+Wants=titus-kube-config.service
+After=titus-kube-config.service
 Requires=titus-isolate.socket
 ConditionPathExists=!/run/is_kubelet
 
