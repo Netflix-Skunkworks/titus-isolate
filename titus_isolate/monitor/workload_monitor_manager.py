@@ -4,16 +4,13 @@ from typing import List
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE
-from titus_isolate.config.constants import DEFAULT_SAMPLE_FREQUENCY_SEC, METRICS_QUERY_TIMEOUT_KEY, \
-    DEFAULT_METRICS_QUERY_TIMEOUT_SEC
 from titus_isolate.event.constants import BURST, STATIC
-from titus_isolate.metrics.constants import BURST_POOL_USAGE_KEY, STATIC_POOL_USAGE_KEY
+from titus_isolate.metrics.constants import BURST_POOL_USAGE_KEY, STATIC_POOL_USAGE_KEY, GET_RESOURCE_USAGE_FAILURE
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
-from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 from titus_isolate.monitor.resource_usage_provider import ResourceUsageProvider
 from titus_isolate.monitor.utils import resource_usages_to_dict
-from titus_isolate.utils import get_workload_manager, get_config_manager
+from titus_isolate.utils import get_workload_manager
 
 
 class WorkloadMonitorManager(MetricsReporter):
@@ -21,8 +18,8 @@ class WorkloadMonitorManager(MetricsReporter):
     def __init__(self, resource_usage_provider: ResourceUsageProvider):
         self.__resource_usage_provider = resource_usage_provider
         self.__registry = None
-        self.__lock = Lock()
-        self.__usage_lock = Lock()
+        self.__metric_lock = Lock()
+        self.__get_resource_usage_failure_count = 0
 
     def __get_usage_dict(self, workload_ids: List[str]) -> dict:
         log.info("Getting resource usage from resource usage provider: %s", self.__resource_usage_provider.get_name())
@@ -30,9 +27,15 @@ class WorkloadMonitorManager(MetricsReporter):
         return usages_dict
 
     def get_resource_usage(self, workload_ids: List[str]) -> GlobalResourceUsage:
-        global_usage = GlobalResourceUsage(self.__get_usage_dict(workload_ids))
-        log.debug("Got resource usage: %s", json.dumps(global_usage.serialize(), sort_keys=True, separators=(',', ':')))
-        return global_usage
+        try:
+            global_usage = GlobalResourceUsage(self.__get_usage_dict(workload_ids))
+            log.debug("Got resource usage: %s", json.dumps(global_usage.serialize(), sort_keys=True, separators=(',', ':')))
+            return global_usage
+        except Exception:
+            log.exception("failed to get resource usage, returning empty usage")
+            with self.__metric_lock:
+                self.__get_resource_usage_failure_count += 1
+            return GlobalResourceUsage({})
 
     def set_registry(self, registry, tags):
         self.__registry = registry
@@ -59,6 +62,10 @@ class WorkloadMonitorManager(MetricsReporter):
 
         self.__registry.gauge(STATIC_POOL_USAGE_KEY, tags).set(static_pool_cpu_usage)
         self.__registry.gauge(BURST_POOL_USAGE_KEY, tags).set(burst_pool_cpu_usage)
+
+        with self.__metric_lock:
+            self.__registry.counter(GET_RESOURCE_USAGE_FAILURE, tags).increment(self.__get_resource_usage_failure_count)
+            self.__get_resource_usage_failure_count = 0
 
     @staticmethod
     def __get_pool_usage(workload_type, usage):
