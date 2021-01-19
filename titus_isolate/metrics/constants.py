@@ -61,6 +61,7 @@ SOLVER_REBALANCE_DURATION = 'titus-isolate.rebalanceThreadsDurationSec'
 
 STATIC_POOL_USAGE_KEY = 'titus-isolate.staticPoolUsage'
 BURST_POOL_USAGE_KEY = 'titus-isolate.burstPoolUsage'
+GET_RESOURCE_USAGE_FAILURE = 'titus-isolate.getResourceUsageFailureCount'
 
 RUNNING = 'titus-isolate.running'
 
