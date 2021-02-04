@@ -1,4 +1,3 @@
-
 from titus_isolate import log
 from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
@@ -18,6 +17,7 @@ from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAUL
 from titus_isolate.monitor.empty_core_free_thread_provider import EmptyCoreFreeThreadProvider
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
 from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
+from titus_isolate.monitor.noop_resource_usage_provider import NoopResourceUsageProvider
 from titus_isolate.monitor.oversubscribe_free_thread_provider import OversubscribeFreeThreadProvider
 from titus_isolate.monitor.pcp_resource_usage_provider import PcpResourceUsageProvider
 from titus_isolate.monitor.prom_resource_usage_provider import PrometheusResourceUsageProvider
@@ -62,7 +62,8 @@ def get_fallback_allocator(config_manager) -> FallbackCpuAllocator:
 
 def get_allocator(allocator_str, config_manager):
     if allocator_str not in CPU_ALLOCATORS:
-        log.error("Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(allocator_str, DEFAULT_ALLOCATOR))
+        log.error("Unexpected CPU allocator specified: '{}', falling back to default: '{}'".format(allocator_str,
+                                                                                                   DEFAULT_ALLOCATOR))
         allocator_str = DEFAULT_ALLOCATOR
 
     free_thread_provider = get_free_thread_provider(config_manager)
@@ -93,3 +94,6 @@ def get_resource_usage_provider(config_manager):
             interval_sec=60,
             sample_interval_sec=DEFAULT_SAMPLE_FREQUENCY_SEC,
             query_timeout_sec=metrics_query_timeout_sec)
+
+    if rup_str == NOOP:
+        return NoopResourceUsageProvider()
