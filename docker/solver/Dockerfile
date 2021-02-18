@@ -6,6 +6,7 @@ ENV container docker
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt update && apt install -y \
+    cmake \
     dbus \
     systemd \
     locales \
