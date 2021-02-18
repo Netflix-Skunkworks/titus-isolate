@@ -31,7 +31,7 @@ def get_current_workloads(docker_client):
             else:
                 workload = get_workload_from_disk(container.name)
         except Exception:
-            log.exception("Failed to read environment for container: '%s'", container.name)
+            log.error("Failed to read environment for container: '%s'", container.name)
 
         if workload is not None:
             workloads.append(workload)

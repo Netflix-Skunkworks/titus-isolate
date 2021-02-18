@@ -46,7 +46,7 @@ def get_duration_predictions(input_str: str) -> List[DurationPrediction]:
 
         return duration_predictions
     except Exception:
-        log.exception("Failed to parse duration predictions: '{}'".format(input_str))
+        log.error("Failed to parse duration predictions: '{}'".format(input_str))
         return []
 
 

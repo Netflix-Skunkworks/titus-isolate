@@ -32,7 +32,7 @@ class WorkloadMonitorManager(MetricsReporter):
             log.debug("Got resource usage: %s", json.dumps(global_usage.serialize(), sort_keys=True, separators=(',', ':')))
             return global_usage
         except Exception:
-            log.exception("failed to get resource usage, returning empty usage")
+            log.error("failed to get resource usage, returning empty usage")
             with self.__metric_lock:
                 self.__get_resource_usage_failure_count += 1
             return GlobalResourceUsage({})

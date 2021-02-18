@@ -178,7 +178,7 @@ def get_cell_name():
         else:
             return cell_name
     except Exception:
-        log.exception("Failed to determine isolation cell.")
+        log.error("Failed to determine isolation cell.")
         return UNKNOWN_CELL
 
 
@@ -219,7 +219,7 @@ def __schedule_loop(exit_handler: ExitHandler):
             log.debug("Scheduling thread sleeping for: '%d' seconds", sleep_time)
             time.sleep(sleep_time)
         except Exception:
-            log.exception("Failed to run scheduling loop")
+            log.error("Failed to run scheduling loop")
             exit_handler.exit(SCHEDULING_LOOP_FAILURE_EXIT_CODE)
 
 
@@ -237,5 +237,5 @@ def _schedule_once(exit_handler: ExitHandler) -> float:
 
         return sleep_time
     except Exception:
-        log.exception("Failed to run scheduling once")
+        log.error("Failed to run scheduling once")
         exit_handler.exit(SCHEDULE_ONCE_FAILURE_EXIT_CODE)

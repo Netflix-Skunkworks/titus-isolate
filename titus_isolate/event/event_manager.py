@@ -140,7 +140,7 @@ class EventManager(MetricsReporter):
                     event_handler.handle(event)
                     self.__report_succeeded_event(event_handler)
                 except Exception:
-                    log.exception("Event handler: '{}' failed to handle event: '{}'".format(
+                    log.error("Event handler: '{}' failed to handle event: '{}'".format(
                         type(event_handler).__name__, event))
                     self.__report_failed_event(event_handler)
 

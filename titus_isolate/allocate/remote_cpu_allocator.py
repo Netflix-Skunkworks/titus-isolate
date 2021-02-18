@@ -67,7 +67,7 @@ class RemoteCpuAllocator(CpuAllocator):
             response = requests.get(url, timeout=self.__timeout)
             return "Remote({})".format(response.text)
         except Exception:
-            log.exception("Failed to GET cpu allocator name.")
+            log.error("Failed to GET cpu allocator name.")
             return UNKNOWN_CPU_ALLOCATOR
 
     def set_registry(self, registry, tags):

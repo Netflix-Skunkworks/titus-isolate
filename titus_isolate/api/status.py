@@ -124,7 +124,7 @@ def init():
         try:
             workload_manager.add_workload(workload)
         except Exception:
-            log.exception("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
+            log.error("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
 
     log.info("Isolated currently running workloads.")
     # Start processing events after adding running workloads to avoid processing a die event before we add a workload
