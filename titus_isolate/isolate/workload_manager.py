@@ -89,7 +89,7 @@ class WorkloadManager(MetricsReporter):
 
             log.debug("Released lock for func: {} on workload: {}".format(func.__name__, workload_id))
             return True
-        except:
+        except Exception:
             self.__error_count += 1
             log.exception("Failed to execute func: {} on workload: {}".format(func.__name__, workload_id))
             return False

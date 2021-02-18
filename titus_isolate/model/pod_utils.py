@@ -68,7 +68,7 @@ def decode_job_descriptor(encoded_job_descriptor: str) -> Optional[dict]:
         jd_bytes = base64.b64decode(encoded_job_descriptor, validate=True)
         jd_bytes = gzip.decompress(jd_bytes)
         return json.loads(jd_bytes.decode("utf-8"))
-    except:
+    except Exception:
         return None
 
 

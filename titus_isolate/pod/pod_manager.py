@@ -64,7 +64,7 @@ class PodManager:
 
                 for event in w.stream(v1.list_pod_for_all_namespaces, field_selector=field_selector):
                     self.__handle_event(event)
-            except:
+            except Exception:
                 log.exception("pod watch thread failed")
 
     def __handle_event(self, event: dict):

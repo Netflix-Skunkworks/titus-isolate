@@ -123,7 +123,7 @@ def init():
     for workload in get_current_workloads(docker.from_env()):
         try:
             workload_manager.add_workload(workload)
-        except:
+        except Exception:
             log.exception("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
 
     log.info("Isolated currently running workloads.")

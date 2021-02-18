@@ -39,7 +39,7 @@ class KeystoneEventLogManager(EventLogManager):
             }
             msg = get_event_msg(event)
             self.__q.put_nowait(msg)
-        except:
+        except Exception:
             self.__failed_msg_count += 1
             log.exception("Failed to report event for payload: {}".format(payload))
 
@@ -68,7 +68,7 @@ class KeystoneEventLogManager(EventLogManager):
                     self.__q.put_nowait(msg)
                 else:
                     self.__succeeded_msg_count += 1
-            except:
+            except Exception:
                 self.__failed_msg_count += 1
                 log.exception("Failed to process event log message.")
 

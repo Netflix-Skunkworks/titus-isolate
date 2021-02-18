@@ -166,7 +166,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
         self.__call_meta['pred_cpu_usage_dur_secs'] = stop_time - start_time
         try:
             self.__call_meta['pred_cpu_usage_model_id'] = cpu_usage_predictor.get_model().meta_data['model_training_titus_task_id']
-        except:
+        except Exception:
             self.__call_meta['pred_cpu_usage_model_id'] = 'unknown'
 
         log.debug("Usage prediction per workload: " + str(res))
@@ -319,7 +319,7 @@ class ForecastIPCpuAllocator(CpuAllocator):
                 self.__call_meta['ip_internal_solver_call_dur_secs'] = internal_solver_time
             try:
                 mip_gap = self.__call_meta['ip_solver_sol_mip_gap'] = str(prob.solver_stats.extra_stats.MIPGap)
-            except:
+            except Exception:
                 pass
 
             if status == IP_SOLUTION_TIME_BOUND:

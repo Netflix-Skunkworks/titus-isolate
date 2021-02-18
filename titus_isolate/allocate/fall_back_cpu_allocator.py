@@ -38,7 +38,7 @@ class FallbackCpuAllocator(CpuAllocator):
         try:
             self.__primary_assign_threads_call_count += 1
             return self.__primary_allocator.assign_threads(request)
-        except:
+        except Exception:
             log.exception(
                 "Failed to assign threads to workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
                     request.get_workload_id(),
@@ -51,7 +51,7 @@ class FallbackCpuAllocator(CpuAllocator):
         try:
             self.__primary_free_threads_call_count += 1
             return self.__primary_allocator.free_threads(request)
-        except:
+        except Exception:
             log.exception(
                 "Failed to free threads for workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
                     request.get_workload_id(),
@@ -64,7 +64,7 @@ class FallbackCpuAllocator(CpuAllocator):
         try:
             self.__primary_rebalance_call_count += 1
             return self.__primary_allocator.rebalance(request)
-        except:
+        except Exception:
             log.exception(
                 "Failed to rebalance workloads: '{}' with primary allocator: '{}', falling back to: '{}'".format(
                     [w.get_id() for w in request.get_workloads().values()],

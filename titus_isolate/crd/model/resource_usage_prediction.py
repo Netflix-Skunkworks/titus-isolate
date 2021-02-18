@@ -178,7 +178,7 @@ class ResourceUsagePredictions:
             try:
                 self.__pred_time2empty_batch = [float(e) for e in content.split(',')]
                 self.metadata.pop(PRED_TIME2EMPTY_BATCH)
-            except:
+            except Exception:
                 log.exception("Error parsing pred_time2empty_batch str: " + content)
 
     @property

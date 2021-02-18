@@ -114,7 +114,7 @@ class OversubscribeEventHandler(EventHandler, MetricsReporter):
 
                 self.__publish_window(event)
 
-        except:
+        except Exception:
             self.__fail_count += 1
             log.exception("Event handler: '{}' failed to handle event: '{}'".format(
                 self.__class__.__name__, event))
