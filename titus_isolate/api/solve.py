@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import time
 from threading import Lock
 
 from flask import Flask, request, jsonify
@@ -134,6 +135,7 @@ def remote_get_cpu_allocator():
 @app.route('/assign_threads', methods=['PUT'])
 def assign_threads():
     try:
+        time.sleep(30)
         request_ip = request.headers.get(FORWARDED_FOR_HEADER)
         log.info("Processing assign threads request (from, proxy): {}".format(request_ip))
 
