@@ -39,7 +39,7 @@ class ResourceUsagePredictionHandler(EventHandler, MetricsReporter):
         except Exception:
             with self.__metric_lock:
                 self.__publish_failure_count += 1
-            log.exception("Failed to publish resource usage predictions")
+            log.error("Failed to publish resource usage predictions")
 
     def __relevant(self, event):
         if not event[ACTION] == PREDICT_USAGE:

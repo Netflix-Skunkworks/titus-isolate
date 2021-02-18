@@ -45,8 +45,8 @@ def get_duration_predictions(input_str: str) -> List[DurationPrediction]:
             duration_predictions.append(DurationPrediction(float(k), float(v)))
 
         return duration_predictions
-    except:
-        log.exception("Failed to parse duration predictions: '{}'".format(input_str))
+    except Exception:
+        log.error("Failed to parse duration predictions: '{}'".format(input_str))
         return []
 
 

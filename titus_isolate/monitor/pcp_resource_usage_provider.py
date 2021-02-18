@@ -76,8 +76,8 @@ class PcpResourceUsageProvider(ResourceUsageProvider):
 
             with self.__lock:
                 self.__usages = usages
-        except:
-            log.exception("Failed to snapshot pcp data or compute usages")
+        except Exception:
+            log.error("Failed to snapshot pcp data or compute usages")
 
     def __get_usages_copy(self) -> List[ResourceUsage]:
         with self.__lock:

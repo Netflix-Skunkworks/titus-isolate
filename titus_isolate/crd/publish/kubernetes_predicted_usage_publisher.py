@@ -55,7 +55,7 @@ class KubernetesPredictedUsagePublisher:
                 allocated_resources = self.__compute_allocated_resources(running_pods)
             except Exception as e:
                 self.__parse_pod_req_resources_fail_count += 1
-                log.exception("Failed to parse pod requested resources. Aborting: %s", e)
+                log.error("Failed to parse pod requested resources. Aborting: %s", e)
                 raise e
             workload_ids = [p.metadata.name for p in running_pods]
             predictions = self.__resource_usage_predictor.get_predictions(
@@ -105,7 +105,7 @@ class KubernetesPredictedUsagePublisher:
                                                                         namespace=PREDICTED_RESOURCE_USAGE_NAMESPACE,
                                                                         body=body)
             else:
-                log.exception("Encountered unexpected API exception reason")
+                log.error("Encountered unexpected API exception reason")
 
         log.info('predicted resource usage: %s', json.dumps(obj))
 

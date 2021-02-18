@@ -23,8 +23,8 @@ def update_numa_balancing(workload: Workload, cpu: Cpu):
             disable_numa_balancing()
         else:
             enable_numa_balancing()
-    except:
-        log.exception("Failed to update NUMA balancing.")
+    except Exception:
+        log.error("Failed to update NUMA balancing.")
 
 
 def enable_numa_balancing():

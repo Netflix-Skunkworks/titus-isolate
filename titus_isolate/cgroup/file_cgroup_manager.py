@@ -112,7 +112,7 @@ class FileCgroupManager(CgroupManager):
         try:
             func(container_name, value)
             self.__write_succeeded(container_name)
-        except:
+        except Exception:
             self.__write_failed()
             log.debug("Failed to apply func: {} with value: {} to container: {}".format(
                 func.__name__, value, container_name))
@@ -120,7 +120,7 @@ class FileCgroupManager(CgroupManager):
     def __get(self, func: FunctionType, container_name: str) -> str:
         try:
             return func(container_name)
-        except:
+        except Exception:
             log.debug("Failed to apply func: {} to container: {}".format(func.__name__, container_name))
 
     def __write_succeeded(self, container_name):

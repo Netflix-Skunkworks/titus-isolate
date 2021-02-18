@@ -149,8 +149,8 @@ def assign_threads():
         log.info("Processed assign threads request (from, proxy): %s for workload: %s",
                  request_ip, threads_request.get_workload_id())
         return jsonify(response.to_dict())
-    except:
-        log.exception("Failed to assign threads")
+    except Exception:
+        log.error("Failed to assign threads")
         global assign_threads_failure_count
         assign_threads_failure_count += 1
         return "Failed to assign threads", 500
@@ -174,8 +174,8 @@ def free_threads():
         log.info("Processed free threads request (from, proxy): %s for workload: %s",
                  request_ip, threads_request.get_workload_id())
         return jsonify(response.to_dict())
-    except:
-        log.exception("Failed to free threads")
+    except Exception:
+        log.error("Failed to free threads")
         global free_threads_failure_count
         free_threads_failure_count += 1
         return "Failed to free threads", 500
@@ -196,8 +196,8 @@ def rebalance():
 
         log.info("Processed rebalance threads request (from, proxy): {}".format(request_ip))
         return jsonify(response.to_dict())
-    except:
-        log.exception("Failed to rebalance")
+    except Exception:
+        log.error("Failed to rebalance")
         global rebalance_failure_count
         rebalance_failure_count += 1
         return "Failed to rebalance", 500

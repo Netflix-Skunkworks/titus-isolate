@@ -39,9 +39,9 @@ class KeystoneEventLogManager(EventLogManager):
             }
             msg = get_event_msg(event)
             self.__q.put_nowait(msg)
-        except:
+        except Exception:
             self.__failed_msg_count += 1
-            log.exception("Failed to report event for payload: {}".format(payload))
+            log.error("Failed to report event for payload: {}".format(payload))
 
     def set_registry(self, registry, tags):
         self.__reg = registry
@@ -68,9 +68,9 @@ class KeystoneEventLogManager(EventLogManager):
                     self.__q.put_nowait(msg)
                 else:
                     self.__succeeded_msg_count += 1
-            except:
+            except Exception:
                 self.__failed_msg_count += 1
-                log.exception("Failed to process event log message.")
+                log.error("Failed to process event log message.")
 
     def __get_address(self) -> Optional[str]:
         config_manager = get_config_manager()
