@@ -9,8 +9,7 @@ from flask import Flask
 from titus_isolate import log
 from titus_isolate.api.testing import is_testing
 from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
-from titus_isolate.config.constants import RESTART_PROPERTIES, METRICS_QUERY_TIMEOUT_KEY, \
-    DEFAULT_METRICS_QUERY_TIMEOUT_SEC, DEFAULT_SAMPLE_FREQUENCY_SEC
+from titus_isolate.config.constants import RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.crd.publish.kubernetes_predicted_usage_publisher import KubernetesPredictedUsagePublisher
 from titus_isolate.event.create_event_handler import CreateEventHandler
