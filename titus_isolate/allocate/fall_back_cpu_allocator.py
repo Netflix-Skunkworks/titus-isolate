@@ -3,8 +3,11 @@ from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
+from titus_isolate.config.constants import FALLBACK_QUEUE_DEPTH, DEFAULT_FALLBACK_QUEUE_DEPTH
 from titus_isolate.metrics.constants import FALLBACK_ASSIGN_COUNT, FALLBACK_FREE_COUNT, \
-    FALLBACK_REBALANCE_COUNT, PRIMARY_ASSIGN_COUNT, PRIMARY_FREE_COUNT, PRIMARY_REBALANCE_COUNT
+    FALLBACK_REBALANCE_COUNT, PRIMARY_ASSIGN_COUNT, PRIMARY_FREE_COUNT, PRIMARY_REBALANCE_COUNT, \
+    FALLBACK_QUEUE_DEPTH_COUNT
+from titus_isolate.utils import get_event_manager, get_config_manager
 
 
 class FallbackCpuAllocator(CpuAllocator):
@@ -29,47 +32,59 @@ class FallbackCpuAllocator(CpuAllocator):
         self.__secondary_free_threads_call_count = 0
         self.__secondary_rebalance_call_count = 0
 
-        log.debug(
-            "Created FallbackCpuAllocator with primary cpu allocator: '{}' and secondary cpu allocator: '{}'".format(
+        self.__queue_depth_fallback_count = 0
+
+        cm = get_config_manager()
+        self.__fallback_queue_depth = cm.get_cached_int(FALLBACK_QUEUE_DEPTH, DEFAULT_FALLBACK_QUEUE_DEPTH)
+
+        log.info(
+            "Created FallbackCpuAllocator with primary cpu allocator: '{}' and secondary cpu allocator: '{}', fallback queue depth: '{}'".format(
                 self.__primary_allocator.__class__.__name__,
-                self.__secondary_allocator.__class__.__name__))
+                self.__secondary_allocator.__class__.__name__,
+                self.__fallback_queue_depth))
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         try:
             self.__primary_assign_threads_call_count += 1
+            self.__should_fallback_immediately()
             return self.__primary_allocator.assign_threads(request)
-        except Exception:
+        except Exception as e:
             log.error(
-                "Failed to assign threads to workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
+                "Failed to assign threads to workload: '{}' with primary allocator: '{}', falling back to: '{}' because '{}'".format(
                     request.get_workload_id(),
                     self.__primary_allocator.__class__.__name__,
-                    self.__secondary_allocator.__class__.__name__))
+                    self.__secondary_allocator.__class__.__name__,
+                    e))
             self.__secondary_assign_threads_call_count += 1
             return self.__secondary_allocator.assign_threads(request)
 
     def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         try:
             self.__primary_free_threads_call_count += 1
+            self.__should_fallback_immediately()
             return self.__primary_allocator.free_threads(request)
-        except Exception:
+        except Exception as e:
             log.error(
-                "Failed to free threads for workload: '{}' with primary allocator: '{}', falling back to: '{}'".format(
+                "Failed to free threads for workload: '{}' with primary allocator: '{}', falling back to: '{}' because '{}'".format(
                     request.get_workload_id(),
                     self.__primary_allocator.__class__.__name__,
-                    self.__secondary_allocator.__class__.__name__))
+                    self.__secondary_allocator.__class__.__name__,
+                    e))
             self.__secondary_free_threads_call_count += 1
             return self.__secondary_allocator.free_threads(request)
 
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         try:
             self.__primary_rebalance_call_count += 1
+            self.__should_fallback_immediately()
             return self.__primary_allocator.rebalance(request)
-        except Exception:
+        except Exception as e:
             log.error(
-                "Failed to rebalance workloads: '{}' with primary allocator: '{}', falling back to: '{}'".format(
+                "Failed to rebalance workloads: '{}' with primary allocator: '{}', falling back to: '{}' because '{}'".format(
                     [w.get_id() for w in request.get_workloads().values()],
                     self.__primary_allocator.__class__.__name__,
-                    self.__secondary_allocator.__class__.__name__))
+                    self.__secondary_allocator.__class__.__name__,
+                    e))
             self.__secondary_rebalance_call_count += 1
             return self.__secondary_allocator.rebalance(request)
 
@@ -102,6 +117,7 @@ class FallbackCpuAllocator(CpuAllocator):
         self.__reg.counter(FALLBACK_ASSIGN_COUNT, tags).increment(self.__secondary_assign_threads_call_count)
         self.__reg.counter(FALLBACK_FREE_COUNT, tags).increment(self.__secondary_free_threads_call_count)
         self.__reg.counter(FALLBACK_REBALANCE_COUNT, tags).increment(self.__secondary_rebalance_call_count)
+        self.__reg.counter(FALLBACK_QUEUE_DEPTH_COUNT, tags).increment(self.__queue_depth_fallback_count)
 
         self.__primary_assign_threads_call_count = 0
         self.__primary_free_threads_call_count = 0
@@ -109,6 +125,7 @@ class FallbackCpuAllocator(CpuAllocator):
         self.__secondary_assign_threads_call_count = 0
         self.__secondary_free_threads_call_count = 0
         self.__secondary_rebalance_call_count = 0
+        self.__queue_depth_fallback_count = 0
 
         self.__primary_allocator.report_metrics(tags)
         self.__secondary_allocator.report_metrics(tags)
@@ -117,3 +134,15 @@ class FallbackCpuAllocator(CpuAllocator):
         return "FallbackCpuAllocator(primary: {}, secondary: {})".format(
             self.__primary_allocator,
             self.__secondary_allocator)
+
+    def __should_fallback_immediately(self):
+        em = get_event_manager()
+
+        if em is not None:
+            queue_depth = em.get_queue_depth()
+            if queue_depth >= self.__fallback_queue_depth:
+                msg = "Falling back due to excessive queue depth: {} > {}".format(
+                    queue_depth, self.__fallback_queue_depth)
+                log.info(msg)
+                self.__queue_depth_fallback_count += 1
+                raise Exception(msg)

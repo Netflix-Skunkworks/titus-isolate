@@ -1,6 +1,7 @@
 import random
 from typing import List
 
+from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse, get_workload_allocations
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
