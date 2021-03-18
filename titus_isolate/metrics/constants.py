@@ -46,6 +46,7 @@ PRIMARY_REBALANCE_COUNT = 'titus-isolate.rebalancePrimary'
 FALLBACK_ASSIGN_COUNT = 'titus-isolate.assignThreadsFallback'
 FALLBACK_FREE_COUNT = 'titus-isolate.freeThreadsFallback'
 FALLBACK_REBALANCE_COUNT = 'titus-isolate.rebalanceFallback'
+FALLBACK_QUEUE_DEPTH_COUNT = 'titus-isolate.queueDepthFallback'
 
 SOLVER_GET_CPU_ALLOCATOR_SUCCESS = 'titus-isolate.getCpuAllocatorSuccessCount'
 SOLVER_GET_CPU_ALLOCATOR_FAILURE = 'titus-isolate.getCpuAllocatorFailureCount'

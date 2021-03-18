@@ -31,7 +31,7 @@ class MetricsManager:
             for reporter in self.__reporters:
                 reporter.report_metrics(tags)
         except Exception:
-            log.error("Failed to report metrics.")
+            log.exception("Failed to report metrics.")
 
     @staticmethod
     def get_tags():
