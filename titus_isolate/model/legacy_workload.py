@@ -14,6 +14,7 @@ class LegacyWorkload(Workload):
             launch_time,
             identifier,
             thread_count,
+            job_id,
             mem,
             disk,
             network,
@@ -35,6 +36,7 @@ class LegacyWorkload(Workload):
 
         self.__identifier = identifier
         self.__thread_count = int(thread_count)
+        self.__job_id = job_id
         self.__mem = float(mem)
         self.__disk = float(disk)
         self.__network = float(network)
@@ -76,6 +78,9 @@ class LegacyWorkload(Workload):
 
     def get_thread_count(self) -> int:
         return self.__thread_count
+
+    def get_job_id(self) -> str:
+        return self.__job_id
 
     def get_mem(self) -> float:
         return self.__mem
