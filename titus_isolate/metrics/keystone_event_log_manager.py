@@ -68,7 +68,7 @@ class KeystoneEventLogManager(EventLogManager):
                     self.__q.put_nowait(msg)
                 else:
                     self.__succeeded_msg_count += 1
-            except Exception:
+            except Exception as e:
                 self.__failed_msg_count += 1
                 log.error("Failed to process event log message.")
 

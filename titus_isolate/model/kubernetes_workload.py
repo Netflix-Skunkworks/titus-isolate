@@ -13,7 +13,7 @@ from titus_isolate.model.constants import CPU, MEMORY, TITUS_NETWORK, EPHEMERAL_
     WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY, CREATION_TIME_KEY, LAUNCH_TIME_KEY, ID_KEY, THREAD_COUNT_KEY, MEM_KEY, \
     DISK_KEY, NETWORK_KEY, APP_NAME_KEY, OWNER_EMAIL_KEY, IMAGE_KEY, COMMAND_KEY, ENTRY_POINT_KEY, JOB_TYPE_KEY, \
     WORKLOAD_TYPE_KEY, OPPORTUNISTIC_THREAD_COUNT_KEY, DURATION_PREDICTIONS_KEY, POD, \
-    KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, WORKLOAD_POD_LABEL_JOB_ID_KEY
+    KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY
 from titus_isolate.model.duration_prediction import DurationPrediction
 from titus_isolate.model.pod_utils import get_main_container, parse_kubernetes_value, get_job_descriptor, get_app_name, \
     get_image, get_cmd, get_entrypoint

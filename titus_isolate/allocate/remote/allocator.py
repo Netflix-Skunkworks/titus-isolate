@@ -18,7 +18,7 @@ from titus_isolate.config.constants import NEW_REMOTE_ALLOC_ENDPOINT, NEW_REMOTE
     MAX_SOLVER_CONNECT_SEC, DEFAULT_MAX_SOLVER_CONNECT_SEC
 from titus_isolate.kub.constants import *
 from titus_isolate.kub.utils import get_node
-from titus_isolate.model.processor.cpu import get_cpu_from_env
+from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.utils import get_config_manager
 
 
@@ -36,12 +36,12 @@ class Allocator(CpuAllocator):
     def __pull_context(self) -> pb.InstanceContext:
         node = get_node()
         ctx = pb.InstanceContext()
-        ctx.instance_id = node.name
-        ctx.stack = node.metadata.annotations.get(ANNOTATION_KEY_STACK, None)
-        ctx.cluster = node.metadata.annotations.get(ANNOTATION_KEY_CLUSTER, None) 
-        ctx.autoscale_group = node.metadata.annotations.get(ANNOTATION_KEY_ASG, None)
-        ctx.resource_pool = node.metadata.annotations.get(LABEL_KEY_RESOURCE_POOL, None)
-        ctx.instance_type = node.metadata.annotations.get(ANNOTATION_KEY_INSTANCE_TYPE, None)
+        ctx.instance_id = node.metadata.name
+        ctx.stack = node.metadata.annotations.get(ANNOTATION_KEY_STACK, '')
+        ctx.cluster = node.metadata.annotations.get(ANNOTATION_KEY_CLUSTER, '') 
+        ctx.autoscale_group = node.metadata.annotations.get(ANNOTATION_KEY_ASG, '')
+        ctx.resource_pool = node.metadata.annotations.get(LABEL_KEY_RESOURCE_POOL, '')
+        ctx.instance_type = node.metadata.annotations.get(ANNOTATION_KEY_INSTANCE_TYPE, '')
         return ctx
 
     def __init__(self, free_thread_provider):
@@ -63,15 +63,15 @@ class Allocator(CpuAllocator):
         for p in cpu.get_packages():
             cores = []
             num_cores = 0
-            threads_per_core = 0
             for c in p.get_cores():
                 num_cores += 1
                 threads = []
+                threads_per_core = 0
                 for t in c.get_threads():
                     threads_per_core += 1
                     task_ids = t.get_workload_ids()
                     if len(task_ids) > 0:
-                        pt = pb.Thread
+                        pt = pb.Thread()
                         pt.id = t.get_id()
                         pt.task_ids.extend(task_ids)
                         threads.append(pt)
@@ -97,14 +97,15 @@ class Allocator(CpuAllocator):
         for wid, assignment in response.assignments.items():
             war = WorkloadAllocateResponse(
                 wid,
-                assignment.thread_ids,
+                list(assignment.thread_ids),
                 1, # TODO
                 1, #TODO
                 False, False, False
 
             )
             wa_responses.append(war)
-            id2workloads[tid].extend(assignment.thread_ids)
+            for tid in assignment.thread_ids:
+                id2workloads[tid].extend(wid)
         for package in new_cpu.get_packages():
             for core in package.get_cores():
                 for thread in core.get_threads():
@@ -117,8 +118,10 @@ class Allocator(CpuAllocator):
 
         return AllocateResponse(new_cpu, wa_responses, ALLOCATOR_NAME, metadata)
 
-    def __process(self, request: AllocateThreadsRequest, req_type : str, is_delete : bool) -> AllocateResponse:
-        req_wid = request.get_workload_id()
+    def __process(self, request: AllocateRequest, req_type : str, is_delete : bool) -> AllocateResponse:
+        req_wid = ''
+        if isinstance(request, AllocateThreadsRequest):
+            req_wid = request.get_workload_id()
         req = self.__build_base_req(request.get_cpu())
         req.metadata[REQ_TYPE_METADATA_KEY] = req_type # for logging purposes server side
 
@@ -138,7 +141,7 @@ class Allocator(CpuAllocator):
         try:
             return self.__deser(response)
         except Exception as e:
-            log.error("failed to deseralize response for remote %s of %s:\n%s", req_type, req_wid repr(e))
+            log.error("failed to deseralize response for remote %s of %s:\n%s", req_type, req_wid, repr(e))
             raise e
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
@@ -147,7 +150,7 @@ class Allocator(CpuAllocator):
     def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         return self.__process(request, "free", True)
 
-    def rebalance(self, request: AllocateThreadsRequest) -> AllocateResponse:
+    def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         return self.__process(request, "rebalance", False)
 
     def get_name(self) -> str:
