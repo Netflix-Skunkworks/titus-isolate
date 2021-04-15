@@ -56,6 +56,8 @@ class Allocator(CpuAllocator):
         self.__instance_ctx = self.__pull_context()
         self.__reg = None
         self.__empty_cpu = get_cpu_from_env()
+        self.__natural2original_indexing = self.__empty_cpu.get_natural_indexing_2_original_indexing()
+        self.__original2natural_indexing = {v: k for k,v in self.__natural2original_indexing.items()}
 
     def __build_base_req(self, cpu) -> pb.PlacementRequest:
         req = pb.PlacementRequest()
@@ -72,8 +74,9 @@ class Allocator(CpuAllocator):
                     task_ids = t.get_workload_ids()
                     if len(task_ids) > 0:
                         pt = pb.Thread()
-                        pt.id = t.get_id()
-                        pt.task_ids.extend(task_ids)
+                        pt.id = self.__original2natural_indexing[t.get_id()]
+                        for tid in task_ids:
+                            pt.task_ids.append(tid)
                         threads.append(pt)
                 if len(threads) > 0:
                     pc = pb.Core()
@@ -95,17 +98,18 @@ class Allocator(CpuAllocator):
         id2workloads = defaultdict(list)
         wa_responses = []
         for wid, assignment in response.assignments.items():
+            thread_ids = [self.__natural2original_indexing[tid] for tid in assignment.thread_ids]
             war = WorkloadAllocateResponse(
                 wid,
-                list(assignment.thread_ids),
+                thread_ids,
                 1, # TODO
                 1, #TODO
                 False, False, False
 
             )
             wa_responses.append(war)
-            for tid in assignment.thread_ids:
-                id2workloads[tid].extend(wid)
+            for tid in thread_ids:
+                id2workloads[tid].append(wid)
         for package in new_cpu.get_packages():
             for core in package.get_cores():
                 for thread in core.get_threads():
@@ -132,10 +136,10 @@ class Allocator(CpuAllocator):
             req.tasks_to_place.append(wid)
 
         try:
-            log.info("remmote %s (workload_id=%s)", req_type, req_wid)
+            log.info("remote %s (tasks_to_place=%s)", req_type, req.tasks_to_place)
             response = self.__stub.ComputePlacement(req, timeout=self.__call_timeout_secs)
         except grpc.RpcError as e:
-            log.error("remote %s failed (workload_id=%s):\n%s", req_type, req_wid, repr(e))
+            log.error("remote %s failed (tasks_to_place=%s):\n%s", req_type, req.tasks_to_place, repr(e))
             raise e
 
         try:
