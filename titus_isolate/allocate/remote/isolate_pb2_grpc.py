@@ -14,17 +14,28 @@ class IsolationServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.ComputePlacement = channel.unary_unary(
-                '/isolation.v1.IsolationService/ComputePlacement',
-                request_serializer=isolate__pb2.PlacementRequest.SerializeToString,
-                response_deserializer=isolate__pb2.PlacementResponse.FromString,
+        self.ComputeIsolation = channel.unary_unary(
+                '/isolation.v1.IsolationService/ComputeIsolation',
+                request_serializer=isolate__pb2.IsolationRequest.SerializeToString,
+                response_deserializer=isolate__pb2.IsolationResponse.FromString,
+                )
+        self.GetCurrentCell = channel.unary_unary(
+                '/isolation.v1.IsolationService/GetCurrentCell',
+                request_serializer=isolate__pb2.CurrentCellRequest.SerializeToString,
+                response_deserializer=isolate__pb2.CurrentCellResponse.FromString,
                 )
 
 
 class IsolationServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def ComputePlacement(self, request, context):
+    def ComputeIsolation(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetCurrentCell(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -33,10 +44,15 @@ class IsolationServiceServicer(object):
 
 def add_IsolationServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'ComputePlacement': grpc.unary_unary_rpc_method_handler(
-                    servicer.ComputePlacement,
-                    request_deserializer=isolate__pb2.PlacementRequest.FromString,
-                    response_serializer=isolate__pb2.PlacementResponse.SerializeToString,
+            'ComputeIsolation': grpc.unary_unary_rpc_method_handler(
+                    servicer.ComputeIsolation,
+                    request_deserializer=isolate__pb2.IsolationRequest.FromString,
+                    response_serializer=isolate__pb2.IsolationResponse.SerializeToString,
+            ),
+            'GetCurrentCell': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCurrentCell,
+                    request_deserializer=isolate__pb2.CurrentCellRequest.FromString,
+                    response_serializer=isolate__pb2.CurrentCellResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -49,7 +65,7 @@ class IsolationService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def ComputePlacement(request,
+    def ComputeIsolation(request,
             target,
             options=(),
             channel_credentials=None,
@@ -59,8 +75,25 @@ class IsolationService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/isolation.v1.IsolationService/ComputePlacement',
-            isolate__pb2.PlacementRequest.SerializeToString,
-            isolate__pb2.PlacementResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/isolation.v1.IsolationService/ComputeIsolation',
+            isolate__pb2.IsolationRequest.SerializeToString,
+            isolate__pb2.IsolationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetCurrentCell(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/isolation.v1.IsolationService/GetCurrentCell',
+            isolate__pb2.CurrentCellRequest.SerializeToString,
+            isolate__pb2.CurrentCellResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

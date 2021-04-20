@@ -28,7 +28,8 @@ REQ_TYPE_METADATA_KEY = "req_type"
 class Allocator(CpuAllocator):
 
     def __create_stub(self) -> pb_grpc.IsolationServiceStub:
-        channel = grpc.insecure_channel(self.__endpoint)
+        channel = grpc.insecure_channel(self.__endpoint,
+            compression=grpc.Compression.Gzip)
         # todo: timeout on connect
         
         return pb_grpc.IsolationServiceStub(channel)
@@ -59,8 +60,8 @@ class Allocator(CpuAllocator):
         self.__natural2original_indexing = self.__empty_cpu.get_natural_indexing_2_original_indexing()
         self.__original2natural_indexing = {v: k for k,v in self.__natural2original_indexing.items()}
 
-    def __build_base_req(self, cpu) -> pb.PlacementRequest:
-        req = pb.PlacementRequest()
+    def __build_base_req(self, cpu) -> pb.IsolationRequest:
+        req = pb.IsolationRequest()
         packages = []
         for p in cpu.get_packages():
             cores = []
@@ -93,20 +94,20 @@ class Allocator(CpuAllocator):
         req.instance_context.CopyFrom(self.__instance_ctx)
         return req
 
-    def __deser(self, response : pb.PlacementResponse) -> AllocateResponse:
+    def __deser(self, response : pb.IsolationResponse) -> AllocateResponse:
         new_cpu = copy.deepcopy(self.__empty_cpu)
         id2workloads = defaultdict(list)
         wa_responses = []
-        for wid, assignment in response.assignments.items():
-            thread_ids = [self.__natural2original_indexing[tid] for tid in assignment.thread_ids]
+        for wid, cpuset in response.cpusets.items():
+            thread_ids = [self.__natural2original_indexing[tid] for tid in cpuset.thread_ids]
             war = WorkloadAllocateResponse(
                 wid,
                 thread_ids,
-                1, # TODO
-                1, #TODO
-                False, False, False
-
-            )
+                cpuset.cfs_tunables.shares,
+                cpuset.cfs_tunables.quota_us,
+                cpuset.cpuset_tunables.memory_migrate,
+                cpuset.cpuset_tunables.memory_spread_page,
+                cpuset.cpuset_tunables.memory_spread_slab)
             wa_responses.append(war)
             for tid in thread_ids:
                 id2workloads[tid].append(wid)
@@ -137,7 +138,7 @@ class Allocator(CpuAllocator):
 
         try:
             log.info("remote %s (tasks_to_place=%s)", req_type, req.tasks_to_place)
-            response = self.__stub.ComputePlacement(req, timeout=self.__call_timeout_secs)
+            response = self.__stub.ComputeIsolation(req, timeout=self.__call_timeout_secs)
         except grpc.RpcError as e:
             log.error("remote %s failed (tasks_to_place=%s):\n%s", req_type, req.tasks_to_place, repr(e))
             raise e

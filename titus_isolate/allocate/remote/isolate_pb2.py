@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z\014isolation/v1',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\risolate.proto\x12\x0cisolation.v1\"&\n\x06Thread\x12\n\n\x02id\x18\x01 \x01(\r\x12\x10\n\x08task_ids\x18\x02 \x03(\t\"9\n\x04\x43ore\x12\n\n\x02id\x18\x01 \x01(\r\x12%\n\x07threads\x18\x02 \x03(\x0b\x32\x14.isolation.v1.Thread\"K\n\x07Package\x12\n\n\x02id\x18\x01 \x01(\r\x12\x11\n\tnum_cores\x18\x02 \x01(\r\x12!\n\x05\x63ores\x18\x03 \x03(\x0b\x32\x12.isolation.v1.Core\"K\n\x06Layout\x12\x18\n\x10threads_per_core\x18\x01 \x01(\r\x12\'\n\x08packages\x18\x02 \x03(\x0b\x32\x15.isolation.v1.Package\"\x8d\x01\n\x0fInstanceContext\x12\x13\n\x0binstance_id\x18\x01 \x01(\t\x12\r\n\x05stack\x18\x02 \x01(\t\x12\x0f\n\x07\x63luster\x18\x03 \x01(\t\x12\x17\n\x0f\x61utoscale_group\x18\x04 \x01(\t\x12\x15\n\rresource_pool\x18\x05 \x01(\t\x12\x15\n\rinstance_type\x18\x06 \x01(\t\"\xa7\x04\n\x10PlacementRequest\x12$\n\x06layout\x18\x01 \x01(\x0b\x32\x14.isolation.v1.Layout\x12\x16\n\x0etasks_to_place\x18\x02 \x03(\t\x12G\n\x0etask_to_job_id\x18\x03 \x03(\x0b\x32/.isolation.v1.PlacementRequest.TaskToJobIdEntry\x12W\n\x16task_to_job_descriptor\x18\x04 \x03(\x0b\x32\x37.isolation.v1.PlacementRequest.TaskToJobDescriptorEntry\x12\x19\n\x11\x64\x65sired_policy_id\x18\x05 \x01(\t\x12\x37\n\x10instance_context\x18\x06 \x01(\x0b\x32\x1d.isolation.v1.InstanceContext\x12>\n\x08metadata\x18\x07 \x03(\x0b\x32,.isolation.v1.PlacementRequest.MetadataEntry\x1a\x32\n\x10TaskToJobIdEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a:\n\x18TaskToJobDescriptorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c:\x02\x38\x01\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\" \n\nAssignment\x12\x12\n\nthread_ids\x18\x01 \x03(\r\"\xcb\x02\n\x11PlacementResponse\x12\x45\n\x0b\x61ssignments\x18\x01 \x03(\x0b\x32\x30.isolation.v1.PlacementResponse.AssignmentsEntry\x12\x11\n\tpolicy_id\x18\x02 \x01(\t\x12\x1c\n\x14policy_model_version\x18\x03 \x01(\t\x12?\n\x08metadata\x18\x04 \x03(\x0b\x32-.isolation.v1.PlacementResponse.MetadataEntry\x1aL\n\x10\x41ssignmentsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\'\n\x05value\x18\x02 \x01(\x0b\x32\x18.isolation.v1.Assignment:\x02\x38\x01\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x32i\n\x10IsolationService\x12U\n\x10\x43omputePlacement\x12\x1e.isolation.v1.PlacementRequest\x1a\x1f.isolation.v1.PlacementResponse\"\x00\x42\x0eZ\x0cisolation/v1b\x06proto3'
+  serialized_pb=b'\n\risolate.proto\x12\x0cisolation.v1\"&\n\x06Thread\x12\n\n\x02id\x18\x01 \x01(\r\x12\x10\n\x08task_ids\x18\x02 \x03(\t\"9\n\x04\x43ore\x12\n\n\x02id\x18\x01 \x01(\r\x12%\n\x07threads\x18\x02 \x03(\x0b\x32\x14.isolation.v1.Thread\"K\n\x07Package\x12\n\n\x02id\x18\x01 \x01(\r\x12\x11\n\tnum_cores\x18\x02 \x01(\r\x12!\n\x05\x63ores\x18\x03 \x03(\x0b\x32\x12.isolation.v1.Core\"K\n\x06Layout\x12\x18\n\x10threads_per_core\x18\x01 \x01(\r\x12\'\n\x08packages\x18\x02 \x03(\x0b\x32\x15.isolation.v1.Package\"\x8d\x01\n\x0fInstanceContext\x12\x13\n\x0binstance_id\x18\x01 \x01(\t\x12\r\n\x05stack\x18\x02 \x01(\t\x12\x0f\n\x07\x63luster\x18\x03 \x01(\t\x12\x17\n\x0f\x61utoscale_group\x18\x04 \x01(\t\x12\x15\n\rresource_pool\x18\x05 \x01(\t\x12\x15\n\rinstance_type\x18\x06 \x01(\t\"\xa7\x04\n\x10IsolationRequest\x12$\n\x06layout\x18\x01 \x01(\x0b\x32\x14.isolation.v1.Layout\x12\x16\n\x0etasks_to_place\x18\x02 \x03(\t\x12G\n\x0etask_to_job_id\x18\x03 \x03(\x0b\x32/.isolation.v1.IsolationRequest.TaskToJobIdEntry\x12W\n\x16task_to_job_descriptor\x18\x04 \x03(\x0b\x32\x37.isolation.v1.IsolationRequest.TaskToJobDescriptorEntry\x12\x19\n\x11\x64\x65sired_policy_id\x18\x05 \x01(\t\x12\x37\n\x10instance_context\x18\x06 \x01(\x0b\x32\x1d.isolation.v1.InstanceContext\x12>\n\x08metadata\x18\x07 \x03(\x0b\x32,.isolation.v1.IsolationRequest.MetadataEntry\x1a\x32\n\x10TaskToJobIdEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a:\n\x18TaskToJobDescriptorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c:\x02\x38\x01\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"B\n\x0b\x43\x46STunables\x12\x11\n\tperiod_us\x18\x01 \x01(\r\x12\x10\n\x08quota_us\x18\x02 \x01(\x05\x12\x0e\n\x06shares\x18\x03 \x01(\r\"`\n\x0e\x43pusetTunables\x12\x16\n\x0ememory_migrate\x18\x01 \x01(\x08\x12\x1a\n\x12memory_spread_page\x18\x02 \x01(\x08\x12\x1a\n\x12memory_spread_slab\x18\x03 \x01(\x08\"\x84\x01\n\x06\x43puset\x12\x12\n\nthread_ids\x18\x01 \x03(\r\x12/\n\x0c\x63\x66s_tunables\x18\x02 \x01(\x0b\x32\x19.isolation.v1.CFSTunables\x12\x35\n\x0f\x63puset_tunables\x18\x03 \x01(\x0b\x32\x1c.isolation.v1.CpusetTunables\"+\n\x06Policy\x12\n\n\x02id\x18\x01 \x01(\t\x12\x15\n\rmodel_version\x18\x02 \x01(\t\"\xc1\x02\n\x11IsolationResponse\x12=\n\x07\x63pusets\x18\x01 \x03(\x0b\x32,.isolation.v1.IsolationResponse.CpusetsEntry\x12\x0f\n\x07\x63\x65ll_id\x18\x02 \x01(\t\x12$\n\x06policy\x18\x03 \x01(\x0b\x32\x14.isolation.v1.Policy\x12?\n\x08metadata\x18\x04 \x03(\x0b\x32-.isolation.v1.IsolationResponse.MetadataEntry\x1a\x44\n\x0c\x43pusetsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.isolation.v1.Cpuset:\x02\x38\x01\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x14\n\x12\x43urrentCellRequest\"&\n\x13\x43urrentCellResponse\x12\x0f\n\x07\x63\x65ll_id\x18\x01 \x01(\t2\xc2\x01\n\x10IsolationService\x12U\n\x10\x43omputeIsolation\x12\x1e.isolation.v1.IsolationRequest\x1a\x1f.isolation.v1.IsolationResponse\"\x00\x12W\n\x0eGetCurrentCell\x12 .isolation.v1.CurrentCellRequest\x1a!.isolation.v1.CurrentCellResponse\"\x00\x42\x0eZ\x0cisolation/v1b\x06proto3'
 )
 
 
@@ -255,23 +255,23 @@ _INSTANCECONTEXT = _descriptor.Descriptor(
 )
 
 
-_PLACEMENTREQUEST_TASKTOJOBIDENTRY = _descriptor.Descriptor(
+_ISOLATIONREQUEST_TASKTOJOBIDENTRY = _descriptor.Descriptor(
   name='TaskToJobIdEntry',
-  full_name='isolation.v1.PlacementRequest.TaskToJobIdEntry',
+  full_name='isolation.v1.IsolationRequest.TaskToJobIdEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='isolation.v1.PlacementRequest.TaskToJobIdEntry.key', index=0,
+      name='key', full_name='isolation.v1.IsolationRequest.TaskToJobIdEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='value', full_name='isolation.v1.PlacementRequest.TaskToJobIdEntry.value', index=1,
+      name='value', full_name='isolation.v1.IsolationRequest.TaskToJobIdEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -293,23 +293,23 @@ _PLACEMENTREQUEST_TASKTOJOBIDENTRY = _descriptor.Descriptor(
   serialized_end=871,
 )
 
-_PLACEMENTREQUEST_TASKTOJOBDESCRIPTORENTRY = _descriptor.Descriptor(
+_ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY = _descriptor.Descriptor(
   name='TaskToJobDescriptorEntry',
-  full_name='isolation.v1.PlacementRequest.TaskToJobDescriptorEntry',
+  full_name='isolation.v1.IsolationRequest.TaskToJobDescriptorEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='isolation.v1.PlacementRequest.TaskToJobDescriptorEntry.key', index=0,
+      name='key', full_name='isolation.v1.IsolationRequest.TaskToJobDescriptorEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='value', full_name='isolation.v1.PlacementRequest.TaskToJobDescriptorEntry.value', index=1,
+      name='value', full_name='isolation.v1.IsolationRequest.TaskToJobDescriptorEntry.value', index=1,
       number=2, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=b"",
       message_type=None, enum_type=None, containing_type=None,
@@ -331,23 +331,23 @@ _PLACEMENTREQUEST_TASKTOJOBDESCRIPTORENTRY = _descriptor.Descriptor(
   serialized_end=931,
 )
 
-_PLACEMENTREQUEST_METADATAENTRY = _descriptor.Descriptor(
+_ISOLATIONREQUEST_METADATAENTRY = _descriptor.Descriptor(
   name='MetadataEntry',
-  full_name='isolation.v1.PlacementRequest.MetadataEntry',
+  full_name='isolation.v1.IsolationRequest.MetadataEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='isolation.v1.PlacementRequest.MetadataEntry.key', index=0,
+      name='key', full_name='isolation.v1.IsolationRequest.MetadataEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='value', full_name='isolation.v1.PlacementRequest.MetadataEntry.value', index=1,
+      name='value', full_name='isolation.v1.IsolationRequest.MetadataEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -369,58 +369,58 @@ _PLACEMENTREQUEST_METADATAENTRY = _descriptor.Descriptor(
   serialized_end=980,
 )
 
-_PLACEMENTREQUEST = _descriptor.Descriptor(
-  name='PlacementRequest',
-  full_name='isolation.v1.PlacementRequest',
+_ISOLATIONREQUEST = _descriptor.Descriptor(
+  name='IsolationRequest',
+  full_name='isolation.v1.IsolationRequest',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='layout', full_name='isolation.v1.PlacementRequest.layout', index=0,
+      name='layout', full_name='isolation.v1.IsolationRequest.layout', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='tasks_to_place', full_name='isolation.v1.PlacementRequest.tasks_to_place', index=1,
+      name='tasks_to_place', full_name='isolation.v1.IsolationRequest.tasks_to_place', index=1,
       number=2, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='task_to_job_id', full_name='isolation.v1.PlacementRequest.task_to_job_id', index=2,
+      name='task_to_job_id', full_name='isolation.v1.IsolationRequest.task_to_job_id', index=2,
       number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='task_to_job_descriptor', full_name='isolation.v1.PlacementRequest.task_to_job_descriptor', index=3,
+      name='task_to_job_descriptor', full_name='isolation.v1.IsolationRequest.task_to_job_descriptor', index=3,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='desired_policy_id', full_name='isolation.v1.PlacementRequest.desired_policy_id', index=4,
+      name='desired_policy_id', full_name='isolation.v1.IsolationRequest.desired_policy_id', index=4,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='instance_context', full_name='isolation.v1.PlacementRequest.instance_context', index=5,
+      name='instance_context', full_name='isolation.v1.IsolationRequest.instance_context', index=5,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='metadata', full_name='isolation.v1.PlacementRequest.metadata', index=6,
+      name='metadata', full_name='isolation.v1.IsolationRequest.metadata', index=6,
       number=7, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -429,7 +429,7 @@ _PLACEMENTREQUEST = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_PLACEMENTREQUEST_TASKTOJOBIDENTRY, _PLACEMENTREQUEST_TASKTOJOBDESCRIPTORENTRY, _PLACEMENTREQUEST_METADATAENTRY, ],
+  nested_types=[_ISOLATIONREQUEST_TASKTOJOBIDENTRY, _ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY, _ISOLATIONREQUEST_METADATAENTRY, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -443,18 +443,32 @@ _PLACEMENTREQUEST = _descriptor.Descriptor(
 )
 
 
-_ASSIGNMENT = _descriptor.Descriptor(
-  name='Assignment',
-  full_name='isolation.v1.Assignment',
+_CFSTUNABLES = _descriptor.Descriptor(
+  name='CFSTunables',
+  full_name='isolation.v1.CFSTunables',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='thread_ids', full_name='isolation.v1.Assignment.thread_ids', index=0,
-      number=1, type=13, cpp_type=3, label=3,
-      has_default_value=False, default_value=[],
+      name='period_us', full_name='isolation.v1.CFSTunables.period_us', index=0,
+      number=1, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='quota_us', full_name='isolation.v1.CFSTunables.quota_us', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='shares', full_name='isolation.v1.CFSTunables.shares', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -471,27 +485,158 @@ _ASSIGNMENT = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=982,
-  serialized_end=1014,
+  serialized_end=1048,
 )
 
 
-_PLACEMENTRESPONSE_ASSIGNMENTSENTRY = _descriptor.Descriptor(
-  name='AssignmentsEntry',
-  full_name='isolation.v1.PlacementResponse.AssignmentsEntry',
+_CPUSETTUNABLES = _descriptor.Descriptor(
+  name='CpusetTunables',
+  full_name='isolation.v1.CpusetTunables',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='isolation.v1.PlacementResponse.AssignmentsEntry.key', index=0,
+      name='memory_migrate', full_name='isolation.v1.CpusetTunables.memory_migrate', index=0,
+      number=1, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='memory_spread_page', full_name='isolation.v1.CpusetTunables.memory_spread_page', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='memory_spread_slab', full_name='isolation.v1.CpusetTunables.memory_spread_slab', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1050,
+  serialized_end=1146,
+)
+
+
+_CPUSET = _descriptor.Descriptor(
+  name='Cpuset',
+  full_name='isolation.v1.Cpuset',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='thread_ids', full_name='isolation.v1.Cpuset.thread_ids', index=0,
+      number=1, type=13, cpp_type=3, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='cfs_tunables', full_name='isolation.v1.Cpuset.cfs_tunables', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='cpuset_tunables', full_name='isolation.v1.Cpuset.cpuset_tunables', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1149,
+  serialized_end=1281,
+)
+
+
+_POLICY = _descriptor.Descriptor(
+  name='Policy',
+  full_name='isolation.v1.Policy',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='id', full_name='isolation.v1.Policy.id', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='value', full_name='isolation.v1.PlacementResponse.AssignmentsEntry.value', index=1,
+      name='model_version', full_name='isolation.v1.Policy.model_version', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1283,
+  serialized_end=1326,
+)
+
+
+_ISOLATIONRESPONSE_CPUSETSENTRY = _descriptor.Descriptor(
+  name='CpusetsEntry',
+  full_name='isolation.v1.IsolationResponse.CpusetsEntry',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='isolation.v1.IsolationResponse.CpusetsEntry.key', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='isolation.v1.IsolationResponse.CpusetsEntry.value', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -509,27 +654,27 @@ _PLACEMENTRESPONSE_ASSIGNMENTSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1223,
-  serialized_end=1299,
+  serialized_start=1533,
+  serialized_end=1601,
 )
 
-_PLACEMENTRESPONSE_METADATAENTRY = _descriptor.Descriptor(
+_ISOLATIONRESPONSE_METADATAENTRY = _descriptor.Descriptor(
   name='MetadataEntry',
-  full_name='isolation.v1.PlacementResponse.MetadataEntry',
+  full_name='isolation.v1.IsolationResponse.MetadataEntry',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='key', full_name='isolation.v1.PlacementResponse.MetadataEntry.key', index=0,
+      name='key', full_name='isolation.v1.IsolationResponse.MetadataEntry.key', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='value', full_name='isolation.v1.PlacementResponse.MetadataEntry.value', index=1,
+      name='value', full_name='isolation.v1.IsolationResponse.MetadataEntry.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -551,37 +696,37 @@ _PLACEMENTRESPONSE_METADATAENTRY = _descriptor.Descriptor(
   serialized_end=980,
 )
 
-_PLACEMENTRESPONSE = _descriptor.Descriptor(
-  name='PlacementResponse',
-  full_name='isolation.v1.PlacementResponse',
+_ISOLATIONRESPONSE = _descriptor.Descriptor(
+  name='IsolationResponse',
+  full_name='isolation.v1.IsolationResponse',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='assignments', full_name='isolation.v1.PlacementResponse.assignments', index=0,
+      name='cpusets', full_name='isolation.v1.IsolationResponse.cpusets', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='policy_id', full_name='isolation.v1.PlacementResponse.policy_id', index=1,
+      name='cell_id', full_name='isolation.v1.IsolationResponse.cell_id', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='policy_model_version', full_name='isolation.v1.PlacementResponse.policy_model_version', index=2,
-      number=3, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=b"".decode('utf-8'),
+      name='policy', full_name='isolation.v1.IsolationResponse.policy', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='metadata', full_name='isolation.v1.PlacementResponse.metadata', index=3,
+      name='metadata', full_name='isolation.v1.IsolationResponse.metadata', index=3,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -590,7 +735,7 @@ _PLACEMENTRESPONSE = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_PLACEMENTRESPONSE_ASSIGNMENTSENTRY, _PLACEMENTRESPONSE_METADATAENTRY, ],
+  nested_types=[_ISOLATIONRESPONSE_CPUSETSENTRY, _ISOLATIONRESPONSE_METADATAENTRY, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -599,34 +744,99 @@ _PLACEMENTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1017,
-  serialized_end=1348,
+  serialized_start=1329,
+  serialized_end=1650,
+)
+
+
+_CURRENTCELLREQUEST = _descriptor.Descriptor(
+  name='CurrentCellRequest',
+  full_name='isolation.v1.CurrentCellRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1652,
+  serialized_end=1672,
+)
+
+
+_CURRENTCELLRESPONSE = _descriptor.Descriptor(
+  name='CurrentCellResponse',
+  full_name='isolation.v1.CurrentCellResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='cell_id', full_name='isolation.v1.CurrentCellResponse.cell_id', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1674,
+  serialized_end=1712,
 )
 
 _CORE.fields_by_name['threads'].message_type = _THREAD
 _PACKAGE.fields_by_name['cores'].message_type = _CORE
 _LAYOUT.fields_by_name['packages'].message_type = _PACKAGE
-_PLACEMENTREQUEST_TASKTOJOBIDENTRY.containing_type = _PLACEMENTREQUEST
-_PLACEMENTREQUEST_TASKTOJOBDESCRIPTORENTRY.containing_type = _PLACEMENTREQUEST
-_PLACEMENTREQUEST_METADATAENTRY.containing_type = _PLACEMENTREQUEST
-_PLACEMENTREQUEST.fields_by_name['layout'].message_type = _LAYOUT
-_PLACEMENTREQUEST.fields_by_name['task_to_job_id'].message_type = _PLACEMENTREQUEST_TASKTOJOBIDENTRY
-_PLACEMENTREQUEST.fields_by_name['task_to_job_descriptor'].message_type = _PLACEMENTREQUEST_TASKTOJOBDESCRIPTORENTRY
-_PLACEMENTREQUEST.fields_by_name['instance_context'].message_type = _INSTANCECONTEXT
-_PLACEMENTREQUEST.fields_by_name['metadata'].message_type = _PLACEMENTREQUEST_METADATAENTRY
-_PLACEMENTRESPONSE_ASSIGNMENTSENTRY.fields_by_name['value'].message_type = _ASSIGNMENT
-_PLACEMENTRESPONSE_ASSIGNMENTSENTRY.containing_type = _PLACEMENTRESPONSE
-_PLACEMENTRESPONSE_METADATAENTRY.containing_type = _PLACEMENTRESPONSE
-_PLACEMENTRESPONSE.fields_by_name['assignments'].message_type = _PLACEMENTRESPONSE_ASSIGNMENTSENTRY
-_PLACEMENTRESPONSE.fields_by_name['metadata'].message_type = _PLACEMENTRESPONSE_METADATAENTRY
+_ISOLATIONREQUEST_TASKTOJOBIDENTRY.containing_type = _ISOLATIONREQUEST
+_ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY.containing_type = _ISOLATIONREQUEST
+_ISOLATIONREQUEST_METADATAENTRY.containing_type = _ISOLATIONREQUEST
+_ISOLATIONREQUEST.fields_by_name['layout'].message_type = _LAYOUT
+_ISOLATIONREQUEST.fields_by_name['task_to_job_id'].message_type = _ISOLATIONREQUEST_TASKTOJOBIDENTRY
+_ISOLATIONREQUEST.fields_by_name['task_to_job_descriptor'].message_type = _ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY
+_ISOLATIONREQUEST.fields_by_name['instance_context'].message_type = _INSTANCECONTEXT
+_ISOLATIONREQUEST.fields_by_name['metadata'].message_type = _ISOLATIONREQUEST_METADATAENTRY
+_CPUSET.fields_by_name['cfs_tunables'].message_type = _CFSTUNABLES
+_CPUSET.fields_by_name['cpuset_tunables'].message_type = _CPUSETTUNABLES
+_ISOLATIONRESPONSE_CPUSETSENTRY.fields_by_name['value'].message_type = _CPUSET
+_ISOLATIONRESPONSE_CPUSETSENTRY.containing_type = _ISOLATIONRESPONSE
+_ISOLATIONRESPONSE_METADATAENTRY.containing_type = _ISOLATIONRESPONSE
+_ISOLATIONRESPONSE.fields_by_name['cpusets'].message_type = _ISOLATIONRESPONSE_CPUSETSENTRY
+_ISOLATIONRESPONSE.fields_by_name['policy'].message_type = _POLICY
+_ISOLATIONRESPONSE.fields_by_name['metadata'].message_type = _ISOLATIONRESPONSE_METADATAENTRY
 DESCRIPTOR.message_types_by_name['Thread'] = _THREAD
 DESCRIPTOR.message_types_by_name['Core'] = _CORE
 DESCRIPTOR.message_types_by_name['Package'] = _PACKAGE
 DESCRIPTOR.message_types_by_name['Layout'] = _LAYOUT
 DESCRIPTOR.message_types_by_name['InstanceContext'] = _INSTANCECONTEXT
-DESCRIPTOR.message_types_by_name['PlacementRequest'] = _PLACEMENTREQUEST
-DESCRIPTOR.message_types_by_name['Assignment'] = _ASSIGNMENT
-DESCRIPTOR.message_types_by_name['PlacementResponse'] = _PLACEMENTRESPONSE
+DESCRIPTOR.message_types_by_name['IsolationRequest'] = _ISOLATIONREQUEST
+DESCRIPTOR.message_types_by_name['CFSTunables'] = _CFSTUNABLES
+DESCRIPTOR.message_types_by_name['CpusetTunables'] = _CPUSETTUNABLES
+DESCRIPTOR.message_types_by_name['Cpuset'] = _CPUSET
+DESCRIPTOR.message_types_by_name['Policy'] = _POLICY
+DESCRIPTOR.message_types_by_name['IsolationResponse'] = _ISOLATIONRESPONSE
+DESCRIPTOR.message_types_by_name['CurrentCellRequest'] = _CURRENTCELLREQUEST
+DESCRIPTOR.message_types_by_name['CurrentCellResponse'] = _CURRENTCELLRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Thread = _reflection.GeneratedProtocolMessageType('Thread', (_message.Message,), {
@@ -664,74 +874,109 @@ InstanceContext = _reflection.GeneratedProtocolMessageType('InstanceContext', (_
   })
 _sym_db.RegisterMessage(InstanceContext)
 
-PlacementRequest = _reflection.GeneratedProtocolMessageType('PlacementRequest', (_message.Message,), {
+IsolationRequest = _reflection.GeneratedProtocolMessageType('IsolationRequest', (_message.Message,), {
 
   'TaskToJobIdEntry' : _reflection.GeneratedProtocolMessageType('TaskToJobIdEntry', (_message.Message,), {
-    'DESCRIPTOR' : _PLACEMENTREQUEST_TASKTOJOBIDENTRY,
+    'DESCRIPTOR' : _ISOLATIONREQUEST_TASKTOJOBIDENTRY,
     '__module__' : 'isolate_pb2'
-    # @@protoc_insertion_point(class_scope:isolation.v1.PlacementRequest.TaskToJobIdEntry)
+    # @@protoc_insertion_point(class_scope:isolation.v1.IsolationRequest.TaskToJobIdEntry)
     })
   ,
 
   'TaskToJobDescriptorEntry' : _reflection.GeneratedProtocolMessageType('TaskToJobDescriptorEntry', (_message.Message,), {
-    'DESCRIPTOR' : _PLACEMENTREQUEST_TASKTOJOBDESCRIPTORENTRY,
+    'DESCRIPTOR' : _ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY,
     '__module__' : 'isolate_pb2'
-    # @@protoc_insertion_point(class_scope:isolation.v1.PlacementRequest.TaskToJobDescriptorEntry)
+    # @@protoc_insertion_point(class_scope:isolation.v1.IsolationRequest.TaskToJobDescriptorEntry)
     })
   ,
 
   'MetadataEntry' : _reflection.GeneratedProtocolMessageType('MetadataEntry', (_message.Message,), {
-    'DESCRIPTOR' : _PLACEMENTREQUEST_METADATAENTRY,
+    'DESCRIPTOR' : _ISOLATIONREQUEST_METADATAENTRY,
     '__module__' : 'isolate_pb2'
-    # @@protoc_insertion_point(class_scope:isolation.v1.PlacementRequest.MetadataEntry)
+    # @@protoc_insertion_point(class_scope:isolation.v1.IsolationRequest.MetadataEntry)
     })
   ,
-  'DESCRIPTOR' : _PLACEMENTREQUEST,
+  'DESCRIPTOR' : _ISOLATIONREQUEST,
   '__module__' : 'isolate_pb2'
-  # @@protoc_insertion_point(class_scope:isolation.v1.PlacementRequest)
+  # @@protoc_insertion_point(class_scope:isolation.v1.IsolationRequest)
   })
-_sym_db.RegisterMessage(PlacementRequest)
-_sym_db.RegisterMessage(PlacementRequest.TaskToJobIdEntry)
-_sym_db.RegisterMessage(PlacementRequest.TaskToJobDescriptorEntry)
-_sym_db.RegisterMessage(PlacementRequest.MetadataEntry)
+_sym_db.RegisterMessage(IsolationRequest)
+_sym_db.RegisterMessage(IsolationRequest.TaskToJobIdEntry)
+_sym_db.RegisterMessage(IsolationRequest.TaskToJobDescriptorEntry)
+_sym_db.RegisterMessage(IsolationRequest.MetadataEntry)
 
-Assignment = _reflection.GeneratedProtocolMessageType('Assignment', (_message.Message,), {
-  'DESCRIPTOR' : _ASSIGNMENT,
+CFSTunables = _reflection.GeneratedProtocolMessageType('CFSTunables', (_message.Message,), {
+  'DESCRIPTOR' : _CFSTUNABLES,
   '__module__' : 'isolate_pb2'
-  # @@protoc_insertion_point(class_scope:isolation.v1.Assignment)
+  # @@protoc_insertion_point(class_scope:isolation.v1.CFSTunables)
   })
-_sym_db.RegisterMessage(Assignment)
+_sym_db.RegisterMessage(CFSTunables)
 
-PlacementResponse = _reflection.GeneratedProtocolMessageType('PlacementResponse', (_message.Message,), {
+CpusetTunables = _reflection.GeneratedProtocolMessageType('CpusetTunables', (_message.Message,), {
+  'DESCRIPTOR' : _CPUSETTUNABLES,
+  '__module__' : 'isolate_pb2'
+  # @@protoc_insertion_point(class_scope:isolation.v1.CpusetTunables)
+  })
+_sym_db.RegisterMessage(CpusetTunables)
 
-  'AssignmentsEntry' : _reflection.GeneratedProtocolMessageType('AssignmentsEntry', (_message.Message,), {
-    'DESCRIPTOR' : _PLACEMENTRESPONSE_ASSIGNMENTSENTRY,
+Cpuset = _reflection.GeneratedProtocolMessageType('Cpuset', (_message.Message,), {
+  'DESCRIPTOR' : _CPUSET,
+  '__module__' : 'isolate_pb2'
+  # @@protoc_insertion_point(class_scope:isolation.v1.Cpuset)
+  })
+_sym_db.RegisterMessage(Cpuset)
+
+Policy = _reflection.GeneratedProtocolMessageType('Policy', (_message.Message,), {
+  'DESCRIPTOR' : _POLICY,
+  '__module__' : 'isolate_pb2'
+  # @@protoc_insertion_point(class_scope:isolation.v1.Policy)
+  })
+_sym_db.RegisterMessage(Policy)
+
+IsolationResponse = _reflection.GeneratedProtocolMessageType('IsolationResponse', (_message.Message,), {
+
+  'CpusetsEntry' : _reflection.GeneratedProtocolMessageType('CpusetsEntry', (_message.Message,), {
+    'DESCRIPTOR' : _ISOLATIONRESPONSE_CPUSETSENTRY,
     '__module__' : 'isolate_pb2'
-    # @@protoc_insertion_point(class_scope:isolation.v1.PlacementResponse.AssignmentsEntry)
+    # @@protoc_insertion_point(class_scope:isolation.v1.IsolationResponse.CpusetsEntry)
     })
   ,
 
   'MetadataEntry' : _reflection.GeneratedProtocolMessageType('MetadataEntry', (_message.Message,), {
-    'DESCRIPTOR' : _PLACEMENTRESPONSE_METADATAENTRY,
+    'DESCRIPTOR' : _ISOLATIONRESPONSE_METADATAENTRY,
     '__module__' : 'isolate_pb2'
-    # @@protoc_insertion_point(class_scope:isolation.v1.PlacementResponse.MetadataEntry)
+    # @@protoc_insertion_point(class_scope:isolation.v1.IsolationResponse.MetadataEntry)
     })
   ,
-  'DESCRIPTOR' : _PLACEMENTRESPONSE,
+  'DESCRIPTOR' : _ISOLATIONRESPONSE,
   '__module__' : 'isolate_pb2'
-  # @@protoc_insertion_point(class_scope:isolation.v1.PlacementResponse)
+  # @@protoc_insertion_point(class_scope:isolation.v1.IsolationResponse)
   })
-_sym_db.RegisterMessage(PlacementResponse)
-_sym_db.RegisterMessage(PlacementResponse.AssignmentsEntry)
-_sym_db.RegisterMessage(PlacementResponse.MetadataEntry)
+_sym_db.RegisterMessage(IsolationResponse)
+_sym_db.RegisterMessage(IsolationResponse.CpusetsEntry)
+_sym_db.RegisterMessage(IsolationResponse.MetadataEntry)
+
+CurrentCellRequest = _reflection.GeneratedProtocolMessageType('CurrentCellRequest', (_message.Message,), {
+  'DESCRIPTOR' : _CURRENTCELLREQUEST,
+  '__module__' : 'isolate_pb2'
+  # @@protoc_insertion_point(class_scope:isolation.v1.CurrentCellRequest)
+  })
+_sym_db.RegisterMessage(CurrentCellRequest)
+
+CurrentCellResponse = _reflection.GeneratedProtocolMessageType('CurrentCellResponse', (_message.Message,), {
+  'DESCRIPTOR' : _CURRENTCELLRESPONSE,
+  '__module__' : 'isolate_pb2'
+  # @@protoc_insertion_point(class_scope:isolation.v1.CurrentCellResponse)
+  })
+_sym_db.RegisterMessage(CurrentCellResponse)
 
 
 DESCRIPTOR._options = None
-_PLACEMENTREQUEST_TASKTOJOBIDENTRY._options = None
-_PLACEMENTREQUEST_TASKTOJOBDESCRIPTORENTRY._options = None
-_PLACEMENTREQUEST_METADATAENTRY._options = None
-_PLACEMENTRESPONSE_ASSIGNMENTSENTRY._options = None
-_PLACEMENTRESPONSE_METADATAENTRY._options = None
+_ISOLATIONREQUEST_TASKTOJOBIDENTRY._options = None
+_ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY._options = None
+_ISOLATIONREQUEST_METADATAENTRY._options = None
+_ISOLATIONRESPONSE_CPUSETSENTRY._options = None
+_ISOLATIONRESPONSE_METADATAENTRY._options = None
 
 _ISOLATIONSERVICE = _descriptor.ServiceDescriptor(
   name='IsolationService',
@@ -740,16 +985,26 @@ _ISOLATIONSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=1350,
-  serialized_end=1455,
+  serialized_start=1715,
+  serialized_end=1909,
   methods=[
   _descriptor.MethodDescriptor(
-    name='ComputePlacement',
-    full_name='isolation.v1.IsolationService.ComputePlacement',
+    name='ComputeIsolation',
+    full_name='isolation.v1.IsolationService.ComputeIsolation',
     index=0,
     containing_service=None,
-    input_type=_PLACEMENTREQUEST,
-    output_type=_PLACEMENTRESPONSE,
+    input_type=_ISOLATIONREQUEST,
+    output_type=_ISOLATIONRESPONSE,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='GetCurrentCell',
+    full_name='isolation.v1.IsolationService.GetCurrentCell',
+    index=1,
+    containing_service=None,
+    input_type=_CURRENTCELLREQUEST,
+    output_type=_CURRENTCELLRESPONSE,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),
