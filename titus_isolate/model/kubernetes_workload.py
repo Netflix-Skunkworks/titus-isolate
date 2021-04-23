@@ -49,6 +49,7 @@ class KubernetesWorkload(Workload):
         image = 'UNKNOWN_IMAGE'
         command = 'UNKNOWN_CMD'
         entrypoint = 'UNKNOWN_ENTRYPOINT'
+        job_id = None
 
         job_descriptor = get_job_descriptor(pod)
         log.debug("job_descriptor: %s", job_descriptor)
@@ -60,10 +61,11 @@ class KubernetesWorkload(Workload):
             entrypoint = get_entrypoint(job_descriptor)
 
         metadata = pod.metadata
-        job_id = metadata.labels.get(LABEL_KEY_JOB_ID, None)
+        if medata.labels is not None:
+            job_id = metadata.labels.get(LABEL_KEY_JOB_ID, None)
         if job_id is None:
             # legacy, very few pods launched a while ago
-            job_id = metadata.annotations.get(ANNOTATION_KEY_JOB_ID, '')
+            job_id = metadata.annotations.get(ANNOTATION_KEY_JOB_ID, 'UNKNOWN_JOB_ID')
         job_type = metadata.annotations[WORKLOAD_JSON_JOB_TYPE_KEY]
         owner_email = metadata.annotations[OWNER_EMAIL]
         workload_type_str = metadata.annotations.get(CPU_BURSTING)
