@@ -7,7 +7,7 @@ from kubernetes.client import V1Pod
 
 from titus_isolate import log
 from titus_isolate.event.constants import STATIC, BURST, BATCH, SERVICE
-from titus_isolate.kub.constants import LABEL_KEY_JOB_ID
+from titus_isolate.kub.constants import LABEL_KEY_JOB_ID, ANNOTATION_KEY_JOB_ID
 from titus_isolate.model.constants import CPU, MEMORY, TITUS_NETWORK, EPHEMERAL_STORAGE, TITUS_DISK, \
     WORKLOAD_JSON_JOB_TYPE_KEY, OWNER_EMAIL, CPU_BURSTING, FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, \
     WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY, CREATION_TIME_KEY, LAUNCH_TIME_KEY, ID_KEY, THREAD_COUNT_KEY, MEM_KEY, \
@@ -60,7 +60,10 @@ class KubernetesWorkload(Workload):
             entrypoint = get_entrypoint(job_descriptor)
 
         metadata = pod.metadata
-        job_id = metadata.labels[LABEL_KEY_JOB_ID] # TODO: could it be null?
+        job_id = metadata.labels.get(LABEL_KEY_JOB_ID, None)
+        if job_id is None:
+            # legacy, very few pods launched a while ago
+            job_id = metadata.annotations.get(ANNOTATION_KEY_JOB_ID, '')
         job_type = metadata.annotations[WORKLOAD_JSON_JOB_TYPE_KEY]
         owner_email = metadata.annotations[OWNER_EMAIL]
         workload_type_str = metadata.annotations.get(CPU_BURSTING)

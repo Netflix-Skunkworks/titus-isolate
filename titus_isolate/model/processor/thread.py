@@ -14,12 +14,12 @@ class Thread:
     def get_id(self):
         return self.__processor_id
 
-    def claim(self, workload_id : int):
+    def claim(self, workload_id):
         workload_ids = list(self.__workload_ids)
         workload_ids.append(workload_id)
         self.__workload_ids = list(set(workload_ids))
 
-    def free(self, workload_id : int):
+    def free(self, workload_id):
         log.debug("Removing workload: '{}' from thread '{}'".format(workload_id, self.get_id()))
         if workload_id in self.__workload_ids:
             self.__workload_ids.remove(workload_id)
