@@ -177,6 +177,7 @@ def deserialize_legacy_workload(body: dict) -> LegacyWorkload:
         body.get(LAUNCH_TIME_KEY, 0),
         body[ID_KEY],
         body[THREAD_COUNT_KEY],
+        UNKNOWN_JOB_ID,
         body[MEM_KEY],
         body[DISK_KEY],
         body[NETWORK_KEY],
