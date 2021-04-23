@@ -9,10 +9,7 @@ import pytest
 
 from titus_isolate.allocate.allocate_response import deserialize_response
 from titus_isolate.allocate.utils import parse_cpu
-from titus_isolate.api.testing import set_testing
 from titus_isolate.model.legacy_workload import deserialize_legacy_workload
-
-set_testing()
 
 from tests.allocate.crashing_allocators import CrashingAllocator
 from tests.utils import get_test_workload, config_logs, get_no_usage_threads_request

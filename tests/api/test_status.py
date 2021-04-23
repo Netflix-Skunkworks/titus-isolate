@@ -3,9 +3,6 @@ import logging
 import unittest
 import uuid
 
-from titus_isolate.api.testing import set_testing
-
-set_testing()
 
 from tests.allocate.test_allocate import TestWorkloadMonitorManager
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
