@@ -26,6 +26,7 @@ WORKLOAD_ID = "workload_id"
 TITUS_ISOLATE_CELL_HEADER = "X-Titus-Isolate-Cell"
 UNKNOWN_CELL = "unknown_cell"
 CELL = "cell"
+GRPC_CELL = "grpc_cell"
 ALLOCATOR_SERVICE_TASK_ID = 'alloc_task_id'  # task id of the service which did run a given allocation
 UNKNOWN_ALLOCATOR_SERVICE_TASK_ID = 'unknown_alloc_task_id'
 TITUS_TASK_ID = 'TITUS_TASK_ID'

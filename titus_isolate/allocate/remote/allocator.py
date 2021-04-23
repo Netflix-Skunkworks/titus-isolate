@@ -9,12 +9,11 @@ from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse, deserialize_response
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
-from titus_isolate.allocate.constants import UNKNOWN_CPU_ALLOCATOR
 from titus_isolate.allocate.cpu_allocate_exception import CpuAllocationException
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.workload_allocate_response import WorkloadAllocateResponse
-from titus_isolate.config.constants import NEW_REMOTE_ALLOC_ENDPOINT, NEW_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS, \
-    NEW_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS, \
+from titus_isolate.config.constants import GRPC_REMOTE_ALLOC_ENDPOINT, GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS, \
+    GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS, \
     MAX_SOLVER_CONNECT_SEC, DEFAULT_MAX_SOLVER_CONNECT_SEC
 from titus_isolate.kub.constants import *
 from titus_isolate.kub.utils import get_node
@@ -22,7 +21,7 @@ from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.utils import get_config_manager
 
 
-ALLOCATOR_NAME = "RemoteIsolationAllocator"
+ALLOCATOR_NAME = "GrpcRemoteIsolationAllocator"
 REQ_TYPE_METADATA_KEY = "req_type"
 
 class Allocator(CpuAllocator):
@@ -30,7 +29,6 @@ class Allocator(CpuAllocator):
     def __create_stub(self) -> pb_grpc.IsolationServiceStub:
         channel = grpc.insecure_channel(self.__endpoint,
             compression=grpc.Compression.Gzip)
-        # todo: timeout on connect
         
         return pb_grpc.IsolationServiceStub(channel)
 
@@ -47,11 +45,11 @@ class Allocator(CpuAllocator):
 
     def __init__(self, free_thread_provider):
         config_manager = get_config_manager()
-        self.__endpoint = config_manager.get_str(NEW_REMOTE_ALLOC_ENDPOINT, None)
-        if not self.__endpoint:
+        self.__endpoint = config_manager.get_str(GRPC_REMOTE_ALLOC_ENDPOINT, None)
+        if self.__endpoint is None:
             raise Exception("Could not get remote allocator endpoint address.")
-        self.__call_timeout_secs = 1000.0 * config_manager.get_int(NEW_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS,
-            NEW_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS)
+        self.__call_timeout_secs = 1000.0 * config_manager.get_int(GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS,
+            GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS)
 
         self.__stub = self.__create_stub()
         self.__instance_ctx = self.__pull_context()
@@ -119,9 +117,7 @@ class Allocator(CpuAllocator):
                         for wid in workloads:
                             thread.claim(wid)
 
-        metadata = {} # cell should be filled by service
-
-        return AllocateResponse(new_cpu, wa_responses, ALLOCATOR_NAME, metadata)
+        return AllocateResponse(new_cpu, wa_responses, ALLOCATOR_NAME, {})
 
     def __process(self, request: AllocateRequest, req_type : str, is_delete : bool) -> AllocateResponse:
         req_wid = ''
