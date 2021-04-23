@@ -61,7 +61,7 @@ class KubernetesWorkload(Workload):
             entrypoint = get_entrypoint(job_descriptor)
 
         metadata = pod.metadata
-        if medata.labels is not None:
+        if metadata.labels is not None:
             job_id = metadata.labels.get(LABEL_KEY_JOB_ID, None)
         if job_id is None:
             # legacy, very few pods launched a while ago
