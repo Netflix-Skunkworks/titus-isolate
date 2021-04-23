@@ -7,3 +7,5 @@ schedule
 titus-optimize==0.7.7
 cvxopt==1.2.5
 tox
+grpcio
+grpcio-tools
