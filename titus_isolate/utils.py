@@ -12,7 +12,7 @@ from titus_isolate.allocate.remote.isolate_pb2 import CurrentCellRequest
 from titus_isolate.allocate.remote.isolate_pb2_grpc import IsolationServiceStub
 from titus_isolate.config.agent_property_provider import AgentPropertyProvider
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.config.constants import REMOTE_ALLOCATOR_URL, GRPC_REMOTE_ALLOC_ENDPOINT, \
+from titus_isolate.config.constants import CPU_ALLOCATOR, REMOTE_ALLOCATOR_URL, GRPC_REMOTE_ALLOC_ENDPOINT, \
     MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME
 from titus_isolate.constants import KUBERNETES_BACKEND_KEY, SCHEDULE_ONCE_FAILURE_EXIT_CODE, \
     SCHEDULING_LOOP_FAILURE_EXIT_CODE
@@ -160,51 +160,64 @@ def get_pod_manager():
         return __pod_manager
 
 
+def is_primary_allocator_grpc(config_manager) -> bool:
+    from titus_isolate.isolate.utils import get_allocator
+    from titus_isolate.allocate.remote.allocator import GrpcRemoteIsolationAllocator
+    primary_alloc_str = config_manager.get_cached_str(CPU_ALLOCATOR)
+    primary_allocator = get_allocator(primary_alloc_str, config_manager)
+    return primary_allocator.get_name() == GrpcRemoteIsolationAllocator.__name__        
+
+
 def get_cell_name():
     config_manager = get_config_manager()
     if config_manager is None:
         log.warning("Config manager is not yet set.")
         return UNKNOWN_CELL
 
-    url = config_manager.get_str(REMOTE_ALLOCATOR_URL)
+    if not is_primary_allocator_grpc(config_manager):
+        log.info("Fetching cell for an http allocator")
+        fetch_fun = get_http_cell_name
+    else:
+        log.info("Fetching cell for the grpc allocator")
+        fetch_fun = get_grpc_cell_name
+
+    try:
+        cell_name = fetch_fun(config_manager)
+        log.info("Cell: %s", cell_name)
+        return cell_name
+    except Exception:
+        log.error("Failed to determine isolation cell.")
+        return UNKNOWN_CELL 
+
+
+def get_http_cell_name(config_manager):
+    url = config_manager.get_cached_str(REMOTE_ALLOCATOR_URL)
     if url is None:
         log.warning("No remote solver URL specified.")
         return UNKNOWN_CELL
 
-    timeout = config_manager.get_int(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
+    timeout = config_manager.get_cached_int(MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME)
 
-    try:
-        response = requests.get(url, timeout=timeout)
-        cell_name = response.headers.get(TITUS_ISOLATE_CELL_HEADER, None)
-        if cell_name is None:
-            log.warning("Titus isolation cell header is not set.")
-            return UNKNOWN_CELL
-        else:
-            return cell_name
-    except Exception:
-        log.error("Failed to determine isolation cell.")
+    response = requests.get(url, timeout=timeout)
+    cell_name = response.headers.get(TITUS_ISOLATE_CELL_HEADER, None)
+    if cell_name is None:
+        log.warning("Titus isolation cell header is not set.")
         return UNKNOWN_CELL
+    return cell_name
 
-def get_grpc_cell_name():
-    config_manager = get_config_manager()
-    if config_manager is None:
-        log.warning("Config manager is not yet set.")
-        return UNKNOWN_CELL
 
-    endpoint = config_manager.get_str(GRPC_REMOTE_ALLOC_ENDPOINT, None)
+def get_grpc_cell_name(config_manager):
+    endpoint = config_manager.get_cached_str(GRPC_REMOTE_ALLOC_ENDPOINT, None)
     if endpoint is None:
         log.warning("Could not get grpc remote allocator endpoint address.")
         return UNKNOWN_CELL
-    try:
-        stub = IsolationServiceStub(grpc.insecure_channel(endpoint))
-        res = stub.GetCurrentCell(CurrentCellRequest(), timeout=5.0)
-        if res.cell_id == "":
-            log.warning("Service returned empty grpc cell header")
-            return UNKNOWN_CELL
-        return res.cell_id
-    except Exception as e:
-        log.error("Failed to determine isolation grpc cell.")
-    return UNKNOWN_CELL
+    stub = IsolationServiceStub(grpc.insecure_channel(endpoint))
+    res = stub.GetCurrentCell(CurrentCellRequest(), timeout=5.0)
+    if res.cell_id == "":
+        log.warning("Service returned empty grpc cell header")
+        return UNKNOWN_CELL
+    return res.cell_id
+
 
 def is_kubernetes() -> bool:
     return get_config_manager().get_cached_bool(KUBERNETES_BACKEND_KEY, True)

@@ -21,10 +21,9 @@ from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.utils import get_config_manager
 
 
-ALLOCATOR_NAME = "GrpcRemoteIsolationAllocator"
 REQ_TYPE_METADATA_KEY = "req_type"
 
-class Allocator(CpuAllocator):
+class GrpcRemoteIsolationAllocator(CpuAllocator):
 
     def __create_stub(self) -> pb_grpc.IsolationServiceStub:
         channel = grpc.insecure_channel(self.__endpoint,
@@ -45,10 +44,10 @@ class Allocator(CpuAllocator):
 
     def __init__(self, free_thread_provider):
         config_manager = get_config_manager()
-        self.__endpoint = config_manager.get_str(GRPC_REMOTE_ALLOC_ENDPOINT, None)
+        self.__endpoint = config_manager.get_cached_str(GRPC_REMOTE_ALLOC_ENDPOINT, None)
         if self.__endpoint is None:
             raise Exception("Could not get remote allocator endpoint address.")
-        self.__call_timeout_secs = 1000.0 * config_manager.get_int(GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS,
+        self.__call_timeout_secs = 1000.0 * config_manager.get_cached_int(GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS,
             GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS)
 
         self.__stub = self.__create_stub()
@@ -117,7 +116,7 @@ class Allocator(CpuAllocator):
                         for wid in workloads:
                             thread.claim(wid)
 
-        return AllocateResponse(new_cpu, wa_responses, ALLOCATOR_NAME, {})
+        return AllocateResponse(new_cpu, wa_responses, self.get_name(), {})
 
     def __process(self, request: AllocateRequest, req_type : str, is_delete : bool) -> AllocateResponse:
         req_wid = ''
@@ -155,7 +154,7 @@ class Allocator(CpuAllocator):
         return self.__process(request, "rebalance", False)
 
     def get_name(self) -> str:
-        return ALLOCATOR_NAME
+        return self.__class__.__name__
 
     def set_registry(self, registry, tags):
         pass
