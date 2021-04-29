@@ -8,3 +8,5 @@ titus-optimize==0.7.2
 cvxopt==1.2.5
 netflix-spectator-py
 kubernetes
+grpcio
+grpcio-tools

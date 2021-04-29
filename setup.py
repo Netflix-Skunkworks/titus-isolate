@@ -18,6 +18,7 @@ setup(name='titus-isolate',
       packages=[
           "titus_isolate",
           "titus_isolate/allocate",
+          "titus_isolate/allocate/remote",
           "titus_isolate/api",
           "titus_isolate/cgroup",
           "titus_isolate/crd",

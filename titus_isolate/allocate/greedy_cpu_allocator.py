@@ -100,6 +100,7 @@ class GreedyCpuAllocator(CpuAllocator):
                 launch_time=workload.get_launch_time(),
                 identifier=workload.get_id(),
                 thread_count=thread_count,
+                job_id=workload.get_job_id(),
                 mem=workload.get_mem(),
                 disk=workload.get_disk(),
                 network=workload.get_network(),

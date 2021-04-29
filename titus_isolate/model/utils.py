@@ -66,6 +66,7 @@ def get_workload_from_disk(identifier) -> LegacyWorkload:
     app_name = json_data[WORKLOAD_JSON_APP_NAME_KEY]
     owner_email = passthrough_data[WORKLOAD_JSON_OWNER_KEY]
     image = '{}@{}'.format(json_data[WORKLOAD_JSON_IMAGE_KEY], json_data[WORKLOAD_JSON_IMAGE_DIGEST_KEY])
+    job_id = env_data[WORKLOAD_ENV_JOB_ID]
 
     command = None
     if WORKLOAD_JSON_COMMAND_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
@@ -93,6 +94,7 @@ def get_workload_from_disk(identifier) -> LegacyWorkload:
         launch_time=launch_time,
         identifier=identifier,
         thread_count=cpus,
+        job_id=job_id,
         mem=mem,
         disk=disk,
         network=network,

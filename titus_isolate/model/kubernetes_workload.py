@@ -7,6 +7,7 @@ from kubernetes.client import V1Pod
 
 from titus_isolate import log
 from titus_isolate.event.constants import STATIC, BURST, BATCH, SERVICE
+from titus_isolate.kub.constants import LABEL_KEY_JOB_ID, ANNOTATION_KEY_JOB_ID
 from titus_isolate.model.constants import CPU, MEMORY, TITUS_NETWORK, EPHEMERAL_STORAGE, TITUS_DISK, \
     WORKLOAD_JSON_JOB_TYPE_KEY, OWNER_EMAIL, CPU_BURSTING, FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, \
     WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY, CREATION_TIME_KEY, LAUNCH_TIME_KEY, ID_KEY, THREAD_COUNT_KEY, MEM_KEY, \
@@ -48,6 +49,7 @@ class KubernetesWorkload(Workload):
         image = 'UNKNOWN_IMAGE'
         command = 'UNKNOWN_CMD'
         entrypoint = 'UNKNOWN_ENTRYPOINT'
+        job_id = None
 
         job_descriptor = get_job_descriptor(pod)
         log.debug("job_descriptor: %s", job_descriptor)
@@ -59,6 +61,11 @@ class KubernetesWorkload(Workload):
             entrypoint = get_entrypoint(job_descriptor)
 
         metadata = pod.metadata
+        if metadata.labels is not None:
+            job_id = metadata.labels.get(LABEL_KEY_JOB_ID, None)
+        if job_id is None:
+            # legacy, very few pods launched a while ago
+            job_id = metadata.annotations.get(ANNOTATION_KEY_JOB_ID, 'UNKNOWN_JOB_ID')
         job_type = metadata.annotations[WORKLOAD_JSON_JOB_TYPE_KEY]
         owner_email = metadata.annotations[OWNER_EMAIL]
         workload_type_str = metadata.annotations.get(CPU_BURSTING)
@@ -77,6 +84,7 @@ class KubernetesWorkload(Workload):
             duration_predictions = \
                 get_duration_predictions(metadata.annotations.get(WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY))
 
+        self.__job_id = job_id
         self.__app_name = app_name
         self.__image = image
         self.__command = command
@@ -134,6 +142,9 @@ class KubernetesWorkload(Workload):
 
     def get_job_type(self) -> str:
         return self.__job_type
+
+    def get_job_id(self) -> str:
+        return self.__job_id
 
     def is_batch(self) -> bool:
         return self.__job_type == BATCH

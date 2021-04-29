@@ -15,6 +15,10 @@ class Workload:
         pass
 
     @abstractmethod
+    def get_job_id(self) -> str:
+        pass
+
+    @abstractmethod
     def get_thread_count(self) -> int:
         pass
 

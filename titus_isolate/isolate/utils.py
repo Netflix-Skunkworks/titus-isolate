@@ -7,11 +7,12 @@ from titus_isolate.allocate.naive_cpu_allocator import NaiveCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.allocate.remote_cpu_allocator import RemoteCpuAllocator
+from titus_isolate.allocate.remote.allocator import GrpcRemoteIsolationAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, CPU_ALLOCATORS, DEFAULT_ALLOCATOR, \
     IP, GREEDY, NOOP, FORECAST_CPU_IP, \
     FREE_THREAD_PROVIDER, DEFAULT_FREE_THREAD_PROVIDER, EMPTY, DEFAULT_TOTAL_THRESHOLD, \
-    TOTAL_THRESHOLD, REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, OVERSUBSCRIBE, NAIVE, NOOP_RESET, \
+    TOTAL_THRESHOLD, REMOTE, GRPC_REMOTE, FALLBACK_ALLOCATOR, DEFAULT_FALLBACK_ALLOCATOR, OVERSUBSCRIBE, NAIVE, NOOP_RESET, \
     EMPTY_CORES, RESOURCE_USAGE_PROVIDER, DEFAULT_RESOURCE_USAGE_PROVIDER, PROMETHEUS
 from titus_isolate.monitor.empty_core_free_thread_provider import EmptyCoreFreeThreadProvider
 from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
@@ -27,7 +28,8 @@ CPU_ALLOCATOR_NAME_TO_CLASS_MAP = {
     NAIVE: NaiveCpuAllocator,
     NOOP: NoopCpuAllocator,
     NOOP_RESET: NoopResetCpuAllocator,
-    REMOTE: RemoteCpuAllocator
+    REMOTE: RemoteCpuAllocator,
+    GRPC_REMOTE : GrpcRemoteIsolationAllocator
 }
 
 

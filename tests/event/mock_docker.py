@@ -5,7 +5,7 @@ import uuid
 from tests.event.mock_titus_environment import MOCK_TITUS_ENVIRONMENT
 from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWORK, DEFAULT_TEST_IMAGE, \
     DEFAULT_TEST_APP_NAME, DEFAULT_TEST_JOB_TYPE, DEFAULT_TEST_OWNER_EMAIL, DEFAULT_TEST_CMD, DEFAULT_TEST_ENTRYPOINT, \
-    DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT
+    DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT, DEFAULT_TEST_JOB_ID
 from titus_isolate import log
 from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, ID, \
     LOWERCASE_ID, NAME, WORKLOAD_TYPE_LABEL_KEY, TIME, TYPE, DIE, STATIC, REPO_DIGESTS, START
@@ -90,6 +90,7 @@ def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()
         launch_time=int(time.time()),
         identifier=name,
         thread_count=cpus,
+        job_id=DEFAULT_TEST_JOB_ID,
         mem=DEFAULT_TEST_MEM,
         disk=DEFAULT_TEST_DISK,
         network=DEFAULT_TEST_NETWORK,

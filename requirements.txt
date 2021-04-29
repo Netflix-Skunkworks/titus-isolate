@@ -8,3 +8,5 @@ titus-optimize==0.7.7
 netflix-spectator-py
 systemd
 kubernetes
+grpcio
+grpcio-tools
