@@ -7,7 +7,8 @@ from kubernetes.client import V1Pod
 
 from titus_isolate import log
 from titus_isolate.event.constants import STATIC, BURST, BATCH, SERVICE
-from titus_isolate.kub.constants import LABEL_KEY_JOB_ID, ANNOTATION_KEY_JOB_ID
+from titus_isolate.kub.constants import LABEL_KEY_JOB_ID, ANNOTATION_KEY_JOB_ID , ANNOTATION_KEY_POD_SPEC_VERSION, \
+    V1_ANNOTATION_KEY_JOB_ID, V1_ANNOTATION_KEY_JOB_TYPE, V1_ANNOTATION_KEY_OWNER_EMAIL, V1_ANNOTATION_KEY_CPU_BURSTING
 from titus_isolate.model.constants import CPU, MEMORY, TITUS_NETWORK, EPHEMERAL_STORAGE, TITUS_DISK, \
     WORKLOAD_JSON_JOB_TYPE_KEY, OWNER_EMAIL, CPU_BURSTING, FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, \
     WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY, CREATION_TIME_KEY, LAUNCH_TIME_KEY, ID_KEY, THREAD_COUNT_KEY, MEM_KEY, \
@@ -49,7 +50,6 @@ class KubernetesWorkload(Workload):
         image = 'UNKNOWN_IMAGE'
         command = 'UNKNOWN_CMD'
         entrypoint = 'UNKNOWN_ENTRYPOINT'
-        job_id = None
 
         job_descriptor = get_job_descriptor(pod)
         log.debug("job_descriptor: %s", job_descriptor)
@@ -61,17 +61,7 @@ class KubernetesWorkload(Workload):
             entrypoint = get_entrypoint(job_descriptor)
 
         metadata = pod.metadata
-        if metadata.labels is not None:
-            job_id = metadata.labels.get(LABEL_KEY_JOB_ID, None)
-        if job_id is None:
-            # legacy, very few pods launched a while ago
-            job_id = metadata.annotations.get(ANNOTATION_KEY_JOB_ID, 'UNKNOWN_JOB_ID')
-        job_type = metadata.annotations[WORKLOAD_JSON_JOB_TYPE_KEY]
-        owner_email = metadata.annotations[OWNER_EMAIL]
-        workload_type_str = metadata.annotations.get(CPU_BURSTING)
-        workload_type = STATIC
-        if workload_type_str is not None and str(workload_type_str).lower() == "true":
-            workload_type = BURST
+        job_meta = get_job_annotations_from_pod(pod)
 
         opportunistic_cpus = 0
         if FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in metadata.annotations.keys():
@@ -84,14 +74,14 @@ class KubernetesWorkload(Workload):
             duration_predictions = \
                 get_duration_predictions(metadata.annotations.get(WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY))
 
-        self.__job_id = job_id
+        self.__job_id = job_meta.get('job_id')
         self.__app_name = app_name
         self.__image = image
         self.__command = command
         self.__entrypoint = entrypoint
-        self.__job_type = job_type
-        self.__owner_email = owner_email
-        self.__workload_type = workload_type
+        self.__job_type = job_meta.get('job_type')
+        self.__owner_email = job_meta.get('owner_email')
+        self.__workload_type = job_meta.get('workload_type')
         self.__opportunistic_cpus = int(opportunistic_cpus)
         self.__duration_predictions = duration_predictions
 
@@ -204,3 +194,43 @@ class KubernetesWorkload(Workload):
 
 def get_workload_from_pod(pod: V1Pod) -> KubernetesWorkload:
     return KubernetesWorkload(pod)
+
+def get_job_annotations_from_pod(pod: V1Pod) -> dict:
+    metadata = pod.metadata
+    job_id = None
+    workload_type = STATIC
+
+    if metadata.annotations.get(ANNOTATION_KEY_POD_SPEC_VERSION) is not None:
+        job_id = metadata.annotations.get(V1_ANNOTATION_KEY_JOB_ID, None)
+        job_type = metadata.annotations.get(V1_ANNOTATION_KEY_JOB_TYPE, None)
+        owner_email = metadata.annotations.get(V1_ANNOTATION_KEY_OWNER_EMAIL, None)
+        workload_type_str = metadata.annotations.get(V1_ANNOTATION_KEY_CPU_BURSTING, None)
+        if workload_type_str is not None and str(workload_type_str).lower() == "true":
+            workload_type = BURST
+
+        return {
+            'job_id': job_id,
+            'job_type': job_type,
+            'owner_email': owner_email,
+            'workload_type': workload_type,
+        }
+
+    # pre-v1 pod spec pods
+
+    if metadata.labels is not None:
+        job_id = metadata.labels.get(LABEL_KEY_JOB_ID, None)
+    if job_id is None:
+        # legacy, very few pods launched a while ago
+        job_id = metadata.annotations.get(ANNOTATION_KEY_JOB_ID, 'UNKNOWN_JOB_ID')
+    job_type = metadata.annotations[WORKLOAD_JSON_JOB_TYPE_KEY]
+    owner_email = metadata.annotations[OWNER_EMAIL]
+    workload_type_str = metadata.annotations.get(CPU_BURSTING)
+    if workload_type_str is not None and str(workload_type_str).lower() == "true":
+        workload_type = BURST
+    
+    return {
+        'job_id': job_id,
+        'job_type': job_type,
+        'owner_email': owner_email,
+        'workload_type': workload_type,
+    }
