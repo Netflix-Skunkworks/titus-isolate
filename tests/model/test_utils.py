@@ -1,9 +1,8 @@
 import unittest
 
 from tests.utils import TEST_POD_JOB_ID, TEST_POD_OWNER_EMAIL, get_simple_test_pod
-from titus_isolate.event.constants import BURST, SERVICE
-from titus_isolate.kub.constants import V1_ANNOTATION_KEY_CPU_BURSTING
-from titus_isolate.model.constants import CPU_BURSTING, JOB_DESCRIPTOR, KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, \
+from titus_isolate.event.constants import BURST, SERVICE, STATIC
+from titus_isolate.model.constants import JOB_DESCRIPTOR, KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, \
     FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY
 from titus_isolate.model.kubernetes_workload import get_workload_from_pod
 from titus_isolate.model.pod_utils import get_start_time, get_main_container, get_job_descriptor, decode_job_descriptor
@@ -107,20 +106,18 @@ class TestUtils(unittest.TestCase):
 
     def test_job_attrs_from_pod_v0(self):
         pod = get_simple_test_pod()
-        pod.metadata.annotations[CPU_BURSTING] = "true"
         w = get_workload_from_pod(pod)
 
         self.assertEqual(TEST_POD_JOB_ID, w.get_job_id())
         self.assertEqual(SERVICE, w.get_job_type())
         self.assertEqual(TEST_POD_OWNER_EMAIL, w.get_owner_email())
-        self.assertEqual(BURST, w.get_type())
+        self.assertEqual(STATIC, w.get_type())
 
     def test_job_attrs_from_pod_v1(self):
         pod = get_simple_test_pod(v1=True)
-        pod.metadata.annotations[V1_ANNOTATION_KEY_CPU_BURSTING] = "true"
         w = get_workload_from_pod(pod)
 
         self.assertEqual(TEST_POD_JOB_ID, w.get_job_id())
         self.assertEqual(SERVICE, w.get_job_type())
         self.assertEqual(TEST_POD_OWNER_EMAIL, w.get_owner_email())
-        self.assertEqual(BURST, w.get_type())
+        self.assertEqual(STATIC, w.get_type())

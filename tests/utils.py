@@ -1,8 +1,8 @@
 import json
 import logging
-from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID, ANNOTATION_KEY_POD_SPEC_VERSION, V1_ANNOTATION_KEY_CPU_BURSTING, \
+from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID, ANNOTATION_KEY_POD_SPEC_VERSION, \
     V1_ANNOTATION_KEY_JOB_ID, V1_ANNOTATION_KEY_JOB_TYPE, V1_ANNOTATION_KEY_OWNER_EMAIL
-from titus_isolate.model.constants import CPU_BURSTING, OWNER_EMAIL, WORKLOAD_JSON_JOB_TYPE_KEY
+from titus_isolate.model.constants import OWNER_EMAIL, WORKLOAD_JSON_JOB_TYPE_KEY
 import numpy as np
 import time
 from typing import List
