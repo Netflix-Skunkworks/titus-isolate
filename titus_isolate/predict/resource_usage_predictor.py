@@ -99,6 +99,9 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
     def __get_job_body(self, pod: V1Pod, resource_usage: GlobalResourceUsage):
         return {
             "job_id": pod.metadata.name,
+            # Note that on v1 pods job_descriptor is None.
+            # That is OK though, because the resource prediction service will fetch the job
+            # descriptor itself in that case.
             "job_descriptor": get_job_descriptor(pod),
             "task_data": {
                 "started_ts_ms": str(get_start_time(pod)),

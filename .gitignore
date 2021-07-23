@@ -12,6 +12,7 @@ venv/
 env/
 
 .idea/
+.vscode/
 *.swp
 *.deb
 

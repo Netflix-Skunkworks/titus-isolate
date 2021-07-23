@@ -186,6 +186,11 @@ def test_pod_json():
                 "titus.agent.jobType": "SERVICE",
                 "titus.agent.ownerEmail": TEST_POD_OWNER_EMAIL,
             },
+            "labels": {
+                "pod.titus.netflix.com/byteUnits": "true",
+                "v3.job.titus.netflix.com/job-id": TEST_POD_JOB_ID,
+                "v3.job.titus.netflix.com/task-id": "122413d6-79f2-4a24-82e3-3040b9890b43"
+            },
             "creationTimestamp": "2020-03-23T22:56:36Z",
             "name": "122413d6-79f2-4a24-82e3-3040b9890b43",
             "namespace": "default",
@@ -279,7 +284,8 @@ def get_simple_test_pod(v1=False) -> V1Pod:
         del annotations[ANNOTATION_KEY_JOB_ID]
         del annotations[WORKLOAD_JSON_JOB_TYPE_KEY]
         del annotations[OWNER_EMAIL]
-
+        del annotations['containerInfo']
+        del annotations['jobDescriptor']
     pod_str = json.dumps(pod)
     return parse_pod(pod_str)
 
