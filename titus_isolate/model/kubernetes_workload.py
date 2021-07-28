@@ -17,7 +17,7 @@ from titus_isolate.model.constants import CPU, MEMORY, TITUS_NETWORK, EPHEMERAL_
     KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY
 from titus_isolate.model.duration_prediction import DurationPrediction
 from titus_isolate.model.pod_utils import get_main_container, parse_kubernetes_value, get_job_descriptor, get_app_name, \
-    get_image, get_cmd, get_entrypoint
+    get_image, get_cmd, get_entrypoint, get_podv1_app_name, get_podv1_image, get_podv1_cmd, get_podv1_entrypoint
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.utils import get_duration_predictions
 
@@ -51,14 +51,21 @@ class KubernetesWorkload(Workload):
         command = 'UNKNOWN_CMD'
         entrypoint = 'UNKNOWN_ENTRYPOINT'
 
+        # The job_descriptor is a v0 pod method of encoding data
+        # This can be none with a v1 pod, so we call v1 functions that don't need it
+        # When v0 pods are gone, this function can be removed
         job_descriptor = get_job_descriptor(pod)
-        log.debug("job_descriptor: %s", job_descriptor)
 
         if job_descriptor is not None:
             app_name = get_app_name(job_descriptor)
             image = get_image(job_descriptor)
             command = get_cmd(job_descriptor)
             entrypoint = get_entrypoint(job_descriptor)
+        else:
+            app_name = get_podv1_app_name(pod)
+            image = get_podv1_image(pod)
+            command = get_podv1_cmd(pod)
+            entrypoint = get_podv1_entrypoint(pod)
 
         metadata = pod.metadata
         job_meta = get_job_annotations_from_pod(pod)
