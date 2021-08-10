@@ -25,7 +25,6 @@ class LegacyWorkload(Workload):
             entrypoint,
             job_type,
             workload_type,
-            opportunistic_thread_count,
             duration_predictions):
 
         self.__creation_time = datetime.datetime.utcnow()
@@ -54,7 +53,6 @@ class LegacyWorkload(Workload):
 
         self.__job_type = job_type
         self.__type = workload_type.lower()
-        self.__opportunistic_thread_count = int(opportunistic_thread_count)
 
         if duration_predictions is None:
             duration_predictions = []
@@ -139,10 +137,10 @@ class LegacyWorkload(Workload):
         return self.__launch_time
 
     def is_opportunistic(self):
-        return self.__opportunistic_thread_count > 0
+        return False
 
     def get_opportunistic_thread_count(self):
-        return self.__opportunistic_thread_count
+        return 0
 
     def get_duration_predictions(self) -> List[DurationPrediction]:
         return self.__duration_predictions

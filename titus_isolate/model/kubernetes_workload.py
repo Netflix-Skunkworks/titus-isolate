@@ -5,16 +5,14 @@ from typing import List
 
 from kubernetes.client import V1Pod
 
-from titus_isolate import log
 from titus_isolate.event.constants import STATIC, BURST, BATCH, SERVICE
 from titus_isolate.kub.constants import LABEL_KEY_JOB_ID, ANNOTATION_KEY_JOB_ID , ANNOTATION_KEY_POD_SPEC_VERSION, \
-    V1_ANNOTATION_KEY_JOB_ID, V1_ANNOTATION_KEY_JOB_TYPE, V1_ANNOTATION_KEY_OWNER_EMAIL, V1_ANNOTATION_KEY_CPU_BURSTING
+    V1_ANNOTATION_KEY_JOB_ID, V1_ANNOTATION_KEY_JOB_TYPE, V1_ANNOTATION_KEY_OWNER_EMAIL
 from titus_isolate.model.constants import CPU, MEMORY, TITUS_NETWORK, EPHEMERAL_STORAGE, TITUS_DISK, \
-    WORKLOAD_JSON_JOB_TYPE_KEY, OWNER_EMAIL, CPU_BURSTING, FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, \
+    WORKLOAD_JSON_JOB_TYPE_KEY, OWNER_EMAIL, \
     WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY, CREATION_TIME_KEY, LAUNCH_TIME_KEY, ID_KEY, THREAD_COUNT_KEY, MEM_KEY, \
     DISK_KEY, NETWORK_KEY, APP_NAME_KEY, OWNER_EMAIL_KEY, IMAGE_KEY, COMMAND_KEY, ENTRY_POINT_KEY, JOB_TYPE_KEY, \
-    WORKLOAD_TYPE_KEY, OPPORTUNISTIC_THREAD_COUNT_KEY, DURATION_PREDICTIONS_KEY, POD, \
-    KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY
+    WORKLOAD_TYPE_KEY, OPPORTUNISTIC_THREAD_COUNT_KEY, DURATION_PREDICTIONS_KEY, POD
 from titus_isolate.model.duration_prediction import DurationPrediction
 from titus_isolate.model.pod_utils import get_main_container, parse_kubernetes_value, get_job_descriptor, get_app_name, \
     get_image, get_cmd, get_entrypoint, get_podv1_app_name, get_podv1_image, get_podv1_cmd, get_podv1_entrypoint
@@ -70,12 +68,6 @@ class KubernetesWorkload(Workload):
         metadata = pod.metadata
         job_meta = get_job_annotations_from_pod(pod)
 
-        opportunistic_cpus = 0
-        if FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in metadata.annotations.keys():
-            opportunistic_cpus = metadata.annotations.get(FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY)
-        if KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY in metadata.annotations.keys():
-            opportunistic_cpus = metadata.annotations.get(KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY)
-
         duration_predictions = []
         if WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY in metadata.annotations.keys():
             duration_predictions = \
@@ -89,7 +81,6 @@ class KubernetesWorkload(Workload):
         self.__job_type = job_meta.get('job_type')
         self.__owner_email = job_meta.get('owner_email')
         self.__workload_type = STATIC
-        self.__opportunistic_cpus = int(opportunistic_cpus)
         self.__duration_predictions = duration_predictions
 
     def get_pod(self):
@@ -159,10 +150,10 @@ class KubernetesWorkload(Workload):
         return self.__launch_time
 
     def is_opportunistic(self) -> bool:
-        return self.__opportunistic_cpus > 0
+        return False
 
     def get_opportunistic_thread_count(self) -> int:
-        return self.__opportunistic_cpus
+        return 0
 
     def get_duration_predictions(self) -> List[DurationPrediction]:
         return self.__duration_predictions
@@ -201,6 +192,7 @@ class KubernetesWorkload(Workload):
 
 def get_workload_from_pod(pod: V1Pod) -> KubernetesWorkload:
     return KubernetesWorkload(pod)
+
 
 def get_job_annotations_from_pod(pod: V1Pod) -> dict:
     metadata = pod.metadata

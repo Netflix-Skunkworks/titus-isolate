@@ -15,11 +15,9 @@ from titus_isolate.crd.publish.kubernetes_predicted_usage_publisher import Kuber
 from titus_isolate.event.create_event_handler import CreateEventHandler
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.event.free_event_handler import FreeEventHandler
-from titus_isolate.crd.publish.kubernetes_opportunistic_window_publisher import KubernetesOpportunisticWindowPublisher
 from titus_isolate.event.predict_usage_event_handler import ResourceUsagePredictionHandler
 from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.event.reconcile_event_handler import ReconcileEventHandler
-from titus_isolate.event.oversubscribe_event_handler import OversubscribeEventHandler
 from titus_isolate.event.utils import get_current_workloads
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.isolate.reconciler import Reconciler
@@ -189,20 +187,15 @@ if __name__ != '__main__' and not is_testing():
     free_event_handler = FreeEventHandler(workload_manager)
     rebalance_event_handler = RebalanceEventHandler(workload_manager)
     reconcile_event_handler = ReconcileEventHandler(reconciler)
-    oversub_event_handler = None
-    predicted_usage_handler = None
-    if is_kubernetes():
-        oversub_event_handler = OversubscribeEventHandler(workload_manager, KubernetesOpportunisticWindowPublisher(exit_handler))
-        predicted_usage_handler = ResourceUsagePredictionHandler(
-            KubernetesPredictedUsagePublisher(resource_usage_predictor=ResourceUsagePredictor(),
-                                              pod_manager=get_pod_manager(),
-                                              workload_monitor_manager=workload_monitor_manager))
+    predicted_usage_handler = ResourceUsagePredictionHandler(
+        KubernetesPredictedUsagePublisher(resource_usage_predictor=ResourceUsagePredictor(),
+                                          pod_manager=get_pod_manager(),
+                                          workload_monitor_manager=workload_monitor_manager))
 
     event_handlers = [h for h in [create_event_handler,
                                   free_event_handler,
                                   rebalance_event_handler,
                                   reconcile_event_handler,
-                                  oversub_event_handler,
                                   predicted_usage_handler] if h is not None]
 
     # Start event processing
@@ -218,7 +211,6 @@ if __name__ != '__main__' and not is_testing():
                                      reconciler,
                                      workload_manager,
                                      workload_monitor_manager,
-                                     oversub_event_handler,
                                      predicted_usage_handler] if m is not None]
 
     metrics_manager = MetricsManager(metrics_reporters)

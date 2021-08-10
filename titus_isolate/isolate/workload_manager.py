@@ -316,14 +316,6 @@ class WorkloadManager(MetricsReporter):
 
         return oversubscribable_thread_count
 
-    def __get_consumed_opportunistic_cpu_count(self) -> int:
-        consumed_cpu_count = 0
-        opportunistic_workloads = [w for w in self.get_workloads() if w.is_opportunistic()]
-        for workload in opportunistic_workloads:
-            consumed_cpu_count += workload.get_opportunistic_thread_count()
-
-        return consumed_cpu_count
-
     def set_registry(self, registry, tags):
         self.__reg = registry
         self.__tags = tags
@@ -362,7 +354,6 @@ class WorkloadManager(MetricsReporter):
         self.__reg.gauge(OVERSUBSCRIBED_THREADS_KEY, tags).set(get_oversubscribed_thread_count(cpu, workload_map))
         self.__reg.gauge(BURSTABLE_THREADS_KEY, tags).set(self.__get_free_thread_count(self.__last_response))
         self.__reg.gauge(OVERSUBSCRIBABLE_THREADS_KEY, tags).set(self.__get_oversubscribable_thread_count(self.__last_response))
-        self.__reg.gauge(OVERSUBSCRIBE_CONSUMED_CPU_COUNT, tags).set(self.__get_consumed_opportunistic_cpu_count())
 
         # Have the sub-components report metrics
         self.__cpu_allocator.report_metrics(tags)
