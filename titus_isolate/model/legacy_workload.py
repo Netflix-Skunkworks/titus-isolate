@@ -186,7 +186,6 @@ def deserialize_legacy_workload(body: dict) -> LegacyWorkload:
         body[ENTRY_POINT_KEY],
         body[JOB_TYPE_KEY],
         body[WORKLOAD_TYPE_KEY],
-        body.get(OPPORTUNISTIC_THREAD_COUNT_KEY, 0),
         [deserialize_duration_prediction(p) for p in raw_duration_predictions])
 
     # Input example:  "2019-03-23 18:03:50.668041"
