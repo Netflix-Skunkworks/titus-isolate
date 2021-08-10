@@ -8,12 +8,12 @@ from kubernetes.client import V1ObjectMeta, V1OwnerReference, V1Pod
 from kubernetes.client.rest import ApiException
 
 from titus_isolate import log
+from titus_isolate.constants import DEFAULT_KUBECONFIG_PATH
 from titus_isolate.crd.model.resource_usage_prediction import ResourceUsagePredictionsResource, \
     PREDICTED_RESOURCE_USAGE_NAMESPACE, PREDICTED_RESOURCE_USAGE_NODE_NAME_LABEL_KEY, \
     PREDICTED_RESOURCE_USAGE_NODE_UID_LABEL_KEY, PREDICTED_RESOURCE_USAGE_PLURAL, CondensedResourceUsagePrediction, \
     ResourceUsagePredictions
 from titus_isolate.crd.model.resources import Resources
-from titus_isolate.crd.publish.kubernetes_opportunistic_window_publisher import DEFAULT_KUBECONFIG_PATH
 from titus_isolate.kub.utils import get_node, get_instance_type
 from titus_isolate.metrics.constants import PARSE_POD_REQUESTED_RESOURCES_FAIL_COUNT
 from titus_isolate.model.constants import CUSTOM_RESOURCE_GROUP, PREDICTED_USAGE_RESOURCE_VERSION

@@ -45,7 +45,6 @@ DEFAULT_TEST_JOB_TYPE = 'SERVICE'
 DEFAULT_TEST_WORKLOAD_TYPE = 'static'
 DEFAULT_TEST_INSTANCE_ID = 'test_instance_id'
 DEFAULT_TEST_REQUEST_METADATA = {INSTANCE_ID: DEFAULT_TEST_INSTANCE_ID}
-DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT = 0
 TEST_POD_JOB_ID = "162aa6e7-b33a-4ca5-a9f0-f848379d4112"
 TEST_POD_OWNER_EMAIL = "email@address.com"
 
@@ -104,27 +103,6 @@ def get_test_workload(identifier, thread_count, workload_type, launch_time=None)
         entrypoint=DEFAULT_TEST_ENTRYPOINT,
         job_type=DEFAULT_TEST_JOB_TYPE,
         workload_type=workload_type,
-        opportunistic_thread_count=DEFAULT_TEST_OPPORTUNISTIC_THREAD_COUNT,
-        duration_predictions=[])
-
-
-def get_test_opportunistic_workload(identifier, thread_count, opportunistic_thread_count, workload_type) -> Workload:
-    return LegacyWorkload(
-        launch_time=int(time.time()),
-        identifier=identifier,
-        thread_count=thread_count,
-        job_id=DEFAULT_TEST_JOB_ID,
-        mem=DEFAULT_TEST_MEM,
-        disk=DEFAULT_TEST_DISK,
-        network=DEFAULT_TEST_NETWORK,
-        app_name=DEFAULT_TEST_APP_NAME,
-        owner_email=DEFAULT_TEST_OWNER_EMAIL,
-        image=DEFAULT_TEST_IMAGE,
-        command=DEFAULT_TEST_CMD,
-        entrypoint=DEFAULT_TEST_ENTRYPOINT,
-        job_type=DEFAULT_TEST_JOB_TYPE,
-        workload_type=workload_type,
-        opportunistic_thread_count=opportunistic_thread_count,
         duration_predictions=[])
 
 

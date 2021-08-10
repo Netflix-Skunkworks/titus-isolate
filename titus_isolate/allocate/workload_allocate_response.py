@@ -1,7 +1,7 @@
 from typing import List, Optional
 
-from titus_isolate.config.constants import OPPORTUNISTIC_SHARES_SCALE_KEY, DEFAULT_OPPORTUNISTIC_SHARES_SCALE, \
-    DEFAULT_SHARES_SCALE, DEFAULT_QUOTA_SCALE, TITUS_ISOLATE_MEMORY_MIGRATE, DEFAULT_TITUS_ISOLATE_MEMORY_MIGRATE, \
+from titus_isolate.config.constants import DEFAULT_SHARES_SCALE, DEFAULT_QUOTA_SCALE, TITUS_ISOLATE_MEMORY_MIGRATE, \
+    DEFAULT_TITUS_ISOLATE_MEMORY_MIGRATE, \
     TITUS_ISOLATE_MEMORY_SPREAD_PAGE, DEFAULT_TITUS_ISOLATE_MEMORY_SPREAD_PAGE, TITUS_ISOLATE_MEMORY_SPREAD_SLAB, \
     DEFAULT_TITUS_ISOLATE_MEMORY_SPREAD_SLAB
 from titus_isolate.isolate.update import get_threads
@@ -89,11 +89,6 @@ def get_cpu_quota(workload: Workload) -> int:
 
 
 def get_cpu_shares(workload: Workload) -> int:
-    if workload.is_opportunistic():
-        opportunistic_shares_scale = get_config_manager().get_int(
-            OPPORTUNISTIC_SHARES_SCALE_KEY, DEFAULT_OPPORTUNISTIC_SHARES_SCALE)
-        return workload.get_thread_count() * opportunistic_shares_scale
-
     return workload.get_thread_count() * DEFAULT_SHARES_SCALE
 
 

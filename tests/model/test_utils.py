@@ -3,8 +3,7 @@ import unittest
 from tests.utils import TEST_POD_JOB_ID, TEST_POD_OWNER_EMAIL, get_simple_test_pod
 from titus_isolate.event.constants import SERVICE, STATIC
 from titus_isolate.kub.constants import V1_ANNOTATION_KEY_CPU_BURSTING
-from titus_isolate.model.constants import CPU_BURSTING, JOB_DESCRIPTOR, KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY, \
-    FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY
+from titus_isolate.model.constants import CPU_BURSTING, JOB_DESCRIPTOR
 from titus_isolate.model.kubernetes_workload import get_workload_from_pod
 from titus_isolate.model.pod_utils import get_start_time, get_main_container, get_job_descriptor, decode_job_descriptor
 from titus_isolate.monitor.utils import get_duration_predictions
@@ -84,26 +83,6 @@ class TestUtils(unittest.TestCase):
 
         raw_jd = "not_decodable_string"
         self.assertTrue(decode_job_descriptor(raw_jd) is None)
-
-    def test_get_workload_from_pod(self):
-        pod = get_simple_test_pod()
-        get_workload_from_pod(pod)
-
-        pod = get_simple_test_pod()
-        pod.metadata.annotations[KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY] = "42"
-        w = get_workload_from_pod(pod)
-        self.assertEqual(42, w.get_opportunistic_thread_count())
-
-        pod = get_simple_test_pod()
-        pod.metadata.annotations[FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY] = "43"
-        w = get_workload_from_pod(pod)
-        self.assertEqual(43, w.get_opportunistic_thread_count())
-
-        pod = get_simple_test_pod()
-        pod.metadata.annotations[FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY] = "15"
-        pod.metadata.annotations[KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY] = "16"
-        w = get_workload_from_pod(pod)
-        self.assertEqual(16, w.get_opportunistic_thread_count())
 
     def test_job_attrs_from_pod_v0(self):
         pod = get_simple_test_pod()

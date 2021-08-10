@@ -19,12 +19,8 @@ WORKLOAD_JSON_ENTRYPOINT_KEY = 'entrypoint'
 WORKLOAD_JSON_JOB_TYPE_KEY = 'titus.agent.jobType'
 WORKLOAD_JSON_CPU_BURST_KEY = 'allowCpuBursting'
 
-# Opportunistic annotations
+# Prediction annotations
 WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY = 'titus.agent.runtimePredictionsAvailable'
-# Fenzo annotations
-FENZO_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY = 'task.opportunisticCpuCount'
-# kube-scheduler annotations
-KS_WORKLOAD_JSON_OPPORTUNISTIC_CPU_KEY = 'opportunistic.scheduler.titus.netflix.com/cpu'
 
 WORKLOAD_JSON_READ_ATTEMPTS = 5
 WORKLOAD_JSON_READ_SLEEP_SECONDS = 0.1

@@ -10,9 +10,9 @@ import schedule
 from titus_isolate import log
 from titus_isolate.config.constants import REBALANCE_FREQUENCY_KEY, DEFAULT_REBALANCE_FREQUENCY, \
     RECONCILE_FREQUENCY_KEY, DEFAULT_RECONCILE_FREQUENCY, \
-    OVERSUBSCRIBE_FREQUENCY_KEY, DEFAULT_OVERSUBSCRIBE_FREQUENCY, PREDICT_RESOURCE_USAGE_FREQUENCY_KEY, \
+    PREDICT_RESOURCE_USAGE_FREQUENCY_KEY, \
     DEFAULT_PREDICT_RESOURCE_USAGE_FREQUENCY
-from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT, OVERSUBSCRIBE_EVENT, ACTION, \
+from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT, ACTION, \
     HANDLED_ACTIONS, PREDICT_USAGE_EVENT
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY, \
@@ -59,11 +59,6 @@ class EventManager(MetricsReporter):
         if reconcile_frequency > 0:
             schedule.every(reconcile_frequency + random_jitter).seconds.do(self.__reconcile)
 
-        oversubscribe_frequency = config_manager.get_float(OVERSUBSCRIBE_FREQUENCY_KEY,
-                                                           DEFAULT_OVERSUBSCRIBE_FREQUENCY)
-        if oversubscribe_frequency > 0:
-            schedule.every(oversubscribe_frequency + random_jitter).seconds.do(self.__oversubscribe)
-
         predict_resource_usage_frequency = config_manager.get_float(PREDICT_RESOURCE_USAGE_FREQUENCY_KEY,
                                                                     DEFAULT_PREDICT_RESOURCE_USAGE_FREQUENCY)
 
@@ -99,9 +94,6 @@ class EventManager(MetricsReporter):
 
     def __reconcile(self):
         self.__put_event(RECONCILE_EVENT)
-
-    def __oversubscribe(self):
-        self.__put_event(OVERSUBSCRIBE_EVENT)
 
     def __predict_usage(self):
         self.__put_event(PREDICT_USAGE_EVENT)
