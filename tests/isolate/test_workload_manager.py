@@ -43,12 +43,12 @@ class TestWorkloadManager(unittest.TestCase):
             workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
 
             # Add workload
-            workload_manager.add_workload(workload)
+            workload_manager.isolate(adds=[workload], removes=[])
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - thread_count, len(workload_manager.get_cpu().get_empty_threads()))
             self.assertEqual(1, cgroup_manager.container_update_counts[workload.get_task_id()])
 
             # Remove workload
-            workload_manager.remove_workload(workload.get_task_id())
+            workload_manager.isolate(adds=[], removes=[workload.get_task_id()])
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
 
     def test_remove_unknown_workload(self):
@@ -60,19 +60,19 @@ class TestWorkloadManager(unittest.TestCase):
             workload_manager = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
 
             # Remove from empty set
-            workload_manager.remove_workload(unknown_workload_id)
+            workload_manager.isolate(adds=[], removes=[unknown_workload_id])
 
             # Add workload
-            workload_manager.add_workload(workload)
+            workload_manager.isolate(adds=[workload], removes=[])
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - thread_count, len(workload_manager.get_cpu().get_empty_threads()))
 
             # Removal of an unknown workload should have no effect
-            workload_manager.remove_workload(unknown_workload_id)
+            workload_manager.isolate(adds=[], removes=[unknown_workload_id])
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - thread_count, len(workload_manager.get_cpu().get_empty_threads()))
 
             # Remove workload with unknown workload, real workload should be removed
-            workload_manager.remove_workload(unknown_workload_id)
-            workload_manager.remove_workload(workload.get_task_id())
+            workload_manager.isolate(adds=[], removes=[unknown_workload_id])
+            workload_manager.isolate(adds=[], removes=[workload.get_task_id()])
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(workload_manager.get_cpu().get_empty_threads()))
 
     def __assert_container_thread_count(self, cpu, cgroup_manager, workloads):
@@ -112,7 +112,7 @@ class TestWorkloadManager(unittest.TestCase):
         reporter.set_registry(registry, {})
 
         workload = get_test_workload(uuid.uuid4(), 2)
-        reporter.add_workload(workload)
+        reporter.isolate(adds=[workload], removes=[])
         reporter.report_metrics({})
 
         self.assertTrue(gauge_value_equals(registry, RUNNING, 1))
@@ -135,14 +135,14 @@ class TestWorkloadManager(unittest.TestCase):
 
             cgroup_manager = MockCgroupManager()
             workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
-            workload_manager.add_workload(w0)
+            workload_manager.isolate(adds=[w0], removes=[])
 
             self.assertTrue(is_cpu_full(workload_manager.get_cpu()))
 
             # Fail to claim one more thread
             error_count = workload_manager.get_error_count()
             w1 = get_test_workload(uuid.uuid4(), 1)
-            workload_manager.add_workload(w1)
+            workload_manager.isolate(adds=[w1], removes=[])
             self.assertEqual(error_count + 1, workload_manager.get_error_count())
 
     def test_is_isolated(self):
@@ -154,7 +154,7 @@ class TestWorkloadManager(unittest.TestCase):
         for allocator in real_allocators:
             workload = get_test_workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT)
             wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
-            wm.add_workload(workload)
+            wm.isolate(adds=[workload], removes=[])
             self.assertTrue(wm.is_isolated(workload.get_task_id()))
 
         wm = WorkloadManager(get_cpu(), MockCgroupManager(), NoopCpuAllocator())
@@ -170,7 +170,7 @@ class TestWorkloadManager(unittest.TestCase):
 
             workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
             workload_manager.set_registry(registry, {})
-            workload_manager.add_workload(w_static)
+            workload_manager.isolate(adds=[w_static], removes=[])
 
             workload_manager.report_metrics({})
             total_thread_count = len(workload_manager.get_cpu().get_threads())
@@ -190,11 +190,11 @@ class TestWorkloadManager(unittest.TestCase):
             # for all memory flags
             set_config_manager(ConfigManager(TestPropertyProvider({})))
 
-            workload_manager.add_workload(workload)
+            workload_manager.isolate(adds=[workload], removes=[])
             self.assertFalse(cgroup_manager.get_memory_migrate(workload.get_task_id()))
             self.assertFalse(cgroup_manager.get_memory_spread_page(workload.get_task_id()))
             self.assertFalse(cgroup_manager.get_memory_spread_slab(workload.get_task_id()))
-            workload_manager.remove_workload(workload.get_task_id())
+            workload_manager.isolate(adds=[], removes=[workload.get_task_id()])
 
             # With all memory configuration options set to True we should expect all memory
             # flags to be set to True
@@ -204,8 +204,8 @@ class TestWorkloadManager(unittest.TestCase):
                 TITUS_ISOLATE_MEMORY_SPREAD_SLAB: True,
             })))
 
-            workload_manager.add_workload(workload)
+            workload_manager.isolate(adds=[workload], removes=[])
             self.assertTrue(cgroup_manager.get_memory_migrate(workload.get_task_id()))
             self.assertTrue(cgroup_manager.get_memory_spread_page(workload.get_task_id()))
             self.assertTrue(cgroup_manager.get_memory_spread_slab(workload.get_task_id()))
-            workload_manager.remove_workload(workload.get_task_id())
+            workload_manager.isolate(adds=[], removes=[workload.get_task_id()])

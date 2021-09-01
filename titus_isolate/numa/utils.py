@@ -1,30 +1,6 @@
 from titus_isolate import log
-from titus_isolate.config.constants import TITUS_ISOLATE_DYNAMIC_NUMA_BALANCING, \
-    DEFAULT_TITUS_ISOLATE_DYNAMIC_NUMA_BALANCING
-from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.workload_interface import Workload
-from titus_isolate.utils import get_config_manager
 
 NUMA_BALANCING_PATH = '/proc/sys/kernel/numa_balancing'
-
-
-def update_numa_balancing(workload: Workload, cpu: Cpu):
-    try:
-        config_manager = get_config_manager()
-        dynamic_numa_balancing_enabled = config_manager.get_bool(
-            TITUS_ISOLATE_DYNAMIC_NUMA_BALANCING,
-            DEFAULT_TITUS_ISOLATE_DYNAMIC_NUMA_BALANCING)
-
-        if not dynamic_numa_balancing_enabled:
-            enable_numa_balancing()
-            return
-
-        if _occupies_entire_cpu(workload, cpu):
-            disable_numa_balancing()
-        else:
-            enable_numa_balancing()
-    except Exception:
-        log.error("Failed to update NUMA balancing.")
 
 
 def enable_numa_balancing():
@@ -56,7 +32,3 @@ def _set_numa_balancing(state: int):
 
     with open(NUMA_BALANCING_PATH, 'w') as f:
         f.write(str(state))
-
-
-def _occupies_entire_cpu(workload: Workload, cpu: Cpu):
-    return len(cpu.get_threads()) == workload.get_thread_count()

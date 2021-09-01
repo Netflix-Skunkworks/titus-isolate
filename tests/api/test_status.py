@@ -41,7 +41,7 @@ class TestStatus(unittest.TestCase):
         workloads = json.loads(get_workloads())
         self.assertEqual(0, len(workloads))
 
-        workload_manager.add_workload(workload)
+        workload_manager.isolate(adds=[workload], removes=[])
 
         workloads = json.loads(get_workloads())
         self.assertEqual(workload_id, workloads[0][TASK_ID_KEY])
@@ -56,7 +56,7 @@ class TestStatus(unittest.TestCase):
         self.assertEqual(0, len(isolated_workload_ids))
 
         workload = get_test_workload(str(uuid.uuid4()), 2)
-        workload_manager.add_workload(workload)
+        workload_manager.isolate(adds=[workload], removes=[])
 
         isolated_workload_ids = json.loads(get_isolated_workload_ids())
         self.assertEqual(1, len(isolated_workload_ids))
@@ -70,7 +70,7 @@ class TestStatus(unittest.TestCase):
         self.assertEqual(404, code)
 
         workload = get_test_workload(str(uuid.uuid4()), 2)
-        workload_manager.add_workload(workload)
+        workload_manager.isolate(adds=[workload], removes=[])
 
         _, code, _ = isolate_workload(workload.get_task_id())
         self.assertEqual(200, code)

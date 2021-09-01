@@ -1,7 +1,7 @@
 import unittest
 
 from tests.allocate.crashing_allocators import CrashingAllocator
-from tests.utils import get_test_workload, get_no_usage_threads_request
+from tests.utils import get_test_workload, get_allocate_request
 from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 
@@ -22,23 +22,23 @@ class TestFallbackCpuAllocator(unittest.TestCase):
 
         allocator = FallbackCpuAllocator(CrashingAllocator(), NaiveCpuAllocator())
 
-        request = get_no_usage_threads_request(cpu, [w_a])
-        cpu = allocator.assign_threads(request).get_cpu()
+        request = get_allocate_request(cpu, [w_a])
+        cpu = allocator.isolate(request).get_cpu()
 
-        request = get_no_usage_threads_request(cpu, [w_a, w_b])
-        cpu = allocator.assign_threads(request).get_cpu()
+        request = get_allocate_request(cpu, [w_a, w_b])
+        cpu = allocator.isolate(request).get_cpu()
 
-        request = get_no_usage_threads_request(cpu, [w_b, w_a])
-        cpu = allocator.free_threads(request).get_cpu()
+        request = get_allocate_request(cpu, [w_b, w_a])
+        cpu = allocator.isolate(request).get_cpu()
 
-        request = get_no_usage_threads_request(cpu, [w_b, w_c])
-        cpu = allocator.assign_threads(request).get_cpu()
+        request = get_allocate_request(cpu, [w_b, w_c])
+        cpu = allocator.isolate(request).get_cpu()
 
-        request = get_no_usage_threads_request(cpu, [w_c, w_b])
-        cpu = allocator.free_threads(request).get_cpu()
+        request = get_allocate_request(cpu, [w_c, w_b])
+        cpu = allocator.isolate(request).get_cpu()
 
-        request = get_no_usage_threads_request(cpu, [w_c, w_d])
-        cpu = allocator.assign_threads(request).get_cpu()
+        request = get_allocate_request(cpu, [w_c, w_d])
+        cpu = allocator.isolate(request).get_cpu()
 
         self.assertEqual(3, len(cpu.get_claimed_threads()))
         self.assertEqual(6, allocator.get_fallback_allocator_calls_count())

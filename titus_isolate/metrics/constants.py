@@ -31,8 +31,6 @@ EVENT_LOG_FAILURE = 'titus-isolate.eventLogFailureCount'
 ALLOCATED_SIZE_KEY = 'titus-isolate.allocatedSize'
 UNALLOCATED_SIZE_KEY = 'titus-isolate.unallocatedSize'
 OVERSUBSCRIBED_THREADS_KEY = 'titus-isolate.oversubscribedThreads'
-BURSTABLE_THREADS_KEY = 'titus-isolate.burstableThreads'
-OVERSUBSCRIBABLE_THREADS_KEY = 'titus-isolate.oversubscribableThreads'
 
 PRIMARY_ASSIGN_COUNT = 'titus-isolate.assignThreadsPrimary'
 PRIMARY_FREE_COUNT = 'titus-isolate.freeThreadsPrimary'

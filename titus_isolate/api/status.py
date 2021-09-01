@@ -28,6 +28,7 @@ from titus_isolate.metrics.keystone_event_log_manager import KeystoneEventLogMan
 from titus_isolate.metrics.metrics_manager import MetricsManager, registry
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.monitor.workload_monitor_manager import WorkloadMonitorManager
+from titus_isolate.numa.utils import enable_numa_balancing
 from titus_isolate.pod.pod_manager import PodManager
 from titus_isolate.predict.cpu_usage_predictor_manager import ConfigurableCpuUsagePredictorManager
 from titus_isolate.predict.resource_usage_predictor import ResourceUsagePredictor
@@ -117,11 +118,11 @@ def _notify_ready():
 def init():
     # Initialize currently running containers as workloads
     log.info("Isolating currently running workloads...")
-    for workload in get_current_workloads(docker.from_env()):
-        try:
-            workload_manager.add_workload(workload)
-        except Exception:
-            log.error("Failed to add currently running workload: '{}', maybe it exited.".format(workload.get_id()))
+    workloads = get_current_workloads(docker.from_env())
+    try:
+        workload_manager.isolate(adds=workloads, removes=[])
+    except Exception:
+        log.exception("Failed to add currently running workloads")
 
     log.info("Isolated currently running workloads.")
     # Start processing events after adding running workloads to avoid processing a die event before we add a workload
@@ -139,6 +140,9 @@ if __name__ != '__main__' and not is_testing():
     logging.getLogger('schedule').setLevel(logging.WARN)
 
     exit_handler = RealExitHandler()
+
+    log.info("Enabling numa balancing...")
+    enable_numa_balancing()
 
     log.info("Setting pod manager...")
     pod_manager = PodManager()

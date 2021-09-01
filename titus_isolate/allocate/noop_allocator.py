@@ -1,31 +1,13 @@
 from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse, get_workload_allocations
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 
 
 class NoopCpuAllocator(CpuAllocator):
 
-    def __init__(self):
-        pass
-
-    def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
-        log.info("Ignoring attempt to assign threads to workload: '{}'".format(request.get_workload_id()))
-        return AllocateResponse(
-            request.get_cpu(),
-            get_workload_allocations(request.get_cpu(), list(request.get_workloads().values())),
-            self.get_name())
-
-    def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
-        log.info("Ignoring attempt to free threads for workload: '{}'".format(request.get_workload_id()))
-        return AllocateResponse(
-            request.get_cpu(),
-            get_workload_allocations(request.get_cpu(), list(request.get_workloads().values())),
-            self.get_name())
-
-    def rebalance(self, request: AllocateRequest) -> AllocateResponse:
-        log.info("Ignoring attempt to rebalance workloads: '{}'".format(request.get_workloads()))
+    def isolate(self, request: AllocateRequest) -> AllocateResponse:
+        log.info("Ignoring attempt isolate")
         return AllocateResponse(
             request.get_cpu(),
             get_workload_allocations(request.get_cpu(), list(request.get_workloads().values())),

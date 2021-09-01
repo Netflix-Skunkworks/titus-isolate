@@ -1,8 +1,10 @@
 import datetime
+from typing import List
 
 from titus_isolate import log
 from titus_isolate.event.constants import ACTOR, ATTRIBUTES, NAME
 from titus_isolate.model.utils import get_workload
+from titus_isolate.model.workload_interface import Workload
 
 epoch = datetime.datetime.utcfromtimestamp(0)
 
@@ -20,14 +22,14 @@ def __get_value(dictionary, key, default=''):
     return dictionary.get(key, default)
 
 
-def get_current_workloads(docker_client):
+def get_current_workloads(docker_client) -> List[Workload]:
     workloads = []
     for container in docker_client.containers.list():
         workload = None
         try:
             workload = get_workload(container.name)
         except Exception:
-            log.error("Failed to read environment for container: '%s'", container.name)
+            log.error("Failed to get workload: '%s'", container.name)
 
         if workload is not None:
             workloads.append(workload)

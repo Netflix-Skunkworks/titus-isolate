@@ -1,7 +1,6 @@
 from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.config.constants import FALLBACK_QUEUE_DEPTH, DEFAULT_FALLBACK_QUEUE_DEPTH
 from titus_isolate.metrics.constants import FALLBACK_ASSIGN_COUNT, FALLBACK_FREE_COUNT, \
@@ -43,50 +42,20 @@ class FallbackCpuAllocator(CpuAllocator):
                 self.__secondary_allocator.__class__.__name__,
                 self.__fallback_queue_depth))
 
-    def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
+    def isolate(self, request: AllocateRequest) -> AllocateResponse:
         try:
             self.__primary_assign_threads_call_count += 1
             self.__should_fallback_immediately()
-            return self.__primary_allocator.assign_threads(request)
+            return self.__primary_allocator.isolate(request)
         except Exception as e:
             log.error(
-                "Failed to assign threads to workload: '{}' with primary allocator: '{}', falling back to: '{}' because '{}'".format(
-                    request.get_workload_id(),
-                    self.__primary_allocator.__class__.__name__,
-                    self.__secondary_allocator.__class__.__name__,
-                    e))
+                "Failed to isolate with primary allocator: '%s', falling back to: '%s' because '%s'",
+                self.__primary_allocator.__class__.__name__,
+                self.__secondary_allocator.__class__.__name__,
+                e)
             self.__secondary_assign_threads_call_count += 1
-            return self.__secondary_allocator.assign_threads(request)
-
-    def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
-        try:
-            self.__primary_free_threads_call_count += 1
-            self.__should_fallback_immediately()
-            return self.__primary_allocator.free_threads(request)
-        except Exception as e:
-            log.error(
-                "Failed to free threads for workload: '{}' with primary allocator: '{}', falling back to: '{}' because '{}'".format(
-                    request.get_workload_id(),
-                    self.__primary_allocator.__class__.__name__,
-                    self.__secondary_allocator.__class__.__name__,
-                    e))
-            self.__secondary_free_threads_call_count += 1
-            return self.__secondary_allocator.free_threads(request)
-
-    def rebalance(self, request: AllocateRequest) -> AllocateResponse:
-        try:
-            self.__primary_rebalance_call_count += 1
-            self.__should_fallback_immediately()
-            return self.__primary_allocator.rebalance(request)
-        except Exception as e:
-            log.error(
-                "Failed to rebalance workloads: '{}' with primary allocator: '{}', falling back to: '{}' because '{}'".format(
-                    [w.get_id() for w in request.get_workloads().values()],
-                    self.__primary_allocator.__class__.__name__,
-                    self.__secondary_allocator.__class__.__name__,
-                    e))
-            self.__secondary_rebalance_call_count += 1
-            return self.__secondary_allocator.rebalance(request)
+            return self.__secondary_allocator.isolate(request)
+        pass
 
     def get_name(self) -> str:
         return "{}({},{})".format(
