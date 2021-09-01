@@ -15,7 +15,6 @@ from titus_isolate.model.kubernetes_workload import KubernetesWorkload
 from titus_isolate.model.legacy_workload import LegacyWorkload
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
-from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 from titus_isolate.monitor.utils import get_duration_predictions
 from titus_isolate.utils import get_pod_manager, managers_are_initialized, get_config_manager
 
@@ -158,29 +157,3 @@ def release_all_threads(cpu, workloads):
 def release_threads(cpu, workload_id):
     for t in cpu.get_threads():
         t.free(workload_id)
-
-
-def update_burst_workloads(
-        cpu: Cpu,
-        workload_map: Dict[str, Workload],
-        free_thread_provider: FreeThreadProvider,
-        metadata: dict):
-
-    free_threads = free_thread_provider.get_free_threads(cpu, workload_map)
-    metadata[FREE_THREAD_IDS] = [t.get_id() for t in free_threads]
-
-    burst_workloads = get_burst_workloads(workload_map.values())
-    if len(burst_workloads) == 0:
-        return
-
-    for t in free_threads:
-        for w in burst_workloads:
-            t.claim(w.get_id())
-
-
-def rebalance(cpu: Cpu, workloads: dict, free_thread_provider: FreeThreadProvider, metadata: dict) -> Cpu:
-    burst_workloads = get_burst_workloads(workloads.values())
-    release_all_threads(cpu, burst_workloads)
-    update_burst_workloads(cpu, workloads, free_thread_provider, metadata)
-
-    return cpu

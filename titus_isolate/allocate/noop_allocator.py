@@ -7,7 +7,7 @@ from titus_isolate.allocate.cpu_allocator import CpuAllocator
 
 class NoopCpuAllocator(CpuAllocator):
 
-    def __init__(self, free_thread_provider=None):
+    def __init__(self):
         pass
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:

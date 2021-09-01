@@ -1,21 +1,15 @@
 import random
 from typing import List
 
-from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse, get_workload_allocations
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.thread import Thread
-from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
-from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
 
 
 class NaiveCpuAllocator(CpuAllocator):
-
-    def __init__(self, free_thread_provider: FreeThreadProvider = EmptyFreeThreadProvider()):
-        pass
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         cpu = request.get_cpu()

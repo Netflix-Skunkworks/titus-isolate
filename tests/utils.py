@@ -1,8 +1,10 @@
 import json
 import logging
-from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID, ANNOTATION_KEY_POD_SPEC_VERSION, V1_ANNOTATION_KEY_CPU_BURSTING, \
+
+from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
+from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID, ANNOTATION_KEY_POD_SPEC_VERSION, \
     V1_ANNOTATION_KEY_JOB_ID, V1_ANNOTATION_KEY_JOB_TYPE, V1_ANNOTATION_KEY_OWNER_EMAIL
-from titus_isolate.model.constants import CPU_BURSTING, OWNER_EMAIL, WORKLOAD_JSON_JOB_TYPE_KEY
+from titus_isolate.model.constants import OWNER_EMAIL, WORKLOAD_JSON_JOB_TYPE_KEY
 import numpy as np
 import time
 from typing import List
@@ -15,7 +17,6 @@ from titus_isolate import LOG_FMT_STRING, log
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.constants import INSTANCE_ID
-from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.create_event_handler import CreateEventHandler
 from titus_isolate.event.free_event_handler import FreeEventHandler
@@ -64,20 +65,29 @@ def wait_until(func, timeout=DEFAULT_TIMEOUT_SECONDS, period=0.01):
 
 def counter_value_equals(registry, key, expected_value, tags={}):
     value = registry.counter(key, tags).count()
-    log.debug("counter: '{}'='{}' expected: '{}'".format(key, value, expected_value))
-    return value == expected_value
+    equal = value == expected_value
+    if not equal:
+        log.info("counter: '{}'='{}' expected: '{}'".format(key, value, expected_value))
+
+    return equal
 
 
 def gauge_value_equals(registry, key, expected_value, tags={}):
     value = registry.gauge(key, tags).get()
-    log.debug("gauge: '{}'='{}' expected: '{}'".format(key, value, expected_value))
-    return value == expected_value
+    equal = value == expected_value
+    if not equal:
+        log.info("gauge: '{}'='{}' expected: '{}'".format(key, value, expected_value))
+
+    return equal
 
 
 def gauge_value_reached(registry, key, min_expected_value):
     value = registry.gauge(key).get()
-    log.debug("gauge: '{}'='{}' min expected: '{}'".format(key, value, min_expected_value))
-    return value >= min_expected_value
+    reached = value >= min_expected_value
+    if not reached:
+        log.info("gauge: '{}'='{}' min expected: '{}'".format(key, value, min_expected_value))
+
+    return reached
 
 
 def get_threads_with_workload(cpu, workload_id):
@@ -269,7 +279,7 @@ def get_simple_test_pod(v1=False) -> V1Pod:
 
 
 class TestContext:
-    def __init__(self, cpu=None, allocator=IntegerProgramCpuAllocator()):
+    def __init__(self, cpu=None, allocator=GreedyCpuAllocator()):
         if cpu is None:
             cpu = get_cpu()
         self.__workload_manager = WorkloadManager(cpu, MockCgroupManager(), allocator)

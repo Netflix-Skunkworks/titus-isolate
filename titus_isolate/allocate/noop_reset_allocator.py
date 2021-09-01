@@ -11,7 +11,7 @@ from titus_isolate.model.workload_interface import Workload
 
 class NoopResetCpuAllocator(CpuAllocator):
 
-    def __init__(self, free_thread_provider=None):
+    def __init__(self):
         pass
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:

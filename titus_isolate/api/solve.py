@@ -262,9 +262,9 @@ if __name__ != '__main__' and not is_testing():
     log.info("Setting cpu_allocators to assign: {}, free: {}, rebalance: {}".format(
         assign_alloc_str, free_alloc_str, rebalance_alloc_str))
 
-    assign_allocator = get_allocator(assign_alloc_str, config_manager)
-    free_allocator = get_allocator(free_alloc_str, config_manager)
-    rebalance_allocator = get_allocator(rebalance_alloc_str, config_manager)
+    assign_allocator = get_allocator(assign_alloc_str)
+    free_allocator = get_allocator(free_alloc_str)
+    rebalance_allocator = get_allocator(rebalance_alloc_str)
     set_cpu_allocators(assign_allocator, free_allocator, rebalance_allocator)
 
     log.info("Starting metrics reporting...")

@@ -2,12 +2,10 @@ import logging
 import unittest
 import uuid
 
-from tests.utils import config_logs, get_test_workload, DEFAULT_TEST_REQUEST_METADATA, get_no_usage_threads_request
+from tests.utils import config_logs, get_test_workload, get_no_usage_threads_request
 from titus_isolate import log
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.event.constants import STATIC
-from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
 from titus_isolate.isolate.detect import get_cross_package_violations, get_shared_core_violations
 from titus_isolate.model.processor.config import get_cpu
 
@@ -18,7 +16,7 @@ class TestDetect(unittest.TestCase):
 
     def test_no_cross_package_violation(self):
         cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator()
+        allocator = GreedyCpuAllocator()
         w = get_test_workload(uuid.uuid4(), 4, STATIC)
 
         violations = get_cross_package_violations(cpu)
@@ -31,7 +29,7 @@ class TestDetect(unittest.TestCase):
 
     def test_one_cross_package_violation(self):
         cpu = get_cpu()
-        allocator = IntegerProgramCpuAllocator()
+        allocator = GreedyCpuAllocator()
         w = get_test_workload(uuid.uuid4(), 9, STATIC)
 
         request = get_no_usage_threads_request(cpu, [w])
@@ -40,7 +38,7 @@ class TestDetect(unittest.TestCase):
         self.assertEqual(1, len(violations))
 
     def test_shared_core_violation(self):
-        allocator = IntegerProgramCpuAllocator()
+        allocator = GreedyCpuAllocator()
 
         # Claim all thread but one
         cpu = get_cpu()

@@ -9,7 +9,7 @@ from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import MockEventProvider
 from tests.utils import get_test_workload, config_logs
-from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
+from titus_isolate.allocate.naive_cpu_allocator import NaiveCpuAllocator
 from titus_isolate.api import status
 from titus_isolate.api.status import get_workloads, get_violations, get_wm_status, get_isolated_workload_ids, \
     isolate_workload
@@ -108,4 +108,4 @@ class TestStatus(unittest.TestCase):
     @staticmethod
     def __get_default_workload_manager():
         cpu = get_cpu()
-        return WorkloadManager(cpu, MockCgroupManager(), IntegerProgramCpuAllocator())
+        return WorkloadManager(cpu, MockCgroupManager(), NaiveCpuAllocator())

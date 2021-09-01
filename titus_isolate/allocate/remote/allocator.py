@@ -7,28 +7,26 @@ import titus_isolate.allocate.remote.isolate_pb2_grpc as pb_grpc
 
 from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
-from titus_isolate.allocate.allocate_response import AllocateResponse, deserialize_response
+from titus_isolate.allocate.allocate_response import AllocateResponse
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
-from titus_isolate.allocate.cpu_allocate_exception import CpuAllocationException
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.workload_allocate_response import WorkloadAllocateResponse
 from titus_isolate.config.constants import GRPC_REMOTE_ALLOC_ENDPOINT, GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS, \
-    GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS, \
-    MAX_SOLVER_CONNECT_SEC, DEFAULT_MAX_SOLVER_CONNECT_SEC
+    GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS
 from titus_isolate.kub.constants import *
 from titus_isolate.kub.utils import get_node
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.utils import get_config_manager
 
-
 REQ_TYPE_METADATA_KEY = "req_type"
+
 
 class GrpcRemoteIsolationAllocator(CpuAllocator):
 
     def __create_stub(self) -> pb_grpc.IsolationServiceStub:
         channel = grpc.insecure_channel(self.__endpoint,
-            compression=grpc.Compression.Gzip)
-        
+                                        compression=grpc.Compression.Gzip)
+
         return pb_grpc.IsolationServiceStub(channel)
 
     def __pull_context(self) -> pb.InstanceContext:
@@ -36,26 +34,26 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
         ctx = pb.InstanceContext()
         ctx.instance_id = node.metadata.name
         ctx.stack = node.metadata.annotations.get(ANNOTATION_KEY_STACK, '')
-        ctx.cluster = node.metadata.annotations.get(ANNOTATION_KEY_CLUSTER, '') 
+        ctx.cluster = node.metadata.annotations.get(ANNOTATION_KEY_CLUSTER, '')
         ctx.autoscale_group = node.metadata.annotations.get(ANNOTATION_KEY_ASG, '')
         ctx.resource_pool = node.metadata.annotations.get(LABEL_KEY_RESOURCE_POOL, '')
         ctx.instance_type = node.metadata.annotations.get(ANNOTATION_KEY_INSTANCE_TYPE, '')
         return ctx
 
-    def __init__(self, free_thread_provider):
+    def __init__(self):
         config_manager = get_config_manager()
         self.__endpoint = config_manager.get_cached_str(GRPC_REMOTE_ALLOC_ENDPOINT, None)
         if self.__endpoint is None:
             raise Exception("Could not get remote allocator endpoint address.")
         self.__call_timeout_secs = 1000.0 * config_manager.get_cached_int(GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS,
-            GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS)
+                                                                          GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS)
 
         self.__stub = self.__create_stub()
         self.__instance_ctx = self.__pull_context()
         self.__reg = None
         self.__empty_cpu = get_cpu_from_env()
         self.__natural2original_indexing = self.__empty_cpu.get_natural_indexing_2_original_indexing()
-        self.__original2natural_indexing = {v: k for k,v in self.__natural2original_indexing.items()}
+        self.__original2natural_indexing = {v: k for k, v in self.__natural2original_indexing.items()}
 
     def __build_base_req(self, cpu) -> pb.IsolationRequest:
         req = pb.IsolationRequest()
@@ -91,7 +89,7 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
         req.instance_context.CopyFrom(self.__instance_ctx)
         return req
 
-    def __deser(self, response : pb.IsolationResponse) -> AllocateResponse:
+    def __deser(self, response: pb.IsolationResponse) -> AllocateResponse:
         new_cpu = copy.deepcopy(self.__empty_cpu)
         id2workloads = defaultdict(list)
         wa_responses = []
@@ -118,12 +116,12 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
 
         return AllocateResponse(new_cpu, wa_responses, self.get_name(), {})
 
-    def __process(self, request: AllocateRequest, req_type : str, is_delete : bool) -> AllocateResponse:
+    def __process(self, request: AllocateRequest, req_type: str, is_delete: bool) -> AllocateResponse:
         req_wid = ''
         if isinstance(request, AllocateThreadsRequest):
             req_wid = request.get_workload_id()
         req = self.__build_base_req(request.get_cpu())
-        req.metadata[REQ_TYPE_METADATA_KEY] = req_type # for logging purposes server side
+        req.metadata[REQ_TYPE_METADATA_KEY] = req_type  # for logging purposes server side
 
         for wid, w in request.get_workloads().items():
             req.task_to_job_id[wid] = w.get_job_id()

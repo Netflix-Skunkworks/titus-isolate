@@ -16,9 +16,6 @@ QUEUE_DEPTH_KEY = 'titus-isolate.queueDepth'
 QUEUE_LATENCY_KEY = 'titus-isolate.queueLatency'
 ISOLATE_LATENCY_KEY = 'titus-isolate.isolateLatency'
 
-IP_ALLOCATOR_TIMEBOUND_COUNT = 'titus-isolate.ipAllocatorTimeBoundSolutionCount'
-FORECAST_REBALANCE_FAILURE_COUNT = 'titus-isolate.forecastRebalanceFailureCount'
-
 WRITE_CPUSET_SUCCEEDED_KEY = 'titus-isolate.writeCpusetSucceeded'
 WRITE_CPUSET_FAILED_KEY = 'titus-isolate.writeCpusetFailed'
 ISOLATED_WORKLOAD_COUNT = 'titus-isolate.isolatedWorkloadCount'
