@@ -1,12 +1,11 @@
 import copy
-from typing import Dict
+from typing import Dict, List
 
 from titus_isolate.allocate.constants import CPU, CPU_USAGE, WORKLOADS, METADATA, CPU_ARRAY, MEM_USAGE, NET_RECV_USAGE, \
     NET_TRANS_USAGE, DISK_USAGE, RESOURCE_USAGE
-from titus_isolate.allocate.utils import parse_cpu, parse_legacy_workloads, parse_usage
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
-from titus_isolate.monitor.resource_usage import GlobalResourceUsage, deserialize_global_resource_usage
+from titus_isolate.monitor.resource_usage import GlobalResourceUsage
 
 
 class AllocateRequest:
@@ -88,37 +87,9 @@ class AllocateRequest:
         return serializable_usage
 
     @staticmethod
-    def __get_serializable_workloads(workloads: list):
+    def __get_serializable_workloads(workloads: List[Workload]):
         serializable_workloads = {}
         for w in workloads:
-            serializable_workloads[w.get_id()] = w.to_dict()
+            serializable_workloads[w.get_task_id()] = w.to_dict()
 
         return serializable_workloads
-
-
-def deserialize_allocate_request(serialized_request: dict) -> AllocateRequest:
-    cpu = parse_cpu(serialized_request[CPU])
-    workloads = parse_legacy_workloads(serialized_request[WORKLOADS])
-    cpu_usage = parse_usage(serialized_request.get(CPU_USAGE, {}))
-    mem_usage = parse_usage(serialized_request.get(MEM_USAGE, {}))
-    net_recv_usage = parse_usage(serialized_request.get(NET_RECV_USAGE, {}))
-    net_trans_usage = parse_usage(serialized_request.get(NET_TRANS_USAGE, {}))
-    disk_usage = parse_usage(serialized_request.get(DISK_USAGE, {}))
-
-    resource_usage = serialized_request.get(RESOURCE_USAGE, None)
-    if resource_usage is None:
-        resource_usage = {}
-    else:
-        resource_usage = deserialize_global_resource_usage(resource_usage)
-
-    metadata = serialized_request[METADATA]
-    return AllocateRequest(
-        cpu=cpu,
-        workloads=workloads,
-        resource_usage=resource_usage,
-        cpu_usage=cpu_usage,
-        mem_usage=mem_usage,
-        net_recv_usage=net_recv_usage,
-        net_trans_usage=net_trans_usage,
-        disk_usage=disk_usage,
-        metadata=metadata)

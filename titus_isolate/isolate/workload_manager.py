@@ -53,14 +53,14 @@ class WorkloadManager(MetricsReporter):
 
         log.info("Created workload manager")
 
-    def add_workload(self, workload):
+    def add_workload(self, workload: Workload):
         update_numa_balancing(workload, self.__cpu)
 
-        succeeded = self.__update_workload(self.__add_workload, workload, workload.get_id())
+        succeeded = self.__update_workload(self.__add_workload, workload, workload.get_task_id())
         if succeeded:
             self.__added_count += 1
         else:
-            self.__remove_workload(workload.get_id())
+            self.__remove_workload(workload.get_task_id())
 
     def remove_workload(self, workload_id):
         self.__cgroup_manager.release_container(workload_id)
@@ -91,16 +91,16 @@ class WorkloadManager(MetricsReporter):
             return True
         except Exception:
             self.__error_count += 1
-            log.error("Failed to execute func: {} on workload: {}".format(func.__name__, workload_id))
+            log.exception("Failed to execute func: {} on workload: {}".format(func.__name__, workload_id))
             return False
 
-    def __add_workload(self, workload):
-        log.info("Assigning '{}' thread(s) to workload: '{}'".format(workload.get_thread_count(), workload.get_id()))
+    def __add_workload(self, workload: Workload):
+        log.info("Assigning '{}' thread(s) to workload: '{}'".format(workload.get_thread_count(), workload.get_task_id()))
 
         workload_map = self.get_workload_map_copy()
-        workload_map[workload.get_id()] = workload
+        workload_map[workload.get_task_id()] = workload
 
-        request = self.__get_threads_request(workload.get_id(), workload_map, "assign")
+        request = self.__get_threads_request(workload.get_task_id(), workload_map, "assign")
         response = self.__cpu_allocator.assign_threads(request)
 
         self.__update_state(response, workload_map)

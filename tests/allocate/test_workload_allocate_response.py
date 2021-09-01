@@ -12,9 +12,8 @@ def assign_threads(workload: Workload) -> Cpu:
     cpu = get_cpu()
     threads = cpu.get_threads()
 
-    total_thread_count = workload.get_thread_count() + workload.get_opportunistic_thread_count()
-    for i in range(total_thread_count):
-        threads[i].claim(workload.get_id())
+    for i in range(workload.get_thread_count()):
+        threads[i].claim(workload.get_task_id())
 
     return cpu
 

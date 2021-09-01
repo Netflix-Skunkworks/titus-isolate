@@ -2,7 +2,7 @@ import unittest
 
 from tests.utils import TEST_POD_JOB_ID, TEST_POD_OWNER_EMAIL, get_simple_test_pod
 from titus_isolate.event.constants import SERVICE
-from titus_isolate.model.constants import CPU_BURSTING, JOB_DESCRIPTOR
+from titus_isolate.model.constants import JOB_DESCRIPTOR
 from titus_isolate.model.kubernetes_workload import get_workload_from_pod
 from titus_isolate.model.pod_utils import get_start_time, get_main_container, get_job_descriptor, decode_job_descriptor
 from titus_isolate.monitor.utils import get_duration_predictions
@@ -85,19 +85,10 @@ class TestUtils(unittest.TestCase):
 
     def test_job_attrs_from_pod_v0(self):
         pod = get_simple_test_pod()
-        # This should have no effect - we always return static
-        pod.metadata.annotations[CPU_BURSTING] = "true"
         w = get_workload_from_pod(pod)
-
         self.assertEqual(TEST_POD_JOB_ID, w.get_job_id())
-        self.assertEqual(SERVICE, w.get_job_type())
-        self.assertEqual(TEST_POD_OWNER_EMAIL, w.get_owner_email())
 
     def test_job_attrs_from_pod_v1(self):
         pod = get_simple_test_pod(v1=True)
-        # This should have no effect - we always return static
         w = get_workload_from_pod(pod)
-
         self.assertEqual(TEST_POD_JOB_ID, w.get_job_id())
-        self.assertEqual(SERVICE, w.get_job_type())
-        self.assertEqual(TEST_POD_OWNER_EMAIL, w.get_owner_email())

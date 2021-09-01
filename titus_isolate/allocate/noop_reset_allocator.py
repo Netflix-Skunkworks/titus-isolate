@@ -44,7 +44,7 @@ class NoopResetCpuAllocator(CpuAllocator):
 
         for w in workloads:
             for t in cpu.get_threads():
-                t.claim(w.get_id())
+                t.claim(w.get_task_id())
 
         return cpu
 
@@ -56,4 +56,3 @@ class NoopResetCpuAllocator(CpuAllocator):
 
     def report_metrics(self, tags):
         pass
-

@@ -51,7 +51,7 @@ class TestAllocation(unittest.TestCase):
             log.info(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT - 1, len(cpu.get_empty_threads()))
             self.assertEqual(1, len(cpu.get_claimed_threads()))
-            self.assertEqual(w.get_id(), cpu.get_claimed_threads()[0].get_workload_ids()[0])
+            self.assertEqual(w.get_task_id(), cpu.get_claimed_threads()[0].get_workload_ids()[0])
 
     def test_assign_two_threads_empty_cpu_ip(self):
         """
@@ -76,14 +76,14 @@ class TestAllocation(unittest.TestCase):
             cpu = allocator.assign_threads(request).get_cpu()
             log.info(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_claimed_threads()))
-            self.assertEqual([w_fill.get_id()], list(cpu.get_workload_ids_to_thread_ids().keys()))
+            self.assertEqual([w_fill.get_task_id()], list(cpu.get_workload_ids_to_thread_ids().keys()))
 
             request = get_no_usage_threads_request(cpu, [w_fill, w_extra])
             cpu = allocator.assign_threads(request).get_cpu()
             log.info(cpu)
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_claimed_threads()))
             self.assertEqual(
-                sorted([w_fill.get_id(), w_extra.get_id()]),
+                sorted([w_fill.get_task_id(), w_extra.get_task_id()]),
                 sorted(list(cpu.get_workload_ids_to_thread_ids().keys())))
 
     def test_assign_two_workloads_empty_cpu_greedy(self):

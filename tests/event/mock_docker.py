@@ -10,6 +10,7 @@ from titus_isolate import log
 from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, ID, \
     LOWERCASE_ID, NAME, TIME, TYPE, DIE, REPO_DIGESTS, START
 from titus_isolate.model.legacy_workload import LegacyWorkload
+from titus_isolate.model.workload_interface import Workload
 
 
 class MockEventProvider:
@@ -41,8 +42,8 @@ class MockImage:
 
 
 class MockContainer:
-    def __init__(self, workload):
-        self.name = workload.get_id()
+    def __init__(self, workload: Workload):
+        self.name = workload.get_task_id()
         self.labels = {}
         self.update_calls = []
         repo_digests = ["registry:7002/name@sha256:digest"]
@@ -86,20 +87,9 @@ def get_container_create_event(cpus, name=str(uuid.uuid4()).replace("-", ""), id
         NAME: name,
     }
     MOCK_TITUS_ENVIRONMENT.add_workload(LegacyWorkload(
-        launch_time=int(time.time()),
-        identifier=name,
-        thread_count=cpus,
+        task_id=name,
         job_id=DEFAULT_TEST_JOB_ID,
-        mem=DEFAULT_TEST_MEM,
-        disk=DEFAULT_TEST_DISK,
-        network=DEFAULT_TEST_NETWORK,
-        app_name=DEFAULT_TEST_APP_NAME,
-        owner_email=DEFAULT_TEST_OWNER_EMAIL,
-        image=DEFAULT_TEST_IMAGE,
-        command=DEFAULT_TEST_CMD,
-        entrypoint=DEFAULT_TEST_ENTRYPOINT,
-        job_type=DEFAULT_TEST_JOB_TYPE,
-        duration_predictions=[]))
+        thread_count=cpus))
 
     return get_event(CONTAINER, START, id, attributes)
 

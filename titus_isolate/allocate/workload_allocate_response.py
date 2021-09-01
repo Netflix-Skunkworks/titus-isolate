@@ -90,7 +90,7 @@ def get_cpu_shares(workload: Workload) -> int:
 
 
 def get_workload_response(workload: Workload, cpu: Cpu) -> Optional[WorkloadAllocateResponse]:
-    thread_ids = get_threads(cpu, workload.get_id())
+    thread_ids = get_threads(cpu, workload.get_task_id())
     cpu_shares = get_cpu_shares(workload)
     cpu_quota = get_cpu_quota(workload)
 
@@ -114,7 +114,7 @@ def get_workload_response(workload: Workload, cpu: Cpu) -> Optional[WorkloadAllo
             DEFAULT_TITUS_ISOLATE_MEMORY_SPREAD_SLAB)
 
     return WorkloadAllocateResponse(
-        workload_id=workload.get_id(),
+        workload_id=workload.get_task_id(),
         thread_ids=thread_ids,
         cpu_shares=cpu_shares,
         cpu_quota=cpu_quota,

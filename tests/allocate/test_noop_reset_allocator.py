@@ -29,7 +29,7 @@ class TestNoopResetAllocation(unittest.TestCase):
 
         for t in cpu.get_threads():
             self.assertEqual(1, len(t.get_workload_ids()))
-            self.assertEqual(w.get_id(), t.get_workload_ids()[0])
+            self.assertEqual(w.get_task_id(), t.get_workload_ids()[0])
 
     def test_assign_free_one_workload_empty_cpu(self):
         cpu = get_cpu()
@@ -44,7 +44,7 @@ class TestNoopResetAllocation(unittest.TestCase):
 
         for t in cpu.get_threads():
             self.assertEqual(1, len(t.get_workload_ids()))
-            self.assertEqual(w.get_id(), t.get_workload_ids()[0])
+            self.assertEqual(w.get_task_id(), t.get_workload_ids()[0])
 
         request = get_no_usage_threads_request(cpu, [w])
         cpu = noop_reset_allocator.free_threads(request).get_cpu()
@@ -71,8 +71,8 @@ class TestNoopResetAllocation(unittest.TestCase):
 
         for t in cpu.get_threads():
             self.assertEqual(2, len(t.get_workload_ids()))
-            self.assertTrue(w0.get_id() in t.get_workload_ids())
-            self.assertTrue(w1.get_id() in t.get_workload_ids())
+            self.assertTrue(w0.get_task_id() in t.get_workload_ids())
+            self.assertTrue(w1.get_task_id() in t.get_workload_ids())
 
     def test_override_previous_assignment(self):
         """
@@ -102,5 +102,5 @@ class TestNoopResetAllocation(unittest.TestCase):
 
         for t in cpu.get_threads():
             self.assertEqual(2, len(t.get_workload_ids()))
-            self.assertTrue(w0.get_id() in t.get_workload_ids())
-            self.assertTrue(w1.get_id() in t.get_workload_ids())
+            self.assertTrue(w0.get_task_id() in t.get_workload_ids())
+            self.assertTrue(w1.get_task_id() in t.get_workload_ids())

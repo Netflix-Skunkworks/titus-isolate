@@ -1,14 +1,15 @@
 import titus_isolate.model.utils
 
 from titus_isolate import log
+from titus_isolate.model.workload_interface import Workload
 
 
 class MockTitusEnvironment:
     def __init__(self):
         self.__workloads = {}
 
-    def add_workload(self, workload):
-        self.__workloads[workload.get_id()] = workload
+    def add_workload(self, workload: Workload):
+        self.__workloads[workload.get_task_id()] = workload
 
     def mocked_get_workload(self, identifier):
         if identifier in self.__workloads:

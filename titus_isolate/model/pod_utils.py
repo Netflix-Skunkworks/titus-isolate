@@ -8,8 +8,7 @@ from kubernetes.client import V1Pod, V1ContainerStatus, V1Container
 from kubernetes.utils import parse_quantity
 
 from titus_isolate import log
-from titus_isolate.model.constants import JOB_DESCRIPTOR, APP_NAME, CONTAINER, IMAGE, NAME, COMMAND, ENTRYPOINT
-from titus_isolate.kub.constants import LABEL_KEY_JOB_ID, V1_ANNOTATION_KEY_APP_NAME, ANNOTATION_KEY_POD_SPEC_VERSION
+from titus_isolate.model.constants import JOB_DESCRIPTOR
 
 
 def get_start_time(pod: V1Pod) -> Optional[int]:
@@ -75,58 +74,6 @@ def decode_job_descriptor(encoded_job_descriptor: str) -> Optional[dict]:
 
 def parse_kubernetes_value(val: str) -> str:
     return str(parse_quantity(val))
-
-
-def get_app_name(job_descriptor: dict) -> str:
-    return job_descriptor[APP_NAME]
-
-
-def get_image(job_descriptor: dict) -> str:
-    return job_descriptor[CONTAINER][IMAGE][NAME]
-
-
-def get_cmd(job_descriptor: dict) -> str:
-    return ' '.join(job_descriptor[CONTAINER][COMMAND])
-
-
-def get_entrypoint(job_descriptor: dict) -> str:
-    return ' '.join(job_descriptor[CONTAINER][ENTRYPOINT])
-
-
-def get_job_type(job_descriptor: dict) -> str:
-    # For whatever reason, on v0 pods for "job_type" we returned the image?
-    return job_descriptor[CONTAINER][IMAGE][NAME]
-
-
-def get_podv1_app_name(pod: V1Pod) -> Optional[str]:
-    return pod.metadata.annotations.get(V1_ANNOTATION_KEY_APP_NAME)
-
-
-def get_podv1_image(pod: V1Pod) -> Optional[str]:
-    if pod.metadata.annotations.get(ANNOTATION_KEY_POD_SPEC_VERSION) is not None:
-        c = get_main_container(pod)
-        if c and c.image:
-            return c.image
-        return None
-
-
-def get_podv1_cmd(pod: V1Pod) -> Optional[str]:
-    if pod.metadata.annotations.get(ANNOTATION_KEY_POD_SPEC_VERSION) is not None:
-        c = get_main_container(pod)
-        if c and c.args:
-            return ' '.join(c.args)
-        return None
-
-
-def get_podv1_entrypoint(pod: V1Pod) -> Optional[str]:
-        c = get_main_container(pod)
-        if c and c.command:
-            return ' '.join(c.command)
-        return None
-
-
-def get_podv1_job_type(pod: V1Pod) -> Optional[str]:
-    return pod.metadata.annotations.get(V1_ANNOTATION_KEY_JOB_TYPE, None)
 
 
 def parse_pod(pod: str) -> V1Pod:

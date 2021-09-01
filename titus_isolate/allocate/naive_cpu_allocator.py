@@ -16,9 +16,12 @@ class NaiveCpuAllocator(CpuAllocator):
         workload = request.get_workloads()[request.get_workload_id()]
         threads = self._get_assign_threads(cpu, workload.get_thread_count())
         for t in threads:
-            t.claim(workload.get_id())
+            t.claim(workload.get_task_id())
 
-        return AllocateResponse(cpu, get_workload_allocations(cpu, request.get_workloads().values()), self.get_name())
+        return AllocateResponse(
+            cpu,
+            get_workload_allocations(cpu, list(request.get_workloads().values())),
+            self.get_name())
 
     @staticmethod
     def _get_assign_threads(cpu: Cpu, thread_count: int) -> List[Thread]:
@@ -40,14 +43,17 @@ class NaiveCpuAllocator(CpuAllocator):
         workload = request.get_workloads()[request.get_workload_id()]
 
         for t in cpu.get_threads():
-            t.free(workload.get_id())
+            t.free(workload.get_task_id())
 
-        return AllocateResponse(cpu, get_workload_allocations(cpu, request.get_workloads().values()), self.get_name())
+        return AllocateResponse(
+            cpu,
+            get_workload_allocations(cpu, list(request.get_workloads().values())),
+            self.get_name())
 
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         return AllocateResponse(
             request.get_cpu(),
-            get_workload_allocations(request.get_cpu(), request.get_workloads().values()),
+            get_workload_allocations(request.get_cpu(), list(request.get_workloads().values())),
             self.get_name())
 
     def get_name(self) -> str:

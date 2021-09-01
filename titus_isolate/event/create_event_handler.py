@@ -22,9 +22,9 @@ class CreateEventHandler(EventHandler):
             log.error(msg)
             raise Exception(msg)
 
-        self.handling_event(event, "adding workload: '{}'".format(workload.get_id()))
+        self.handling_event(event, "adding workload: '{}'".format(workload.get_task_id()))
         self.__workload_manager.add_workload(workload)
-        self.handled_event(event, "added workload: '{}'".format(workload.get_id()))
+        self.handled_event(event, "added workload: '{}'".format(workload.get_task_id()))
 
     def __relevant(self, event):
         if not event[ACTION] == START:

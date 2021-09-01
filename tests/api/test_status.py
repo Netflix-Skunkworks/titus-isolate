@@ -8,7 +8,7 @@ from tests.allocate.test_allocate import TestWorkloadMonitorManager
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import MockEventProvider
-from tests.utils import get_test_workload, config_logs
+from tests.utils import get_test_workload, config_logs, DEFAULT_TEST_JOB_ID
 from titus_isolate.allocate.naive_cpu_allocator import NaiveCpuAllocator
 from titus_isolate.api import status
 from titus_isolate.api.status import get_workloads, get_violations, get_wm_status, get_isolated_workload_ids, \
@@ -16,6 +16,7 @@ from titus_isolate.api.status import get_workloads, get_violations, get_wm_statu
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
+from titus_isolate.model.constants import TASK_ID_KEY, JOB_ID_KEY, THREAD_COUNT_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_PACKAGE_COUNT, DEFAULT_CORE_COUNT, DEFAULT_THREAD_COUNT
 from titus_isolate.utils import set_config_manager, set_workload_manager, set_event_manager, \
@@ -43,8 +44,9 @@ class TestStatus(unittest.TestCase):
         workload_manager.add_workload(workload)
 
         workloads = json.loads(get_workloads())
-        self.assertEqual(workload_id, workloads[0]["id"])
-        self.assertEqual(thread_count, workloads[0]["thread_count"])
+        self.assertEqual(workload_id, workloads[0][TASK_ID_KEY])
+        self.assertEqual(DEFAULT_TEST_JOB_ID, workloads[0][JOB_ID_KEY])
+        self.assertEqual(thread_count, workloads[0][THREAD_COUNT_KEY])
 
     def test_get_isolated_workloads_endpoint(self):
         workload_manager = self.__get_default_workload_manager()
@@ -58,7 +60,7 @@ class TestStatus(unittest.TestCase):
 
         isolated_workload_ids = json.loads(get_isolated_workload_ids())
         self.assertEqual(1, len(isolated_workload_ids))
-        self.assertEqual(workload.get_id(), isolated_workload_ids[0])
+        self.assertEqual(workload.get_task_id(), isolated_workload_ids[0])
 
     def test_isolate_workload_endpoint(self):
         workload_manager = self.__get_default_workload_manager()
@@ -70,7 +72,7 @@ class TestStatus(unittest.TestCase):
         workload = get_test_workload(str(uuid.uuid4()), 2)
         workload_manager.add_workload(workload)
 
-        _, code, _ = isolate_workload(workload.get_id())
+        _, code, _ = isolate_workload(workload.get_task_id())
         self.assertEqual(200, code)
 
     def test_get_cpu_endpoint(self):
