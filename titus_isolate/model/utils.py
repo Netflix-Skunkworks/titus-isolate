@@ -22,7 +22,7 @@ def get_duration(workload: Workload, percentile: float) -> Optional[float]:
     return None
 
 
-def get_workload_from_kubernetes(identifier) -> Optional[KubernetesWorkload]:
+def get_workload(identifier) -> Optional[KubernetesWorkload]:
     if not managers_are_initialized():
         log.error("Cannot get workload from kubernetes because managers aren't initialized")
         return None

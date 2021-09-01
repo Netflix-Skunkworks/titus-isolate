@@ -14,8 +14,7 @@ from titus_isolate.config.agent_property_provider import AgentPropertyProvider
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, REMOTE_ALLOCATOR_URL, GRPC_REMOTE_ALLOC_ENDPOINT, \
     MAX_SOLVER_RUNTIME, DEFAULT_MAX_SOLVER_RUNTIME
-from titus_isolate.constants import KUBERNETES_BACKEND_KEY, SCHEDULE_ONCE_FAILURE_EXIT_CODE, \
-    SCHEDULING_LOOP_FAILURE_EXIT_CODE
+from titus_isolate.constants import SCHEDULE_ONCE_FAILURE_EXIT_CODE, SCHEDULING_LOOP_FAILURE_EXIT_CODE
 from titus_isolate.exit_handler import ExitHandler
 
 SCHEDULING_SLEEP_INTERVAL = 10.0
@@ -217,10 +216,6 @@ def get_grpc_cell_name(config_manager):
         log.warning("Service returned empty grpc cell header")
         return UNKNOWN_CELL
     return res.cell_id
-
-
-def is_kubernetes() -> bool:
-    return get_config_manager().get_cached_bool(KUBERNETES_BACKEND_KEY, True)
 
 
 def start_periodic_scheduling(exit_handler: ExitHandler):
