@@ -1,4 +1,4 @@
-from kubernetes.client import V1Node, V1Pod
+from kubernetes.client import V1Node
 
 from titus_isolate.config.constants import EC2_INSTANCE_ID
 from titus_isolate.kub import core_api
