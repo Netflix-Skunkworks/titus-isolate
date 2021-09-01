@@ -8,7 +8,7 @@ from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWOR
     DEFAULT_TEST_JOB_ID
 from titus_isolate import log
 from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, ID, \
-    LOWERCASE_ID, NAME, WORKLOAD_TYPE_LABEL_KEY, TIME, TYPE, DIE, STATIC, REPO_DIGESTS, START
+    LOWERCASE_ID, NAME, TIME, TYPE, DIE, REPO_DIGESTS, START
 from titus_isolate.model.legacy_workload import LegacyWorkload
 
 
@@ -81,10 +81,9 @@ class MockDockerClient:
         self.containers._add_container(container)
 
 
-def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()).replace("-", ""), id=str(uuid.uuid4()).replace("-", "")):
+def get_container_create_event(cpus, name=str(uuid.uuid4()).replace("-", ""), id=str(uuid.uuid4()).replace("-", "")):
     attributes = {
         NAME: name,
-        WORKLOAD_TYPE_LABEL_KEY: workload_type
     }
     MOCK_TITUS_ENVIRONMENT.add_workload(LegacyWorkload(
         launch_time=int(time.time()),
@@ -100,7 +99,6 @@ def get_container_create_event(cpus, workload_type=STATIC, name=str(uuid.uuid4()
         command=DEFAULT_TEST_CMD,
         entrypoint=DEFAULT_TEST_ENTRYPOINT,
         job_type=DEFAULT_TEST_JOB_TYPE,
-        workload_type=workload_type,
         duration_predictions=[]))
 
     return get_event(CONTAINER, START, id, attributes)

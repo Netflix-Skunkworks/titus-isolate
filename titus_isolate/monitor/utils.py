@@ -1,24 +1,10 @@
-import csv
-import re
-import socket
-from collections import deque
-
-from datetime import datetime
-from io import StringIO
-from typing import Dict, List, Tuple, Union
-
-import pytz
+from typing import List
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE
-from titus_isolate.event.constants import STATIC
 from titus_isolate.model.duration_prediction import DurationPrediction
-from titus_isolate.model.processor.core import Core
-from titus_isolate.model.processor.cpu import Cpu
-from titus_isolate.model.workload_interface import Workload
 
 from titus_isolate.monitor.resource_usage import ResourceUsage
-from titus_isolate.utils import is_kubernetes
 
 CPU_USAGE_HEADING = 'cgroup.cpuacct.usage'
 MEM_USAGE_HEADING = 'titus.memory.usage'

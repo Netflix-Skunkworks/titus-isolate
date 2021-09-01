@@ -55,18 +55,6 @@ class Workload:
         pass
 
     @abstractmethod
-    def get_type(self) -> str:
-        pass
-
-    @abstractmethod
-    def is_burst(self) -> bool:
-        pass
-
-    @abstractmethod
-    def is_static(self) -> bool:
-        pass
-
-    @abstractmethod
     def get_job_type(self) -> str:
         pass
 

@@ -6,7 +6,6 @@ from tests.utils import get_test_workload, get_no_usage_threads_request, config_
 from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
-from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 
@@ -21,7 +20,7 @@ class TestNoopResetAllocation(unittest.TestCase):
         cpu = get_cpu()
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
-        w = get_test_workload(uuid.uuid4(), 1, STATIC)
+        w = get_test_workload(uuid.uuid4(), 1)
         request = get_no_usage_threads_request(cpu, [w])
         cpu = noop_reset_allocator.assign_threads(request).get_cpu()
         log.info(cpu)
@@ -36,7 +35,7 @@ class TestNoopResetAllocation(unittest.TestCase):
         cpu = get_cpu()
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
-        w = get_test_workload(uuid.uuid4(), 1, STATIC)
+        w = get_test_workload(uuid.uuid4(), 1)
         request = get_no_usage_threads_request(cpu, [w])
         cpu = noop_reset_allocator.assign_threads(request).get_cpu()
         log.info(cpu)
@@ -55,8 +54,8 @@ class TestNoopResetAllocation(unittest.TestCase):
         cpu = get_cpu()
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
-        w0 = get_test_workload(uuid.uuid4(), 1, STATIC)
-        w1 = get_test_workload(uuid.uuid4(), 2, STATIC)
+        w0 = get_test_workload(uuid.uuid4(), 1)
+        w1 = get_test_workload(uuid.uuid4(), 2)
 
         # Assign the first workload
         request = get_no_usage_threads_request(cpu, [w0])
@@ -82,8 +81,8 @@ class TestNoopResetAllocation(unittest.TestCase):
         cpu = get_cpu()
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
-        w0 = get_test_workload(uuid.uuid4(), 1, STATIC)
-        w1 = get_test_workload(uuid.uuid4(), 2, STATIC)
+        w0 = get_test_workload(uuid.uuid4(), 1)
+        w1 = get_test_workload(uuid.uuid4(), 2)
 
         greedy_allocator = GreedyCpuAllocator()
 

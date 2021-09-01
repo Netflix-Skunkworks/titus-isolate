@@ -1,8 +1,8 @@
 from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, REQUIRED_LABELS, START
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.event.utils import get_container_name
-from titus_isolate.model.utils import get_workload_from_kubernetes, get_workload_from_disk
-from titus_isolate.utils import is_kubernetes
+from titus_isolate import log
+from titus_isolate.model.utils import get_workload_from_kubernetes
 
 
 class CreateEventHandler(EventHandler):
@@ -14,16 +14,13 @@ class CreateEventHandler(EventHandler):
         if not self.__relevant(event):
             return
 
-        workload = None
         container_name = get_container_name(event)
-
-        if is_kubernetes():
-            workload = get_workload_from_kubernetes(container_name)
-        else:
-            workload = get_workload_from_disk(container_name)
+        workload = get_workload_from_kubernetes(container_name)
 
         if workload is None:
-            raise Exception('failed to construct workload from event')
+            msg = 'failed to construct workload from event'
+            log.error(msg)
+            raise Exception(msg)
 
         self.handling_event(event, "adding workload: '{}'".format(workload.get_id()))
         self.__workload_manager.add_workload(workload)

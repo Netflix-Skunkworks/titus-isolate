@@ -82,9 +82,6 @@ class WorkloadAllocateResponse:
 
 
 def get_cpu_quota(workload: Workload) -> int:
-    if workload.is_burst():
-        return -1
-
     return workload.get_thread_count() * DEFAULT_QUOTA_SCALE
 
 

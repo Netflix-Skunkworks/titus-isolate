@@ -9,18 +9,15 @@ from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, TestContext, gauge_value_equals, get_threads_with_workload, \
     get_test_workload, counter_value_equals
-from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.naive_cpu_allocator import NaiveCpuAllocator
 from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import TITUS_ISOLATE_MEMORY_MIGRATE, \
     TITUS_ISOLATE_MEMORY_SPREAD_PAGE, TITUS_ISOLATE_MEMORY_SPREAD_SLAB
-from titus_isolate.event.constants import STATIC, BURST
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.metrics.constants import RUNNING, ADDED_KEY, REMOVED_KEY, SUCCEEDED_KEY, FAILED_KEY, \
-    WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, OVERSUBSCRIBED_THREADS_KEY, \
-    STATIC_ALLOCATED_SIZE_KEY, BURST_ALLOCATED_SIZE_KEY,  BURST_REQUESTED_SIZE_KEY, ALLOCATED_SIZE_KEY, \
+    WORKLOAD_COUNT_KEY, PACKAGE_VIOLATIONS_KEY, CORE_VIOLATIONS_KEY, OVERSUBSCRIBED_THREADS_KEY,  ALLOCATED_SIZE_KEY, \
     UNALLOCATED_SIZE_KEY
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT, is_cpu_full
@@ -40,7 +37,7 @@ class TestWorkloadManager(unittest.TestCase):
     def test_single_static_workload_lifecycle(self):
         for allocator in ALLOCATORS:
             thread_count = 2
-            workload = get_test_workload(uuid.uuid4(), thread_count, STATIC)
+            workload = get_test_workload(uuid.uuid4(), thread_count)
 
             cgroup_manager = MockCgroupManager()
             workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
@@ -58,7 +55,7 @@ class TestWorkloadManager(unittest.TestCase):
         for allocator in ALLOCATORS:
             unknown_workload_id = "unknown"
             thread_count = 2
-            workload = get_test_workload(uuid.uuid4(), thread_count, STATIC)
+            workload = get_test_workload(uuid.uuid4(), thread_count)
 
             workload_manager = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
 
@@ -80,21 +77,15 @@ class TestWorkloadManager(unittest.TestCase):
 
     def __assert_container_thread_count(self, cpu, cgroup_manager, workloads):
         for w in workloads:
-            if w.get_type() == STATIC:
-                self.assertEqual(
-                    w.get_thread_count(),
-                    len(cgroup_manager.container_update_map[w.get_id()]))
-            else:
-                self.assertTrue(len(cgroup_manager.container_update_map[w.get_id()]) > w.get_thread_count())
+            self.assertEqual(
+                w.get_thread_count(),
+                len(cgroup_manager.container_update_map[w.get_id()]))
 
     def __assert_cpu_thread_count(self, cpu, workloads):
         for w in workloads:
-            if w.get_type() == STATIC:
-                self.assertEqual(
-                    w.get_thread_count(),
-                    len(get_threads_with_workload(cpu, w.get_id())))
-            else:
-                self.assertTrue(len(get_threads_with_workload(cpu, w.get_id())) > w.get_thread_count())
+            self.assertEqual(
+                w.get_thread_count(),
+                len(get_threads_with_workload(cpu, w.get_id())))
 
     def test_empty_metrics(self):
         test_context = TestContext()
@@ -120,7 +111,7 @@ class TestWorkloadManager(unittest.TestCase):
         reporter = test_context.get_workload_manager()
         reporter.set_registry(registry, {})
 
-        workload = get_test_workload(uuid.uuid4(), 2, STATIC)
+        workload = get_test_workload(uuid.uuid4(), 2)
         reporter.add_workload(workload)
         reporter.report_metrics({})
 
@@ -140,7 +131,7 @@ class TestWorkloadManager(unittest.TestCase):
     def test_assign_to_full_cpu_fails(self):
         for allocator in LEGACY_ALLOCATORS:
             # Fill the CPU
-            w0 = get_test_workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
+            w0 = get_test_workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT)
 
             cgroup_manager = MockCgroupManager()
             workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)
@@ -150,7 +141,7 @@ class TestWorkloadManager(unittest.TestCase):
 
             # Fail to claim one more thread
             error_count = workload_manager.get_error_count()
-            w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
+            w1 = get_test_workload(uuid.uuid4(), 1)
             workload_manager.add_workload(w1)
             self.assertEqual(error_count + 1, workload_manager.get_error_count())
 
@@ -161,7 +152,7 @@ class TestWorkloadManager(unittest.TestCase):
             self.assertFalse(wm.is_isolated(uuid.uuid4()))
 
         for allocator in real_allocators:
-            workload = get_test_workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT, STATIC)
+            workload = get_test_workload(uuid.uuid4(), DEFAULT_TOTAL_THREAD_COUNT)
             wm = WorkloadManager(get_cpu(), MockCgroupManager(), allocator)
             wm.add_workload(workload)
             self.assertTrue(wm.is_isolated(workload.get_id()))
@@ -172,7 +163,7 @@ class TestWorkloadManager(unittest.TestCase):
     def test_thread_allocation_computation(self):
         for allocator in [NaiveCpuAllocator(), GreedyCpuAllocator()]:
             static_thread_count = 2
-            w_static = get_test_workload("s", static_thread_count, STATIC)
+            w_static = get_test_workload("s", static_thread_count)
 
             cgroup_manager = MockCgroupManager()
             registry = Registry()
@@ -185,13 +176,12 @@ class TestWorkloadManager(unittest.TestCase):
             total_thread_count = len(workload_manager.get_cpu().get_threads())
             self.assertTrue(gauge_value_equals(registry, ALLOCATED_SIZE_KEY, w_static.get_thread_count()))
             self.assertTrue(gauge_value_equals(registry, UNALLOCATED_SIZE_KEY, total_thread_count - w_static.get_thread_count()))
-            self.assertTrue(gauge_value_equals(registry, STATIC_ALLOCATED_SIZE_KEY, static_thread_count))
             self.assertTrue(gauge_value_equals(registry, OVERSUBSCRIBED_THREADS_KEY, 0))
 
     def test_single_workload_memory_settings(self):
         for allocator in ALLOCATORS:
             thread_count = 2
-            workload = get_test_workload(uuid.uuid4(), thread_count, STATIC)
+            workload = get_test_workload(uuid.uuid4(), thread_count)
 
             cgroup_manager = MockCgroupManager()
             workload_manager = WorkloadManager(get_cpu(), cgroup_manager, allocator)

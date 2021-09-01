@@ -3,7 +3,6 @@ import unittest
 from tests.utils import get_test_workload
 from titus_isolate.allocate.workload_allocate_response import get_workload_response
 from titus_isolate.config.constants import DEFAULT_QUOTA_SCALE, DEFAULT_SHARES_SCALE
-from titus_isolate.event.constants import STATIC, BURST
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
@@ -22,29 +21,15 @@ def assign_threads(workload: Workload) -> Cpu:
 
 class TestWorkloadAllocateReponse(unittest.TestCase):
 
-    def test_static_normal_construction(self):
+    def test_normal_construction(self):
         thread_count = 2
-        w = get_test_workload("a", thread_count, STATIC)
+        w = get_test_workload("a", thread_count)
         cpu = assign_threads(w)
 
         w_resp = get_workload_response(w, cpu)
         self.assertEqual(thread_count, len(w_resp.get_thread_ids()))
 
         expected_quota = thread_count * DEFAULT_QUOTA_SCALE
-        self.assertEqual(expected_quota, w_resp.get_cpu_quota())
-
-        expected_shares = thread_count * DEFAULT_SHARES_SCALE
-        self.assertEqual(expected_shares, w_resp.get_cpu_shares())
-
-    def test_burst_normal_construction(self):
-        thread_count = 2
-        w = get_test_workload("a", thread_count, BURST)
-        cpu = assign_threads(w)
-
-        w_resp = get_workload_response(w, cpu)
-        self.assertEqual(thread_count, len(w_resp.get_thread_ids()))
-
-        expected_quota = -1
         self.assertEqual(expected_quota, w_resp.get_cpu_quota())
 
         expected_shares = thread_count * DEFAULT_SHARES_SCALE

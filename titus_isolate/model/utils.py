@@ -2,20 +2,15 @@ import json
 import re
 import time
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from titus_isolate import log
-from titus_isolate.allocate.constants import FREE_THREAD_IDS
 from titus_isolate.cgroup.utils import get_json_path, get_env_path
 from titus_isolate.config.constants import GET_WORKLOAD_RETRY_COUNT, DEFAULT_GET_WORKLOAD_RETRY_COUNT, \
     GET_WORKLOAD_RETRY_INTERVAL_SEC, DEFAULT_GET_WORKLOAD_RETRY_INTERVAL_SEC
-from titus_isolate.event.constants import BURST, STATIC
 from titus_isolate.model.constants import *
 from titus_isolate.model.kubernetes_workload import KubernetesWorkload
-from titus_isolate.model.legacy_workload import LegacyWorkload
-from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
-from titus_isolate.monitor.utils import get_duration_predictions
 from titus_isolate.utils import get_pod_manager, managers_are_initialized, get_config_manager
 
 
@@ -50,60 +45,6 @@ def get_workload_from_kubernetes(identifier) -> Optional[KubernetesWorkload]:
     return None
 
 
-def get_workload_from_disk(identifier) -> LegacyWorkload:
-    # In theory these files could go away if the task dies. that is ok.  A failure here will only result in the workload
-    # not being created which is fine because it is dead anyway.
-    json_data = __get_workload_json(identifier)
-    passthrough_data = json_data[WORKLOAD_JSON_PASSTHROUGH_KEY]
-    env_data = __get_workload_env(identifier)  # note that this is string -> string
-
-    launch_time = int(json_data[WORKLOAD_JSON_RUNSTATE_KEY][WORKLOAD_JSON_LAUNCHTIME_KEY])
-    cpus = int(env_data[WORKLOAD_ENV_CPU_KEY])
-    mem = int(env_data[WORKLOAD_ENV_MEM_KEY])
-    disk = int(env_data[WORKLOAD_ENV_DISK_KEY])
-    network = int(env_data[WORKLOAD_ENV_NETWORK_KEY])
-    app_name = json_data[WORKLOAD_JSON_APP_NAME_KEY]
-    owner_email = passthrough_data[WORKLOAD_JSON_OWNER_KEY]
-    image = '{}@{}'.format(json_data[WORKLOAD_JSON_IMAGE_KEY], json_data[WORKLOAD_JSON_IMAGE_DIGEST_KEY])
-    job_id = env_data[WORKLOAD_ENV_JOB_ID]
-
-    command = None
-    if WORKLOAD_JSON_COMMAND_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
-        command = json_data[WORKLOAD_JSON_PROCESS_KEY][WORKLOAD_JSON_COMMAND_KEY]
-
-    entrypoint = None
-    if WORKLOAD_JSON_ENTRYPOINT_KEY in json_data[WORKLOAD_JSON_PROCESS_KEY]:
-        entrypoint = json_data[WORKLOAD_JSON_PROCESS_KEY][WORKLOAD_JSON_ENTRYPOINT_KEY]
-
-    job_type = passthrough_data[WORKLOAD_JSON_JOB_TYPE_KEY]
-
-    workload_type = STATIC
-    if json_data[WORKLOAD_JSON_CPU_BURST_KEY]:
-        workload_type = BURST
-
-    duration_predictions = []
-    if WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY in passthrough_data:
-        duration_predictions = get_duration_predictions(passthrough_data[WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY])
-
-    return LegacyWorkload(
-        launch_time=launch_time,
-        identifier=identifier,
-        thread_count=cpus,
-        job_id=job_id,
-        mem=mem,
-        disk=disk,
-        network=network,
-        app_name=app_name,
-        owner_email=owner_email,
-        image=image,
-        command=command,
-        entrypoint=entrypoint,
-        job_type=job_type,
-        workload_type=workload_type,
-        opportunistic_thread_count=0,
-        duration_predictions=duration_predictions)
-
-
 def __get_workload_json(identifier):
     for attempt in range(WORKLOAD_JSON_READ_ATTEMPTS):
         try:
@@ -131,18 +72,6 @@ def __get_workload_env(identifier):
             env[match.group(1)] = match.group(2)
             line = env_file.readline()
     return env
-
-
-def get_burst_workloads(workloads):
-    return get_workloads_by_type(workloads, BURST)
-
-
-def get_static_workloads(workloads):
-    return get_workloads_by_type(workloads, STATIC)
-
-
-def get_workloads_by_type(workloads, workload_type):
-    return [w for w in workloads if w.get_type() == workload_type]
 
 
 def get_sorted_workloads(workloads: List[Workload]):

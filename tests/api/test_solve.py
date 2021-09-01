@@ -16,7 +16,6 @@ from tests.utils import get_test_workload, config_logs, get_no_usage_threads_req
 from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.api.solve import app, set_cpu_allocators
-from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 
 config_logs(logging.DEBUG)
@@ -45,7 +44,7 @@ class TestStatus(unittest.TestCase):
         os.unlink(app.config['DATABASE'])
 
     def test_parse_workload(self):
-        w_in = get_test_workload("a", 2, STATIC)
+        w_in = get_test_workload("a", 2)
         log.info("w_in : {}".format(w_in))
 
         w_out = deserialize_legacy_workload(w_in.to_dict())
@@ -75,7 +74,7 @@ class TestStatus(unittest.TestCase):
 
     def test_assign_free_threads(self):
         cpu = get_cpu()
-        workload = get_test_workload("a", 2, STATIC)
+        workload = get_test_workload("a", 2)
 
         cpu_allocator = GreedyCpuAllocator()
         self.__set_cpu_allocator(cpu_allocator)

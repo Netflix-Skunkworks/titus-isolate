@@ -94,7 +94,7 @@ def get_threads_with_workload(cpu, workload_id):
     return [t for t in cpu.get_threads() if workload_id in t.get_workload_ids()]
 
 
-def get_test_workload(identifier, thread_count, workload_type, launch_time=None) -> Workload:
+def get_test_workload(identifier, thread_count, launch_time=None) -> Workload:
     if launch_time is None:
         launch_time = int(time.time())
 
@@ -112,7 +112,6 @@ def get_test_workload(identifier, thread_count, workload_type, launch_time=None)
         command=DEFAULT_TEST_CMD,
         entrypoint=DEFAULT_TEST_ENTRYPOINT,
         job_type=DEFAULT_TEST_JOB_TYPE,
-        workload_type=workload_type,
         duration_predictions=[])
 
 
