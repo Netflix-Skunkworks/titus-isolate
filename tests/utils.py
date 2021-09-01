@@ -3,8 +3,7 @@ import logging
 
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID, ANNOTATION_KEY_POD_SPEC_VERSION, \
-    V1_ANNOTATION_KEY_JOB_ID, V1_ANNOTATION_KEY_JOB_TYPE, V1_ANNOTATION_KEY_OWNER_EMAIL
-from titus_isolate.model.constants import OWNER_EMAIL, WORKLOAD_JSON_JOB_TYPE_KEY
+    V1_ANNOTATION_KEY_JOB_ID
 import numpy as np
 import time
 from typing import List
@@ -94,31 +93,17 @@ def get_threads_with_workload(cpu, workload_id):
     return [t for t in cpu.get_threads() if workload_id in t.get_workload_ids()]
 
 
-def get_test_workload(identifier, thread_count, launch_time=None) -> Workload:
-    if launch_time is None:
-        launch_time = int(time.time())
-
+def get_test_workload(task_id, thread_count, launch_time=None) -> Workload:
     return LegacyWorkload(
-        launch_time=launch_time,
-        identifier=identifier,
-        thread_count=thread_count,
+        task_id=task_id,
         job_id=DEFAULT_TEST_JOB_ID,
-        mem=DEFAULT_TEST_MEM,
-        disk=DEFAULT_TEST_DISK,
-        network=DEFAULT_TEST_NETWORK,
-        app_name=DEFAULT_TEST_APP_NAME,
-        owner_email=DEFAULT_TEST_OWNER_EMAIL,
-        image=DEFAULT_TEST_IMAGE,
-        command=DEFAULT_TEST_CMD,
-        entrypoint=DEFAULT_TEST_ENTRYPOINT,
-        job_type=DEFAULT_TEST_JOB_TYPE,
-        duration_predictions=[])
+        thread_count=thread_count)
 
 
 def get_no_usage_threads_request(cpu: Cpu, workloads: List[Workload]):
     return AllocateThreadsRequest(
         cpu=cpu,
-        workload_id=workloads[-1].get_id(),
+        workload_id=workloads[-1].get_task_id(),
         workloads=__workloads_list_to_map(workloads),
         resource_usage=GlobalResourceUsage({}),
         cpu_usage={},
@@ -145,7 +130,7 @@ def get_no_usage_rebalance_request(cpu: Cpu, workloads: List[Workload]):
 def __workloads_list_to_map(workloads: List[Workload]) -> dict:
     __workloads = {}
     for w in workloads:
-        __workloads[w.get_id()] = w
+        __workloads[w.get_task_id()] = w
     return __workloads
 
 
@@ -265,12 +250,8 @@ def get_simple_test_pod(v1=False) -> V1Pod:
         annotations = pod['metadata']['annotations']
         annotations[ANNOTATION_KEY_POD_SPEC_VERSION] = "1"
         annotations[V1_ANNOTATION_KEY_JOB_ID] = annotations[ANNOTATION_KEY_JOB_ID]
-        annotations[V1_ANNOTATION_KEY_JOB_TYPE] = annotations[WORKLOAD_JSON_JOB_TYPE_KEY]
-        annotations[V1_ANNOTATION_KEY_OWNER_EMAIL] = annotations[OWNER_EMAIL]
 
         del annotations[ANNOTATION_KEY_JOB_ID]
-        del annotations[WORKLOAD_JSON_JOB_TYPE_KEY]
-        del annotations[OWNER_EMAIL]
         del annotations['containerInfo']
         del annotations['jobDescriptor']
     pod_str = json.dumps(pod)

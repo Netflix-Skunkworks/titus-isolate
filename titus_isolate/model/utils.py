@@ -74,10 +74,6 @@ def __get_workload_env(identifier):
     return env
 
 
-def get_sorted_workloads(workloads: List[Workload]):
-    return sorted(workloads, key=lambda w: w.get_creation_time())
-
-
 def release_all_threads(cpu, workloads):
     for w in workloads:
         release_threads(cpu, w.get_id())

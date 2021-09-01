@@ -10,6 +10,3 @@ UNKNOWN_INSTANCE_TYPE = 'unknown'
 # v1 pod spec constants
 ANNOTATION_KEY_POD_SPEC_VERSION = 'pod.netflix.com/pod-schema-version'
 V1_ANNOTATION_KEY_JOB_ID = 'v3.job.titus.netflix.com/id'
-V1_ANNOTATION_KEY_JOB_TYPE = 'v3.job.titus.netflix.com/type'
-V1_ANNOTATION_KEY_OWNER_EMAIL = 'workload.netflix.com/owner-email'
-V1_ANNOTATION_KEY_APP_NAME = 'app.netflix.com/name'

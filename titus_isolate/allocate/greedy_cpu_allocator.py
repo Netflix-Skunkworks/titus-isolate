@@ -5,7 +5,6 @@ from titus_isolate.allocate.allocate_threads_request import AllocateThreadsReque
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.model.legacy_workload import LegacyWorkload
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
-from titus_isolate.model.utils import release_all_threads
 
 
 class GreedyCpuAllocator(CpuAllocator):
@@ -62,7 +61,7 @@ class GreedyCpuAllocator(CpuAllocator):
             return claimed_threads
 
         if is_cpu_full(cpu):
-            raise ValueError("Failed to add workload: '{}', cpu is full: {}".format(workload.get_id(), cpu))
+            raise ValueError("Failed to add workload: '{}', cpu is full: {}".format(workload.get_task_id(), cpu))
 
         package = cpu.get_emptiest_package()
 
@@ -72,28 +71,17 @@ class GreedyCpuAllocator(CpuAllocator):
 
             for empty_thread in empty_threads:
                 log.debug("Claiming package:core:thread '{}:{}:{}' for workload '{}'".format(
-                    package.get_id(), core.get_id(), empty_thread.get_id(), workload.get_id()))
-                empty_thread.claim(workload.get_id())
+                    package.get_id(), core.get_id(), empty_thread.get_id(), workload.get_task_id()))
+                empty_thread.claim(workload.get_task_id())
                 claimed_threads.append(empty_thread)
                 thread_count -= 1
 
         return claimed_threads + self.__assign_threads(
             cpu,
             LegacyWorkload(
-                launch_time=workload.get_launch_time(),
-                identifier=workload.get_id(),
-                thread_count=thread_count,
+                task_id=workload.get_task_id(),
                 job_id=workload.get_job_id(),
-                mem=workload.get_mem(),
-                disk=workload.get_disk(),
-                network=workload.get_network(),
-                app_name=workload.get_app_name(),
-                owner_email=workload.get_owner_email(),
-                image=workload.get_image(),
-                command=workload.get_command(),
-                entrypoint=workload.get_entrypoint(),
-                job_type=workload.get_job_type(),
-                duration_predictions=workload.get_duration_predictions()))
+                thread_count=thread_count))
 
     def set_registry(self, registry, tags):
         pass

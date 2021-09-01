@@ -3,7 +3,6 @@ import boto3 as boto3
 from titus_isolate import log
 from titus_isolate.config.constants import *
 from titus_isolate.config.utils import get_required_property
-from titus_isolate.model.legacy_workload import deserialize_legacy_workload
 from titus_isolate.model.processor.core import Core
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.processor.package import Package
@@ -26,13 +25,6 @@ def parse_cpu(cpu_dict: dict) -> Cpu:
         packages.append(Package(p["id"], cores))
 
     return Cpu(packages)
-
-
-def parse_legacy_workloads(workloads: dict) -> dict:
-    __workloads = {}
-    for w_id, workload in workloads.items():
-        __workloads[w_id] = deserialize_legacy_workload(workload)
-    return __workloads
 
 
 def parse_usage(usage: dict) -> dict:
