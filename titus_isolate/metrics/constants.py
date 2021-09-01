@@ -30,9 +30,6 @@ EVENT_LOG_FAILURE = 'titus-isolate.eventLogFailureCount'
 
 ALLOCATED_SIZE_KEY = 'titus-isolate.allocatedSize'
 UNALLOCATED_SIZE_KEY = 'titus-isolate.unallocatedSize'
-STATIC_ALLOCATED_SIZE_KEY = 'titus-isolate.staticAllocatedSize'
-BURST_ALLOCATED_SIZE_KEY = 'titus-isolate.burstAllocatedSize'
-BURST_REQUESTED_SIZE_KEY = 'titus-isolate.burstRequestedSize'
 OVERSUBSCRIBED_THREADS_KEY = 'titus-isolate.oversubscribedThreads'
 BURSTABLE_THREADS_KEY = 'titus-isolate.burstableThreads'
 OVERSUBSCRIBABLE_THREADS_KEY = 'titus-isolate.oversubscribableThreads'
@@ -57,8 +54,6 @@ SOLVER_REBALANCE_SUCCESS = 'titus-isolate.rebalanceSuccessCount'
 SOLVER_REBALANCE_FAILURE = 'titus-isolate.rebalanceFailureCount'
 SOLVER_REBALANCE_DURATION = 'titus-isolate.rebalanceThreadsDurationSec'
 
-STATIC_POOL_USAGE_KEY = 'titus-isolate.staticPoolUsage'
-BURST_POOL_USAGE_KEY = 'titus-isolate.burstPoolUsage'
 GET_RESOURCE_USAGE_FAILURE = 'titus-isolate.getResourceUsageFailureCount'
 
 RUNNING = 'titus-isolate.running'

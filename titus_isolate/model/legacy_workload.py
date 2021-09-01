@@ -24,7 +24,6 @@ class LegacyWorkload(Workload):
             command,
             entrypoint,
             job_type,
-            workload_type,
             duration_predictions):
 
         self.__creation_time = datetime.datetime.utcnow()
@@ -52,7 +51,6 @@ class LegacyWorkload(Workload):
         self.__entrypoint = entrypoint
 
         self.__job_type = job_type
-        self.__type = workload_type.lower()
 
         if duration_predictions is None:
             duration_predictions = []
@@ -60,13 +58,6 @@ class LegacyWorkload(Workload):
 
         if self.__thread_count < 0:
             raise ValueError("A workload must request at least 0 threads.")
-
-        if self.__type not in WORKLOAD_TYPES:
-            raise ValueError("Unexpected workload type: '{}', acceptable values are: '{}'".format(
-                self.__type, WORKLOAD_TYPES))
-
-        if self.__identifier == BURST:
-            raise ValueError("The identifier '{}' is reserved".format(BURST))
 
     def get_object_type(self) -> type:
         return type(self)
@@ -103,15 +94,6 @@ class LegacyWorkload(Workload):
 
     def get_entrypoint(self) -> str:
         return self.__entrypoint
-
-    def get_type(self) -> str:
-        return self.__type
-
-    def is_burst(self) -> bool:
-        return self.get_type() == BURST
-
-    def is_static(self) -> bool:
-        return self.get_type() == STATIC
 
     def get_job_type(self) -> str:
         return self.__job_type
@@ -160,7 +142,6 @@ class LegacyWorkload(Workload):
             COMMAND_KEY: self.get_command(),
             ENTRY_POINT_KEY: self.get_entrypoint(),
             JOB_TYPE_KEY: self.get_job_type(),
-            WORKLOAD_TYPE_KEY: self.get_type(),
             OPPORTUNISTIC_THREAD_COUNT_KEY: self.get_opportunistic_thread_count(),
             DURATION_PREDICTIONS_KEY: [p.to_dict() for p in self.get_duration_predictions()]
         }
@@ -185,7 +166,6 @@ def deserialize_legacy_workload(body: dict) -> LegacyWorkload:
         body[COMMAND_KEY],
         body[ENTRY_POINT_KEY],
         body[JOB_TYPE_KEY],
-        body[WORKLOAD_TYPE_KEY],
         [deserialize_duration_prediction(p) for p in raw_duration_predictions])
 
     # Input example:  "2019-03-23 18:03:50.668041"

@@ -6,7 +6,6 @@ from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 
 from titus_isolate.allocate.naive_cpu_allocator import NaiveCpuAllocator
-from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 
 
@@ -14,10 +13,10 @@ class TestFallbackCpuAllocator(unittest.TestCase):
 
     def test_naive_fallback(self):
 
-        w_a = get_test_workload("a", 3, STATIC)
-        w_b = get_test_workload("b", 2, STATIC)
-        w_c = get_test_workload("c", 1, STATIC)
-        w_d = get_test_workload("d", 2, STATIC)
+        w_a = get_test_workload("a", 3)
+        w_b = get_test_workload("b", 2)
+        w_c = get_test_workload("c", 1)
+        w_d = get_test_workload("d", 2)
 
         cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)
 

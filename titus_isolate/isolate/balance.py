@@ -38,8 +38,6 @@ def has_better_isolation(cur_cpu, new_cpu):
 
         In both cases we make the assumption that avoiding cross package workloads is to be preferred.
 
-    NOTE: We do not consider the placement of burst workloads when comparing the two placement options.
-
     :return: True if the new_cpu has better placement, False otherwise
     """
     cur_cross_package_violation_count = len(get_cross_package_violations(cur_cpu))

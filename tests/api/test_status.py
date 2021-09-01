@@ -14,7 +14,6 @@ from titus_isolate.api import status
 from titus_isolate.api.status import get_workloads, get_violations, get_wm_status, get_isolated_workload_ids, \
     isolate_workload
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.event.constants import STATIC, BURST
 from titus_isolate.event.event_manager import EventManager
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.processor.config import get_cpu
@@ -33,7 +32,7 @@ class TestStatus(unittest.TestCase):
 
         thread_count = 2
         workload_id = str(uuid.uuid4())
-        workload = get_test_workload(workload_id, thread_count, STATIC)
+        workload = get_test_workload(workload_id, thread_count)
 
         workload_manager = self.__get_default_workload_manager()
         set_workload_manager(workload_manager)
@@ -45,7 +44,6 @@ class TestStatus(unittest.TestCase):
 
         workloads = json.loads(get_workloads())
         self.assertEqual(workload_id, workloads[0]["id"])
-        self.assertEqual(STATIC, workloads[0]["type"])
         self.assertEqual(thread_count, workloads[0]["thread_count"])
 
     def test_get_isolated_workloads_endpoint(self):
@@ -55,7 +53,7 @@ class TestStatus(unittest.TestCase):
         isolated_workload_ids = json.loads(get_isolated_workload_ids())
         self.assertEqual(0, len(isolated_workload_ids))
 
-        workload = get_test_workload(str(uuid.uuid4()), 2, BURST)
+        workload = get_test_workload(str(uuid.uuid4()), 2)
         workload_manager.add_workload(workload)
 
         isolated_workload_ids = json.loads(get_isolated_workload_ids())
@@ -69,7 +67,7 @@ class TestStatus(unittest.TestCase):
         _, code, _ = isolate_workload(str(uuid.uuid4()))
         self.assertEqual(404, code)
 
-        workload = get_test_workload(str(uuid.uuid4()), 2, BURST)
+        workload = get_test_workload(str(uuid.uuid4()), 2)
         workload_manager.add_workload(workload)
 
         _, code, _ = isolate_workload(workload.get_id())

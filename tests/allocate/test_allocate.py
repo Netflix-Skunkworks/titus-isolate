@@ -10,7 +10,6 @@ from tests.utils import config_logs, get_test_workload, get_no_usage_threads_req
 from titus_isolate import log
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.allocate.naive_cpu_allocator import NaiveCpuAllocator
-from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.utils import set_workload_monitor_manager
@@ -45,7 +44,7 @@ class TestAllocation(unittest.TestCase):
             cpu = get_cpu()
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
-            w = get_test_workload(uuid.uuid4(), 1, STATIC)
+            w = get_test_workload(uuid.uuid4(), 1)
 
             request = get_no_usage_threads_request(cpu, [w])
             cpu = allocator.assign_threads(request).get_cpu()
@@ -60,7 +59,7 @@ class TestAllocation(unittest.TestCase):
         """
         for allocator in ALLOCATORS:
             cpu = get_cpu()
-            w = get_test_workload(uuid.uuid4(), 2, STATIC)
+            w = get_test_workload(uuid.uuid4(), 2)
 
             request = get_no_usage_threads_request(cpu, [w])
             cpu = allocator.assign_threads(request).get_cpu()
@@ -70,8 +69,8 @@ class TestAllocation(unittest.TestCase):
     def test_assign_more_than_available_threads_with_two_workloads(self):
         for allocator in OVER_ALLOCATORS:
             cpu = get_cpu()
-            w_fill = get_test_workload("fill", DEFAULT_TOTAL_THREAD_COUNT, STATIC)
-            w_extra = get_test_workload("extra", DEFAULT_TOTAL_THREAD_COUNT * 1, STATIC)
+            w_fill = get_test_workload("fill", DEFAULT_TOTAL_THREAD_COUNT)
+            w_extra = get_test_workload("extra", DEFAULT_TOTAL_THREAD_COUNT * 1)
 
             request = get_no_usage_threads_request(cpu, [w_fill])
             cpu = allocator.assign_threads(request).get_cpu()
@@ -94,8 +93,8 @@ class TestAllocation(unittest.TestCase):
         """
         cpu = get_cpu()
         allocator = GreedyCpuAllocator()
-        w0 = get_test_workload(uuid.uuid4(), 2, STATIC)
-        w1 = get_test_workload(uuid.uuid4(), 1, STATIC)
+        w0 = get_test_workload(uuid.uuid4(), 2)
+        w1 = get_test_workload(uuid.uuid4(), 1)
 
         request0 = get_no_usage_threads_request(cpu, [w0])
         cpu = allocator.assign_threads(request0).get_cpu()
@@ -135,11 +134,11 @@ class TestAllocation(unittest.TestCase):
         for allocator in ALLOCATORS:
             cpu = get_cpu()
             workloads = [
-                get_test_workload("v", 8, STATIC),
-                get_test_workload("w", 4, STATIC),
-                get_test_workload("x", 2, STATIC),
-                get_test_workload("y", 1, STATIC),
-                get_test_workload("z", 1, STATIC)]
+                get_test_workload("v", 8),
+                get_test_workload("w", 4),
+                get_test_workload("x", 2),
+                get_test_workload("y", 1),
+                get_test_workload("z", 1)]
 
             tot_req = 0
             __workloads = []
@@ -156,7 +155,7 @@ class TestAllocation(unittest.TestCase):
             cpu = get_cpu()
             self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(cpu.get_empty_threads()))
 
-            w = get_test_workload(uuid.uuid4(), 3, STATIC)
+            w = get_test_workload(uuid.uuid4(), 3)
             request = get_no_usage_threads_request(cpu, [w])
             cpu = allocator.assign_threads(request).get_cpu()
             self.assertEqual(
@@ -171,10 +170,9 @@ class TestAllocation(unittest.TestCase):
         for allocator in ALLOCATORS:
             cpu = get_cpu()
 
-            workloads = {}
-            w0 = get_test_workload(123, 3, STATIC)
-            w1 = get_test_workload(456, 2, STATIC)
-            w2 = get_test_workload(789, 4, STATIC)
+            w0 = get_test_workload(123, 3)
+            w1 = get_test_workload(456, 2)
+            w2 = get_test_workload(789, 4)
 
             request = get_no_usage_threads_request(cpu, [w0])
             cpu = allocator.assign_threads(request).get_cpu()

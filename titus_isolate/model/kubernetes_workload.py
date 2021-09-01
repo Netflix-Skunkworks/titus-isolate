@@ -5,14 +5,13 @@ from typing import List
 
 from kubernetes.client import V1Pod
 
-from titus_isolate.event.constants import STATIC, BURST, BATCH, SERVICE
 from titus_isolate.kub.constants import LABEL_KEY_JOB_ID, ANNOTATION_KEY_JOB_ID , ANNOTATION_KEY_POD_SPEC_VERSION, \
     V1_ANNOTATION_KEY_JOB_ID, V1_ANNOTATION_KEY_JOB_TYPE, V1_ANNOTATION_KEY_OWNER_EMAIL
 from titus_isolate.model.constants import CPU, MEMORY, TITUS_NETWORK, EPHEMERAL_STORAGE, TITUS_DISK, \
     WORKLOAD_JSON_JOB_TYPE_KEY, OWNER_EMAIL, \
     WORKLOAD_JSON_RUNTIME_PREDICTIONS_KEY, CREATION_TIME_KEY, LAUNCH_TIME_KEY, ID_KEY, THREAD_COUNT_KEY, MEM_KEY, \
     DISK_KEY, NETWORK_KEY, APP_NAME_KEY, OWNER_EMAIL_KEY, IMAGE_KEY, COMMAND_KEY, ENTRY_POINT_KEY, JOB_TYPE_KEY, \
-    WORKLOAD_TYPE_KEY, OPPORTUNISTIC_THREAD_COUNT_KEY, DURATION_PREDICTIONS_KEY, POD
+    OPPORTUNISTIC_THREAD_COUNT_KEY, DURATION_PREDICTIONS_KEY, POD
 from titus_isolate.model.duration_prediction import DurationPrediction
 from titus_isolate.model.pod_utils import get_main_container, parse_kubernetes_value, get_job_descriptor, get_app_name, \
     get_image, get_cmd, get_entrypoint, get_podv1_app_name, get_podv1_image, get_podv1_cmd, get_podv1_entrypoint
@@ -44,11 +43,6 @@ class KubernetesWorkload(Workload):
         self.__disk = float(parse_kubernetes_value(disk))
 
     def __init_metadata(self, pod: V1Pod):
-        app_name = 'UNKNOWN_APP_NAME'
-        image = 'UNKNOWN_IMAGE'
-        command = 'UNKNOWN_CMD'
-        entrypoint = 'UNKNOWN_ENTRYPOINT'
-
         # The job_descriptor is a v0 pod method of encoding data
         # This can be none with a v1 pod, so we call v1 functions that don't need it
         # When v0 pods are gone, this function can be removed
@@ -80,7 +74,6 @@ class KubernetesWorkload(Workload):
         self.__entrypoint = entrypoint
         self.__job_type = job_meta.get('job_type')
         self.__owner_email = job_meta.get('owner_email')
-        self.__workload_type = STATIC
         self.__duration_predictions = duration_predictions
 
     def get_pod(self):
@@ -119,26 +112,11 @@ class KubernetesWorkload(Workload):
     def get_entrypoint(self) -> str:
         return self.__entrypoint
 
-    def get_type(self) -> str:
-        return self.__workload_type
-
-    def is_burst(self) -> bool:
-        return self.get_type() == BURST
-
-    def is_static(self) -> bool:
-        return self.get_type() == STATIC
-
     def get_job_type(self) -> str:
         return self.__job_type
 
     def get_job_id(self) -> str:
         return self.__job_id
-
-    def is_batch(self) -> bool:
-        return self.__job_type == BATCH
-
-    def is_service(self) -> bool:
-        return self.__job_type == SERVICE
 
     def get_creation_time(self):
         return self.__creation_time
@@ -173,7 +151,6 @@ class KubernetesWorkload(Workload):
             COMMAND_KEY: self.get_command(),
             ENTRY_POINT_KEY: self.get_entrypoint(),
             JOB_TYPE_KEY: self.get_job_type(),
-            WORKLOAD_TYPE_KEY: self.get_type(),
             OPPORTUNISTIC_THREAD_COUNT_KEY: self.get_opportunistic_thread_count(),
             DURATION_PREDICTIONS_KEY: [p.to_dict() for p in self.get_duration_predictions()],
             POD: self.__get_serializable_pod(self.__pod)

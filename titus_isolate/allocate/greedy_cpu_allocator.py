@@ -3,10 +3,9 @@ from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse, get_workload_allocations
 from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
-from titus_isolate.event.constants import STATIC
 from titus_isolate.model.legacy_workload import LegacyWorkload
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
-from titus_isolate.model.utils import get_burst_workloads, release_all_threads
+from titus_isolate.model.utils import release_all_threads
 
 
 class GreedyCpuAllocator(CpuAllocator):
@@ -16,15 +15,12 @@ class GreedyCpuAllocator(CpuAllocator):
         workloads = request.get_workloads()
         workload_id = request.get_workload_id()
 
-        burst_workloads = get_burst_workloads(workloads.values())
-        release_all_threads(cpu, burst_workloads)
-        if workloads[workload_id].get_type() == STATIC:
-            self.__assign_threads(cpu, workloads[workload_id])
+        self.__assign_threads(cpu, workloads[workload_id])
 
         metadata = {}
         return AllocateResponse(
             cpu,
-            get_workload_allocations(cpu, workloads.values()),
+            get_workload_allocations(cpu, list(workloads.values())),
             self.get_name(),
             metadata)
 
@@ -33,8 +29,6 @@ class GreedyCpuAllocator(CpuAllocator):
         workloads = request.get_workloads()
         workload_id = request.get_workload_id()
 
-        burst_workloads = get_burst_workloads(workloads.values())
-        release_all_threads(cpu, burst_workloads)
         for t in cpu.get_threads():
             if workload_id in t.get_workload_ids():
                 t.free(workload_id)
@@ -43,7 +37,7 @@ class GreedyCpuAllocator(CpuAllocator):
         metadata = {}
         return AllocateResponse(
             cpu,
-            get_workload_allocations(cpu, workloads.values()),
+            get_workload_allocations(cpu, list(workloads.values())),
             self.get_name(),
             metadata)
 
@@ -53,7 +47,7 @@ class GreedyCpuAllocator(CpuAllocator):
         metadata = {}
         return AllocateResponse(
             cpu,
-            get_workload_allocations(cpu, workloads.values()),
+            get_workload_allocations(cpu, list(workloads.values())),
             self.get_name(),
             metadata)
 
@@ -99,7 +93,6 @@ class GreedyCpuAllocator(CpuAllocator):
                 command=workload.get_command(),
                 entrypoint=workload.get_entrypoint(),
                 job_type=workload.get_job_type(),
-                workload_type=workload.get_type(),
                 duration_predictions=workload.get_duration_predictions()))
 
     def set_registry(self, registry, tags):

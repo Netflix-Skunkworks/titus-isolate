@@ -210,7 +210,6 @@ if __name__ != '__main__' and not is_testing():
                                      event_manager,
                                      reconciler,
                                      workload_manager,
-                                     workload_monitor_manager,
                                      predicted_usage_handler] if m is not None]
 
     metrics_manager = MetricsManager(metrics_reporters)

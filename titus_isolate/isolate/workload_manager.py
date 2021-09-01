@@ -324,7 +324,6 @@ class WorkloadManager(MetricsReporter):
 
     def report_metrics(self, tags):
         cpu = self.get_cpu_copy()
-        workload_map = self.get_workload_map_copy()
 
         self.__reg.gauge(RUNNING, tags).set(1)
         self.__reg.gauge(WORKLOAD_COUNT_KEY, tags).set(len(self.get_workloads()))
@@ -348,10 +347,7 @@ class WorkloadManager(MetricsReporter):
         # Allocation / Request sizes
         self.__reg.gauge(ALLOCATED_SIZE_KEY, tags).set(get_allocated_size(cpu))
         self.__reg.gauge(UNALLOCATED_SIZE_KEY, tags).set(get_unallocated_size(cpu))
-        self.__reg.gauge(STATIC_ALLOCATED_SIZE_KEY, tags).set(get_static_allocated_size(cpu, workload_map))
-        self.__reg.gauge(BURST_ALLOCATED_SIZE_KEY, tags).set(get_burst_allocated_size(cpu, workload_map))
-        self.__reg.gauge(BURST_REQUESTED_SIZE_KEY, tags).set(get_burst_request_size(list(workload_map.values())))
-        self.__reg.gauge(OVERSUBSCRIBED_THREADS_KEY, tags).set(get_oversubscribed_thread_count(cpu, workload_map))
+        self.__reg.gauge(OVERSUBSCRIBED_THREADS_KEY, tags).set(get_oversubscribed_thread_count(cpu))
         self.__reg.gauge(BURSTABLE_THREADS_KEY, tags).set(self.__get_free_thread_count(self.__last_response))
         self.__reg.gauge(OVERSUBSCRIBABLE_THREADS_KEY, tags).set(self.__get_oversubscribable_thread_count(self.__last_response))
 

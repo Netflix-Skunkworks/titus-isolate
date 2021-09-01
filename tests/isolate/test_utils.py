@@ -1,6 +1,5 @@
 import logging
 import unittest
-from time import sleep
 
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.utils import config_logs, get_test_workload
@@ -8,7 +7,6 @@ from titus_isolate.allocate.noop_allocator import NoopCpuAllocator
 from titus_isolate.allocate.noop_reset_allocator import NoopResetCpuAllocator
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import CPU_ALLOCATOR, NOOP, NOOP_RESET
-from titus_isolate.event.constants import STATIC
 from titus_isolate.isolate.utils import get_fallback_allocator
 from titus_isolate.model.utils import get_sorted_workloads
 
@@ -36,9 +34,9 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(NoopResetCpuAllocator, allocator.get_primary_allocator().__class__)
 
     def test_get_sorted_workloads(self):
-        w_a = get_test_workload('a', 1, STATIC, 0)
-        w_b = get_test_workload('b', 1, STATIC, 1)
-        w_c = get_test_workload('c', 1, STATIC, 2)
+        w_a = get_test_workload('a', 1, 0)
+        w_b = get_test_workload('b', 1, 1)
+        w_c = get_test_workload('c', 1, 2)
         expected_ids = ['a', 'b', 'c']
 
         scrambled_workloads = [w_b, w_a, w_c]
