@@ -1,18 +1,18 @@
 import unittest
 
 from tests.allocate.crashing_allocators import CrashingAllocator
-from tests.utils import get_test_workload, DEFAULT_TEST_REQUEST_METADATA, get_no_usage_threads_request
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
+from tests.utils import get_test_workload, get_no_usage_threads_request
 from titus_isolate.allocate.fall_back_cpu_allocator import FallbackCpuAllocator
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
-from titus_isolate.allocate.integer_program_cpu_allocator import IntegerProgramCpuAllocator
+
+from titus_isolate.allocate.naive_cpu_allocator import NaiveCpuAllocator
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.processor.config import get_cpu
 
 
 class TestFallbackCpuAllocator(unittest.TestCase):
 
-    def test_ip_fallback(self):
+    def test_naive_fallback(self):
 
         w_a = get_test_workload("a", 3, STATIC)
         w_b = get_test_workload("b", 2, STATIC)
@@ -21,7 +21,7 @@ class TestFallbackCpuAllocator(unittest.TestCase):
 
         cpu = get_cpu(package_count=2, cores_per_package=2, threads_per_core=2)
 
-        allocator = FallbackCpuAllocator(CrashingAllocator(), IntegerProgramCpuAllocator())
+        allocator = FallbackCpuAllocator(CrashingAllocator(), NaiveCpuAllocator())
 
         request = get_no_usage_threads_request(cpu, [w_a])
         cpu = allocator.assign_threads(request).get_cpu()

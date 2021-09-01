@@ -164,7 +164,7 @@ def is_primary_allocator_grpc(config_manager) -> bool:
     from titus_isolate.isolate.utils import get_allocator
     from titus_isolate.allocate.remote.allocator import GrpcRemoteIsolationAllocator
     primary_alloc_str = config_manager.get_cached_str(CPU_ALLOCATOR)
-    primary_allocator = get_allocator(primary_alloc_str, config_manager)
+    primary_allocator = get_allocator(primary_alloc_str)
     return primary_allocator.get_name() == GrpcRemoteIsolationAllocator.__name__        
 
 

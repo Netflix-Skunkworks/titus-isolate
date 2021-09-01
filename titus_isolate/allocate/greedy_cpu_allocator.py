@@ -6,15 +6,10 @@ from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.event.constants import STATIC
 from titus_isolate.model.legacy_workload import LegacyWorkload
 from titus_isolate.model.processor.utils import get_emptiest_core, is_cpu_full
-from titus_isolate.model.utils import get_burst_workloads, release_all_threads, update_burst_workloads, rebalance
-from titus_isolate.monitor.empty_free_thread_provider import EmptyFreeThreadProvider
-from titus_isolate.monitor.free_thread_provider import FreeThreadProvider
+from titus_isolate.model.utils import get_burst_workloads, release_all_threads
 
 
 class GreedyCpuAllocator(CpuAllocator):
-
-    def __init__(self, free_thread_provider: FreeThreadProvider = EmptyFreeThreadProvider()):
-        self.__free_thread_provider = free_thread_provider
 
     def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
         cpu = request.get_cpu()
@@ -27,8 +22,6 @@ class GreedyCpuAllocator(CpuAllocator):
             self.__assign_threads(cpu, workloads[workload_id])
 
         metadata = {}
-        update_burst_workloads(cpu, workloads, self.__free_thread_provider, metadata)
-
         return AllocateResponse(
             cpu,
             get_workload_allocations(cpu, workloads.values()),
@@ -48,8 +41,6 @@ class GreedyCpuAllocator(CpuAllocator):
 
         workloads.pop(workload_id)
         metadata = {}
-        update_burst_workloads(cpu, workloads, self.__free_thread_provider, metadata)
-
         return AllocateResponse(
             cpu,
             get_workload_allocations(cpu, workloads.values()),
@@ -59,9 +50,7 @@ class GreedyCpuAllocator(CpuAllocator):
     def rebalance(self, request: AllocateRequest) -> AllocateResponse:
         cpu = request.get_cpu()
         workloads = request.get_workloads()
-
         metadata = {}
-        cpu = rebalance(cpu, workloads, self.__free_thread_provider, metadata)
         return AllocateResponse(
             cpu,
             get_workload_allocations(cpu, workloads.values()),
