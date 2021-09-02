@@ -1,9 +1,11 @@
+import itertools
 import json
 import time
 from queue import Queue, Empty
 from threading import Thread, Lock
 from datetime import datetime
 from random import randrange
+from typing import List
 
 import schedule
 
@@ -13,7 +15,8 @@ from titus_isolate.config.constants import REBALANCE_FREQUENCY_KEY, DEFAULT_REBA
     PREDICT_RESOURCE_USAGE_FREQUENCY_KEY, \
     DEFAULT_PREDICT_RESOURCE_USAGE_FREQUENCY
 from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT, ACTION, \
-    HANDLED_ACTIONS, PREDICT_USAGE_EVENT
+    HANDLED_ACTIONS, PREDICT_USAGE_EVENT, CONTAINER_EVENTS, INTERNAL_EVENTS, CONTAINER_BATCH, STARTS, DIES, \
+    START, DIE
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY, \
     ENQUEUED_COUNT_KEY, DEQUEUED_COUNT_KEY, QUEUE_LATENCY_KEY
@@ -112,34 +115,93 @@ class EventManager(MetricsReporter):
                 self.__reg.counter(ENQUEUED_COUNT_KEY, self.__tags).increment()
                 self.__reg.counter(self.__get_enqueued_metric_name(event), self.__tags).increment()
 
+    @staticmethod
+    def __get_container_events(events: List) -> List:
+        return [event for event in events if event[ACTION] in CONTAINER_EVENTS]
+
+    @staticmethod
+    def __get_internal_events(events: List) -> List:
+        return [event for event in events if event[ACTION] in INTERNAL_EVENTS]
+
+    def __dequeue_event(self):
+        try:
+            event = self.__q.get(timeout=self.__event_timeout)
+            dequeue_time = time.time()
+            log.info("Dequeued event: {}, queue depth: {}".format(event[ACTION], self.get_queue_depth()))
+            if self.__reg is not None:
+                self.__reg.counter(DEQUEUED_COUNT_KEY, self.__tags).increment()
+                self.__reg.counter(self.__get_dequeued_metric_name(event), self.__tags).increment()
+                self.__reg.distribution_summary(QUEUE_LATENCY_KEY, self.__tags).record(
+                    dequeue_time - event[ENQUEUE_TIME_KEY])
+            return event
+        except Empty:
+            log.debug("Timed out waiting for event on queue.")
+            return None
+
+    def __get_batch(self) -> List:
+        event = self.__dequeue_event()
+        if event is None:
+            return []
+
+        events = [event]
+
+        for _ in itertools.repeat(None, self.__q.qsize()):
+            event = self.__dequeue_event()
+            if event is None:
+                break
+            else:
+                events.append(event)
+
+        return events
+
+    @staticmethod
+    def __get_container_batch_event(container_events: List):
+        batch_event = {
+            ACTION: CONTAINER_BATCH,
+            STARTS: [],
+            DIES: [],
+        }
+
+        for event in container_events:
+            if event[ACTION] == START:
+                batch_event[STARTS].append(event)
+            if event[ACTION] == DIE:
+                batch_event[DIES].append(event)
+
+        return batch_event
+
     def __process_events(self):
         while not self.__stopped:
-            try:
-                event = self.__q.get(timeout=self.__event_timeout)
-                dequeue_time = time.time()
-                log.info("Dequeued event: {}, queue depth: {}".format(event[ACTION], self.get_queue_depth()))
-                if self.__reg is not None:
-                    self.__reg.counter(DEQUEUED_COUNT_KEY, self.__tags).increment()
-                    self.__reg.counter(self.__get_dequeued_metric_name(event), self.__tags).increment()
-                    self.__reg.distribution_summary(QUEUE_LATENCY_KEY, self.__tags).record(dequeue_time - event[ENQUEUE_TIME_KEY])
-            except Empty:
-                log.debug("Timed out waiting for event on queue.")
+            batch = self.__get_batch()
+            if len(batch) == 0:
+                log.info("Got empty batch")
                 continue
 
-            for event_handler in self.__event_handlers:
-                try:
-                    log.info("{} handling event: {}".format(type(event_handler).__name__, event[ACTION]))
-                    event_handler.handle(event)
-                    self.__report_succeeded_event(event_handler)
-                except Exception:
-                    log.error("Event handler: '{}' failed to handle event: '{}'".format(
-                        type(event_handler).__name__, event))
-                    self.__report_failed_event(event_handler)
+            internal_events = self.__get_internal_events(batch)
+            container_events = self.__get_container_events(batch)
 
-            self.__q.task_done()
-            self.__reg.counter(EVENT_PROCESSED_KEY, self.__tags).increment()
+            events = []
+            if len(container_events) > 0:
+                events.append(self.__get_container_batch_event(container_events))
+            events = events + internal_events
+
+            for event in events:
+                for event_handler in self.__event_handlers:
+                    try:
+                        log.info("{} handling event: {}".format(type(event_handler).__name__, event[ACTION]))
+                        event_handler.handle(event)
+                        self.__report_succeeded_event(event_handler)
+                    except Exception:
+                        log.exception("Event handler: '{}' failed to handle event: '{}'".format(
+                            type(event_handler).__name__, event))
+                        self.__report_failed_event(event_handler)
+
+            for _ in itertools.repeat(None, len(internal_events) + len(container_events)):
+                self.__reg.counter(EVENT_PROCESSED_KEY, self.__tags).increment()
+                self.__processed_count += 1
+                self.__q.task_done()
+
             self.__reg.gauge(QUEUE_DEPTH_KEY, self.__tags).set(self.get_queue_depth())
-            self.__processed_count += 1
 
     def __report_succeeded_event(self, event_handler: EventHandler):
         if self.__reg is not None:

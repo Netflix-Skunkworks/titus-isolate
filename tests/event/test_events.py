@@ -7,7 +7,6 @@ from spectator import Registry
 from tests.allocate.test_allocate import TestWorkloadMonitorManager, TestPodManager
 from tests.config.test_property_provider import TestPropertyProvider
 from tests.event.mock_docker import get_container_create_event, MockEventProvider, get_event, get_container_die_event
-from tests.event.mock_titus_environment import MOCK_TITUS_ENVIRONMENT
 from tests.utils import config_logs, wait_until, TestContext, gauge_value_equals, counter_value_equals, \
     get_simple_test_pod
 from titus_isolate.config.config_manager import ConfigManager
@@ -16,6 +15,9 @@ from titus_isolate.event.event_manager import EventManager
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY
 from titus_isolate.model.processor.utils import DEFAULT_TOTAL_THREAD_COUNT
 from titus_isolate.utils import set_config_manager, set_workload_monitor_manager, set_pod_manager, get_pod_manager
+
+# This import is necessary for the tests below to work
+from tests.event.mock_titus_environment import MOCK_TITUS_ENVIRONMENT
 
 DEFAULT_CPU_COUNT = 2
 
@@ -53,7 +55,7 @@ class TestEvents(unittest.TestCase):
         self.assertEqual(
             DEFAULT_TOTAL_THREAD_COUNT - DEFAULT_CPU_COUNT,
             len(test_context.get_cpu().get_empty_threads()))
-        self.assertEqual(1, test_context.get_create_event_handler().get_handled_event_count())
+        self.assertEqual(1, test_context.get_container_batch_event_handler().get_handled_event_count())
 
         manager.stop_processing_events()
 
@@ -86,8 +88,7 @@ class TestEvents(unittest.TestCase):
         wait_until(lambda: event_count == manager.get_processed_count())
         self.assertEqual(0, manager.get_queue_depth())
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(test_context.get_cpu().get_empty_threads()))
-        self.assertEqual(1, test_context.get_create_event_handler().get_handled_event_count())
-        self.assertEqual(1, test_context.get_free_event_handler().get_handled_event_count())
+        self.assertEqual(2, test_context.get_container_batch_event_handler().get_handled_event_count())
 
         manager.stop_processing_events()
 
@@ -112,7 +113,7 @@ class TestEvents(unittest.TestCase):
         manager.set_registry(registry, {})
         manager.start_processing_events()
 
-        wait_until(lambda: test_context.get_create_event_handler().get_ignored_event_count() == 1)
+        wait_until(lambda: test_context.get_container_batch_event_handler().get_ignored_event_count() == 1)
         self.assertEqual(0, manager.get_queue_depth())
 
         manager.stop_processing_events()
@@ -141,8 +142,7 @@ class TestEvents(unittest.TestCase):
         wait_until(lambda: event_count == manager.get_processed_count())
         self.assertEqual(0, manager.get_queue_depth())
         self.assertEqual(DEFAULT_TOTAL_THREAD_COUNT, len(test_context.get_cpu().get_empty_threads()))
-        self.assertEqual(0, test_context.get_create_event_handler().get_handled_event_count())
-        self.assertEqual(0, test_context.get_free_event_handler().get_handled_event_count())
+        self.assertEqual(0, test_context.get_container_batch_event_handler().get_handled_event_count())
         self.assertEqual(1, test_context.get_rebalance_event_handler().get_handled_event_count())
 
         manager.stop_processing_events()
