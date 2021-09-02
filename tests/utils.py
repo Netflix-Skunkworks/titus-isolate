@@ -3,6 +3,7 @@ import logging
 
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
+from titus_isolate.event.container_batch_event_handler import ContainerBatchEventHandler
 from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID, ANNOTATION_KEY_POD_SPEC_VERSION, \
     V1_ANNOTATION_KEY_JOB_ID
 import numpy as np
@@ -16,8 +17,6 @@ from tests.config.test_property_provider import TestPropertyProvider
 from titus_isolate import LOG_FMT_STRING, log
 from titus_isolate.allocate.constants import INSTANCE_ID
 from titus_isolate.config.config_manager import ConfigManager
-from titus_isolate.event.create_event_handler import CreateEventHandler
-from titus_isolate.event.free_event_handler import FreeEventHandler
 from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.legacy_workload import LegacyWorkload
@@ -242,8 +241,7 @@ class TestContext:
         if cpu is None:
             cpu = get_cpu()
         self.__workload_manager = WorkloadManager(cpu, MockCgroupManager(), allocator)
-        self.__create_event_handler = CreateEventHandler(self.__workload_manager)
-        self.__free_event_handler = FreeEventHandler(self.__workload_manager)
+        self.__container_batch_event_handler = ContainerBatchEventHandler(self.__workload_manager)
         self.__rebalance_event_handler = RebalanceEventHandler(self.__workload_manager)
 
     def get_cpu(self):
@@ -252,17 +250,14 @@ class TestContext:
     def get_workload_manager(self):
         return self.__workload_manager
 
-    def get_create_event_handler(self):
-        return self.__create_event_handler
-
-    def get_free_event_handler(self):
-        return self.__free_event_handler
+    def get_container_batch_event_handler(self):
+        return self.__container_batch_event_handler
 
     def get_rebalance_event_handler(self):
         return self.__rebalance_event_handler
 
     def get_event_handlers(self):
-        return [self.__create_event_handler, self.__free_event_handler, self.__rebalance_event_handler]
+        return [self.__container_batch_event_handler, self.__rebalance_event_handler]
 
 
 class TestPredictor(object):

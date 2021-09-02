@@ -11,14 +11,14 @@ class EventHandler:
         self.__handled_event_count = 0
 
     def ignored_event(self, event, msg):
-        log.debug("'{}' ignored event. msg: '{}', event: '{}', ".format(self.__class__.__name__, msg, event))
+        log.debug("'{}' ignored event. msg: '{}'".format(self.__class__.__name__, msg))
         self.__ignored_event_count += 1
 
     def handling_event(self, event, msg):
-        log.log(self.__log_level, "'{}' handling event.  msg: '{}', event: '{}'".format(self.__class__.__name__, msg, event))
+        log.log(self.__log_level, "'{}' handling event.  msg: '{}'".format(self.__class__.__name__, msg))
 
     def handled_event(self, event, msg):
-        log.log(self.__log_level, "'{}' handled event.  msg: '{}', event: '{}'".format(self.__class__.__name__, msg, event))
+        log.log(self.__log_level, "'{}' handled event.  msg: '{}'".format(self.__class__.__name__, msg))
         self.__handled_event_count += 1
 
     def get_ignored_event_count(self):

@@ -12,9 +12,8 @@ from titus_isolate.cgroup.file_cgroup_manager import FileCgroupManager
 from titus_isolate.config.constants import RESTART_PROPERTIES
 from titus_isolate.config.restart_property_watcher import RestartPropertyWatcher
 from titus_isolate.crd.publish.kubernetes_predicted_usage_publisher import KubernetesPredictedUsagePublisher
-from titus_isolate.event.create_event_handler import CreateEventHandler
+from titus_isolate.event.container_batch_event_handler import ContainerBatchEventHandler
 from titus_isolate.event.event_manager import EventManager
-from titus_isolate.event.free_event_handler import FreeEventHandler
 from titus_isolate.event.predict_usage_event_handler import ResourceUsagePredictionHandler
 from titus_isolate.event.rebalance_event_handler import RebalanceEventHandler
 from titus_isolate.event.reconcile_event_handler import ReconcileEventHandler
@@ -186,8 +185,7 @@ if __name__ != '__main__' and not is_testing():
     # Setup the event handlers
     log.info("Setting up event handlers...")
     reconciler = Reconciler(cgroup_manager, exit_handler)
-    create_event_handler = CreateEventHandler(workload_manager)
-    free_event_handler = FreeEventHandler(workload_manager)
+    container_batch_event_handler = ContainerBatchEventHandler(workload_manager)
     rebalance_event_handler = RebalanceEventHandler(workload_manager)
     reconcile_event_handler = ReconcileEventHandler(reconciler)
     predicted_usage_handler = ResourceUsagePredictionHandler(
@@ -195,8 +193,7 @@ if __name__ != '__main__' and not is_testing():
                                           pod_manager=get_pod_manager(),
                                           workload_monitor_manager=workload_monitor_manager))
 
-    event_handlers = [h for h in [create_event_handler,
-                                  free_event_handler,
+    event_handlers = [h for h in [container_batch_event_handler,
                                   rebalance_event_handler,
                                   reconcile_event_handler,
                                   predicted_usage_handler] if h is not None]
@@ -213,7 +210,8 @@ if __name__ != '__main__' and not is_testing():
                                      event_manager,
                                      reconciler,
                                      workload_manager,
-                                     predicted_usage_handler] if m is not None]
+                                     predicted_usage_handler,
+                                     container_batch_event_handler] if m is not None]
 
     metrics_manager = MetricsManager(metrics_reporters)
 

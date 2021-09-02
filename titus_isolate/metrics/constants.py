@@ -15,6 +15,7 @@ DEQUEUED_COUNT_KEY = 'titus-isolate.dequeuedCount'
 QUEUE_DEPTH_KEY = 'titus-isolate.queueDepth'
 QUEUE_LATENCY_KEY = 'titus-isolate.queueLatency'
 ISOLATE_LATENCY_KEY = 'titus-isolate.isolateLatency'
+CONTAINER_BATCH_SIZE_KEY = 'titus-isolate.containerBatchSize'
 
 WRITE_CPUSET_SUCCEEDED_KEY = 'titus-isolate.writeCpusetSucceeded'
 WRITE_CPUSET_FAILED_KEY = 'titus-isolate.writeCpusetFailed'

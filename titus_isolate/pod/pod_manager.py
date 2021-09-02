@@ -88,12 +88,12 @@ class PodManager:
 
     def __add_pod(self, event):
         pod_name = get_pod_name(event)
-        log.info("Add pod event: %s", pod_name)
+        log.debug("Add pod event: %s", pod_name)
         self.__store_pod(event)
 
     def __modify_pod(self, event):
         pod_name = get_pod_name(event)
-        log.info("Modify pod event: %s", pod_name)
+        log.debug("Modify pod event: %s", pod_name)
         self.__store_pod(event)
 
     def __store_pod(self, event):
@@ -101,5 +101,5 @@ class PodManager:
 
     def __delete_pod(self, event):
         pod_name = get_pod_name(event)
-        log.info("Delete pod event: %s", pod_name)
+        log.debug("Delete pod event: %s", pod_name)
         self.__pod_cache.pop(pod_name, None)

@@ -63,8 +63,9 @@ class WorkloadManager(MetricsReporter):
 
                 stop_time = time.time()
                 if self.__reg is not None:
+                    request_type = self.__get_request_type(len(adds), len(removes))
                     self.__reg.distribution_summary(
-                        self.__get_workload_processing_metric_name("isolate"),
+                        self.__get_workload_processing_metric_name(request_type),
                         self.__tags).record(stop_time - start_time)
                     self.__reg.distribution_summary(
                         WORKLOAD_PROCESSING_DURATION,
@@ -78,8 +79,7 @@ class WorkloadManager(MetricsReporter):
             return False
 
     def __isolate(self, adds: List[Workload], removes: List[str]):
-        add_ids = [w.get_task_id() for w in adds]
-        log.info("removing workloads: %s, adding workloads: %s", add_ids, removes)
+        log.info("adding %d workloads, removing %d workloads", len(adds), len(removes))
 
         cpu = self.get_cpu_copy()
         workload_map = self.get_workload_map_copy()
@@ -91,11 +91,22 @@ class WorkloadManager(MetricsReporter):
         for w in adds:
             workload_map[w.get_task_id()] = w
 
-        request = AllocateRequest(cpu, workload_map, self.__get_request_metadata("isolate"))
+        request = AllocateRequest(
+            cpu,
+            workload_map,
+            self.__get_request_metadata(self.__get_request_type(len(adds), len(removes))))
         response = self.__cpu_allocator.isolate(request)
 
         self.__update_state(response, workload_map)
         report_cpu_event(request, response)
+
+    @staticmethod
+    def __get_request_type(add_count, remove_count):
+        request_type = "isolate"
+        if add_count == 0 and remove_count == 0:
+            request_type = "rebalance"
+
+        return request_type
 
     @staticmethod
     def __get_workload_processing_metric_name(func_name: str) -> str:
