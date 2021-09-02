@@ -8,7 +8,6 @@ import titus_isolate.allocate.remote.isolate_pb2_grpc as pb_grpc
 from titus_isolate import log
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.allocate_response import AllocateResponse
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.workload_allocate_response import WorkloadAllocateResponse
 from titus_isolate.config.constants import GRPC_REMOTE_ALLOC_ENDPOINT, GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS, \
@@ -22,23 +21,6 @@ REQ_TYPE_METADATA_KEY = "req_type"
 
 
 class GrpcRemoteIsolationAllocator(CpuAllocator):
-
-    def __create_stub(self) -> pb_grpc.IsolationServiceStub:
-        channel = grpc.insecure_channel(self.__endpoint,
-                                        compression=grpc.Compression.Gzip)
-
-        return pb_grpc.IsolationServiceStub(channel)
-
-    def __pull_context(self) -> pb.InstanceContext:
-        node = get_node()
-        ctx = pb.InstanceContext()
-        ctx.instance_id = node.metadata.name
-        ctx.stack = node.metadata.annotations.get(ANNOTATION_KEY_STACK, '')
-        ctx.cluster = node.metadata.annotations.get(ANNOTATION_KEY_CLUSTER, '')
-        ctx.autoscale_group = node.metadata.annotations.get(ANNOTATION_KEY_ASG, '')
-        ctx.resource_pool = node.metadata.annotations.get(LABEL_KEY_RESOURCE_POOL, '')
-        ctx.instance_type = node.metadata.annotations.get(ANNOTATION_KEY_INSTANCE_TYPE, '')
-        return ctx
 
     def __init__(self):
         config_manager = get_config_manager()
@@ -116,40 +98,47 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
 
         return AllocateResponse(new_cpu, wa_responses, self.get_name(), {})
 
-    def __process(self, request: AllocateRequest, req_type: str, is_delete: bool) -> AllocateResponse:
-        req_wid = ''
-        if isinstance(request, AllocateThreadsRequest):
-            req_wid = request.get_workload_id()
+    def __process(self, request: AllocateRequest) -> AllocateResponse:
         req = self.__build_base_req(request.get_cpu())
-        req.metadata[REQ_TYPE_METADATA_KEY] = req_type  # for logging purposes server side
+        req.metadata[REQ_TYPE_METADATA_KEY] = "isolate" # for logging purposes server side
 
         for wid, w in request.get_workloads().items():
             req.task_to_job_id[wid] = w.get_job_id()
-            if is_delete and wid == req_wid:
-                continue
             req.tasks_to_place.append(wid)
 
         try:
-            log.info("remote %s (tasks_to_place=%s)", req_type, req.tasks_to_place)
+            log.info("remote isolate (tasks_to_place=%s)", req.tasks_to_place)
             response = self.__stub.ComputeIsolation(req, timeout=self.__call_timeout_secs)
         except grpc.RpcError as e:
-            log.error("remote %s failed (tasks_to_place=%s):\n%s", req_type, req.tasks_to_place, repr(e))
+            log.exception("remote isolate failed (tasks_to_place=%s)")
             raise e
 
         try:
             return self.__deser(response)
         except Exception as e:
-            log.error("failed to deseralize response for remote %s of %s:\n%s", req_type, req_wid, repr(e))
+            log.exception("failed to deseralize response for remote isolate request")
             raise e
 
-    def assign_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
-        return self.__process(request, "assign", False)
+    def __create_stub(self) -> pb_grpc.IsolationServiceStub:
+        channel = grpc.insecure_channel(self.__endpoint,
+                                        compression=grpc.Compression.Gzip)
 
-    def free_threads(self, request: AllocateThreadsRequest) -> AllocateResponse:
-        return self.__process(request, "free", True)
+        return pb_grpc.IsolationServiceStub(channel)
 
-    def rebalance(self, request: AllocateRequest) -> AllocateResponse:
-        return self.__process(request, "rebalance", False)
+    @staticmethod
+    def __pull_context() -> pb.InstanceContext:
+        node = get_node()
+        ctx = pb.InstanceContext()
+        ctx.instance_id = node.metadata.name
+        ctx.stack = node.metadata.annotations.get(ANNOTATION_KEY_STACK, '')
+        ctx.cluster = node.metadata.annotations.get(ANNOTATION_KEY_CLUSTER, '')
+        ctx.autoscale_group = node.metadata.annotations.get(ANNOTATION_KEY_ASG, '')
+        ctx.resource_pool = node.metadata.annotations.get(LABEL_KEY_RESOURCE_POOL, '')
+        ctx.instance_type = node.metadata.annotations.get(ANNOTATION_KEY_INSTANCE_TYPE, '')
+        return ctx
+
+    def isolate(self, request: AllocateRequest) -> AllocateResponse:
+        return self.__process(request)
 
     def get_name(self) -> str:
         return self.__class__.__name__

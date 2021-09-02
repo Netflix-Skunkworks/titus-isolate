@@ -1,6 +1,7 @@
 import json
 import logging
 
+from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID, ANNOTATION_KEY_POD_SPEC_VERSION, \
     V1_ANNOTATION_KEY_JOB_ID
@@ -13,8 +14,6 @@ from kubernetes.client import V1Pod
 from tests.cgroup.mock_cgroup_manager import MockCgroupManager
 from tests.config.test_property_provider import TestPropertyProvider
 from titus_isolate import LOG_FMT_STRING, log
-from titus_isolate.allocate.allocate_request import AllocateRequest
-from titus_isolate.allocate.allocate_threads_request import AllocateThreadsRequest
 from titus_isolate.allocate.constants import INSTANCE_ID
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.event.create_event_handler import CreateEventHandler
@@ -100,30 +99,10 @@ def get_test_workload(task_id, thread_count, launch_time=None) -> Workload:
         thread_count=thread_count)
 
 
-def get_no_usage_threads_request(cpu: Cpu, workloads: List[Workload]):
-    return AllocateThreadsRequest(
-        cpu=cpu,
-        workload_id=workloads[-1].get_task_id(),
-        workloads=__workloads_list_to_map(workloads),
-        resource_usage=GlobalResourceUsage({}),
-        cpu_usage={},
-        mem_usage={},
-        net_recv_usage={},
-        net_trans_usage={},
-        disk_usage={},
-        metadata=DEFAULT_TEST_REQUEST_METADATA)
-
-
-def get_no_usage_rebalance_request(cpu: Cpu, workloads: List[Workload]):
+def get_allocate_request(cpu: Cpu, workloads: List[Workload]):
     return AllocateRequest(
         cpu=cpu,
         workloads=__workloads_list_to_map(workloads),
-        resource_usage=GlobalResourceUsage({}),
-        cpu_usage={},
-        mem_usage={},
-        net_recv_usage={},
-        net_trans_usage={},
-        disk_usage={},
         metadata=DEFAULT_TEST_REQUEST_METADATA)
 
 

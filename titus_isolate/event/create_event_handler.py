@@ -2,11 +2,12 @@ from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, REQUIRED_LA
 from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.event.utils import get_container_name
 from titus_isolate import log
+from titus_isolate.isolate.workload_manager import WorkloadManager
 from titus_isolate.model.utils import get_workload
 
 
 class CreateEventHandler(EventHandler):
-    def __init__(self, workload_manager):
+    def __init__(self, workload_manager: WorkloadManager):
         super().__init__()
         self.__workload_manager = workload_manager
 
@@ -23,7 +24,9 @@ class CreateEventHandler(EventHandler):
             raise Exception(msg)
 
         self.handling_event(event, "adding workload: '{}'".format(workload.get_task_id()))
-        self.__workload_manager.add_workload(workload)
+        self.__workload_manager.isolate(
+            adds=[workload],
+            removes=[])
         self.handled_event(event, "added workload: '{}'".format(workload.get_task_id()))
 
     def __relevant(self, event):

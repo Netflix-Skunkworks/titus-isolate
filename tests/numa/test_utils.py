@@ -1,8 +1,6 @@
 import unittest
 
-from tests.utils import get_test_workload
-from titus_isolate.model.processor.config import get_cpu
-from titus_isolate.numa.utils import _set_numa_balancing, _occupies_entire_cpu
+from titus_isolate.numa.utils import _set_numa_balancing
 
 
 class TestUtils(unittest.TestCase):
@@ -13,12 +11,3 @@ class TestUtils(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             _set_numa_balancing(2)
-
-    def test_occupies_entire_cpu(self):
-        cpu = get_cpu()
-
-        workload = get_test_workload("a", len(cpu.get_threads()))
-        self.assertTrue(_occupies_entire_cpu(workload, cpu))
-
-        workload = get_test_workload("a", len(cpu.get_threads()) - 1)
-        self.assertFalse(_occupies_entire_cpu(workload, cpu))
