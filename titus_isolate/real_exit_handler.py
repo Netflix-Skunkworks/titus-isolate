@@ -11,6 +11,7 @@ class RealExitHandler(ExitHandler):
     def __init__(self):
         signal.signal(signal.SIGINT, self.__sig_exit)
         signal.signal(signal.SIGTERM, self.__sig_exit)
+        signal.signal(signal.SIGALRM, self.__sig_exit)
 
     def __sig_exit(self, signum, frame):
         log.info("Exiting due to signal: {} and frame: {}".format(signum, frame))

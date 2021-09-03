@@ -1,4 +1,5 @@
 import datetime
+import signal
 from typing import List
 
 from titus_isolate import log
@@ -24,6 +25,7 @@ def __get_value(dictionary, key, default=''):
 
 def get_current_workloads(docker_client) -> List[Workload]:
     workloads = []
+    signal.alarm(60)
     for container in docker_client.containers.list():
         workload = None
         try:
@@ -34,6 +36,7 @@ def get_current_workloads(docker_client) -> List[Workload]:
         if workload is not None:
             workloads.append(workload)
 
+    signal.alarm(0)
     return workloads
 
 
