@@ -1,6 +1,7 @@
 import datetime
 import signal
 from typing import List
+import re
 
 from titus_isolate import log
 from titus_isolate.event.constants import ACTOR, ATTRIBUTES, NAME
@@ -8,6 +9,8 @@ from titus_isolate.model.utils import get_workload
 from titus_isolate.model.workload_interface import Workload
 
 epoch = datetime.datetime.utcfromtimestamp(0)
+
+UUID_REGEX = r'^\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}$'
 
 
 def get_container_name(event):
@@ -27,6 +30,8 @@ def get_current_workloads(docker_client) -> List[Workload]:
     workloads = []
     signal.alarm(60)
     for container in docker_client.containers.list():
+        if not container_looks_like_titus_task(container):
+            continue
         workload = None
         try:
             workload = get_workload(container.name)
@@ -38,6 +43,20 @@ def get_current_workloads(docker_client) -> List[Workload]:
 
     signal.alarm(0)
     return workloads
+
+
+def container_looks_like_titus_task(container) -> bool:
+    """ All container that refer to titus tasks look like UUIDs.
+    Any non-uuid are likely to be extraContainers (sidecars), or potentially
+    other random junk. titus-isolate should not try to do
+    anything with these containers that cannot be looked up
+    in the titus api. """
+    return bool(re.match(UUID_REGEX, container.name))
+
+
+def is_event_from_a_titus_task(event) -> bool:
+    name = get_container_name(event)
+    return container_looks_like_titus_task(name)
 
 
 def unix_time_millis(dt: datetime):

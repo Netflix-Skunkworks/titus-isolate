@@ -21,7 +21,7 @@ from titus_isolate.event.event_handler import EventHandler
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY, \
     ENQUEUED_COUNT_KEY, DEQUEUED_COUNT_KEY, QUEUE_LATENCY_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
-from titus_isolate.utils import get_config_manager
+from titus_isolate.utils import get_config_manager, is_event_from_a_titus_task
 
 DEFAULT_EVENT_TIMEOUT_SECS = 60
 ENQUEUE_TIME_KEY = "enqueue_time"
@@ -107,7 +107,7 @@ class EventManager(MetricsReporter):
 
     def __put_event(self, event):
         event = json.loads(event.decode("utf-8"))
-        if event[ACTION] in HANDLED_ACTIONS:
+        if event[ACTION] in HANDLED_ACTIONS and is_event_from_a_titus_task(event):
             log.info("Enqueuing event: {}, queue depth: {}".format(event[ACTION], self.get_queue_depth()))
             event[ENQUEUE_TIME_KEY] = time.time()
             self.__q.put(event)
