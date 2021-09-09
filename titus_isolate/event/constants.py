@@ -9,6 +9,7 @@ NAME = "name"
 REPO_DIGESTS = 'RepoDigests'
 TIME = "time"
 TYPE = "Type"
+TASK_ID = "TITUS_TASK_INSTANCE_ID"
 
 CONTAINER = "container"
 
