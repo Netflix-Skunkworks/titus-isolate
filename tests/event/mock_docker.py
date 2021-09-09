@@ -8,7 +8,7 @@ from tests.utils import DEFAULT_TEST_MEM, DEFAULT_TEST_DISK, DEFAULT_TEST_NETWOR
     DEFAULT_TEST_JOB_ID
 from titus_isolate import log
 from titus_isolate.event.constants import ACTION, ACTOR, ATTRIBUTES, CONTAINER, ID, \
-    LOWERCASE_ID, NAME, TIME, TYPE, DIE, REPO_DIGESTS, START
+    LOWERCASE_ID, NAME, TIME, TYPE, DIE, REPO_DIGESTS, START, TASK_ID
 from titus_isolate.model.legacy_workload import LegacyWorkload
 from titus_isolate.model.workload_interface import Workload
 
@@ -103,6 +103,8 @@ def get_container_die_event(name=str(uuid.uuid4()).replace("-", ""), id=str(uuid
 
 
 def get_event(type, action, container_id, attributes):
+    attributes[TASK_ID] = container_id
+
     return json.dumps({
         LOWERCASE_ID: str(container_id),
         TYPE: str(type),

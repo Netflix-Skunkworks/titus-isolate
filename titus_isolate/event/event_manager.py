@@ -18,6 +18,7 @@ from titus_isolate.event.constants import REBALANCE_EVENT, RECONCILE_EVENT, ACTI
     HANDLED_ACTIONS, PREDICT_USAGE_EVENT, CONTAINER_EVENTS, INTERNAL_EVENTS, CONTAINER_BATCH, STARTS, DIES, \
     START, DIE
 from titus_isolate.event.event_handler import EventHandler
+from titus_isolate.event.utils import get_task_id, get_container_name
 from titus_isolate.metrics.constants import QUEUE_DEPTH_KEY, EVENT_SUCCEEDED_KEY, EVENT_FAILED_KEY, EVENT_PROCESSED_KEY, \
     ENQUEUED_COUNT_KEY, DEQUEUED_COUNT_KEY, QUEUE_LATENCY_KEY
 from titus_isolate.metrics.metrics_reporter import MetricsReporter
@@ -107,13 +108,26 @@ class EventManager(MetricsReporter):
 
     def __put_event(self, event):
         event = json.loads(event.decode("utf-8"))
-        if event[ACTION] in HANDLED_ACTIONS:
+        if self.__should_handle(event):
             log.info("Enqueuing event: {}, queue depth: {}".format(event[ACTION], self.get_queue_depth()))
             event[ENQUEUE_TIME_KEY] = time.time()
             self.__q.put(event)
             if self.__reg is not None:
                 self.__reg.counter(ENQUEUED_COUNT_KEY, self.__tags).increment()
                 self.__reg.counter(self.__get_enqueued_metric_name(event), self.__tags).increment()
+
+    @staticmethod
+    def __should_handle(event):
+        if event[ACTION] not in HANDLED_ACTIONS:
+            return False
+
+        if event[ACTION] in CONTAINER_EVENTS:
+            # If the start or die event doesn't have a Titus Task ID tag, then it's none of our business.
+            if get_task_id(event) == '':
+                log.info("Ignoring event: %s, for container: %s", event[ACTION], get_container_name(event))
+                return False
+
+        return True
 
     @staticmethod
     def __get_container_events(events: List) -> List:

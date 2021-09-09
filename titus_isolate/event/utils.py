@@ -3,7 +3,7 @@ import signal
 from typing import List
 
 from titus_isolate import log
-from titus_isolate.event.constants import ACTOR, ATTRIBUTES, NAME
+from titus_isolate.event.constants import ACTOR, ATTRIBUTES, NAME, TASK_ID
 from titus_isolate.model.utils import get_workload
 from titus_isolate.model.workload_interface import Workload
 
@@ -12,6 +12,10 @@ epoch = datetime.datetime.utcfromtimestamp(0)
 
 def get_container_name(event):
     return __get_attribute(event, NAME)
+
+
+def get_task_id(event):
+    return __get_attribute(event, TASK_ID)
 
 
 def __get_attribute(event, key, default=''):
