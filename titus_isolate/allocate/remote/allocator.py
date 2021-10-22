@@ -27,8 +27,8 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
         self.__endpoint = config_manager.get_cached_str(GRPC_REMOTE_ALLOC_ENDPOINT, None)
         if self.__endpoint is None:
             raise Exception("Could not get remote allocator endpoint address.")
-        self.__call_timeout_secs = 1000.0 * config_manager.get_cached_int(GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS,
-                                                                          GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS)
+        self.__call_timeout_secs = config_manager.get_cached_int(GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS,
+                                                                 GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS) / 1000.0
 
         self.__stub = self.__create_stub()
         self.__instance_ctx = self.__pull_context()
