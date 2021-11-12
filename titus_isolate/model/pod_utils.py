@@ -30,7 +30,8 @@ def get_start_time(pod: V1Pod) -> Optional[int]:
 
 
 def get_main_container_status(pod: V1Pod) -> Optional[V1ContainerStatus]:
-    statuses = [s for s in pod.status.container_statuses if s.name == pod.metadata.name]
+    # TODO: Only bother looking for 'main' once fully rolled out
+    statuses = [s for s in pod.status.container_statuses if s.name == "main" or s.name == pod.metadata.name]
     if len(statuses) != 1:
         return None
 
@@ -39,7 +40,8 @@ def get_main_container_status(pod: V1Pod) -> Optional[V1ContainerStatus]:
 
 def get_main_container(pod: V1Pod) -> Optional[V1Container]:
     pod_name = pod.metadata.name
-    containers = [c for c in pod.spec.containers if c.name == pod_name]
+    # TODO: Only bother looking for 'main' once fully rolled out
+    containers = [c for c in pod.spec.containers if c.name == "main" or c.name == pod_name]
 
     if len(containers) == 1:
         return containers[0]
