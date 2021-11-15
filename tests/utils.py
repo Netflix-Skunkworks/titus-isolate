@@ -153,7 +153,7 @@ def test_pod_json():
                 {
                     "image": "imageIsInContainerInfo",
                     "imagePullPolicy": "IfNotPresent",
-                    "name": "122413d6-79f2-4a24-82e3-3040b9890b43",
+                    "name": "main",
                     "resources": {
                         "limits": {
                             "cpu": str(2),
