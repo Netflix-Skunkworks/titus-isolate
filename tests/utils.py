@@ -4,8 +4,7 @@ import logging
 from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.event.container_batch_event_handler import ContainerBatchEventHandler
-from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID, ANNOTATION_KEY_POD_SPEC_VERSION, \
-    V1_ANNOTATION_KEY_JOB_ID
+from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID
 import numpy as np
 import time
 from typing import List
@@ -224,14 +223,12 @@ def test_pod_json():
 
 def get_simple_test_pod(v1=False) -> V1Pod:
     pod = test_pod_json()
+
     if v1:
         annotations = pod['metadata']['annotations']
-        annotations[ANNOTATION_KEY_POD_SPEC_VERSION] = "1"
-        annotations[V1_ANNOTATION_KEY_JOB_ID] = annotations[ANNOTATION_KEY_JOB_ID]
-
-        del annotations[ANNOTATION_KEY_JOB_ID]
         del annotations['containerInfo']
         del annotations['jobDescriptor']
+
     pod_str = json.dumps(pod)
     return parse_pod(pod_str)
 

@@ -36,7 +36,11 @@ def get_workload(identifier) -> Optional[KubernetesWorkload]:
         pod = pod_manager.get_pod(identifier)
         if pod is not None:
             log.info("Got pod from kubernetes: %s", identifier)
-            return KubernetesWorkload(pod)
+            try:
+                return KubernetesWorkload(pod)
+            except Exception as e:
+                log.exception("failed to construct kubernetes workload because: %s", e)
+                return None
 
         log.info("Retrying getting pod from kubernetes in %s seconds", retry_interval)
         time.sleep(retry_interval)
