@@ -6,7 +6,3 @@ LABEL_KEY_RESOURCE_POOL = 'scaler.titus.netflix.com/resource-pool'
 LABEL_KEY_JOB_ID = 'v3.job.titus.netflix.com/job-id'
 ANNOTATION_KEY_JOB_ID = 'titus.agent.jobId'
 UNKNOWN_INSTANCE_TYPE = 'unknown'
-
-# v1 pod spec constants
-ANNOTATION_KEY_POD_SPEC_VERSION = 'pod.netflix.com/pod-schema-version'
-V1_ANNOTATION_KEY_JOB_ID = 'v3.job.titus.netflix.com/id'

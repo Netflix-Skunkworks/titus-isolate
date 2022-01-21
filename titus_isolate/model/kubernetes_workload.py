@@ -1,11 +1,11 @@
 import copy
 import datetime
 import json
+from titus_isolate import log
 
 from kubernetes.client import V1Pod
 
-from titus_isolate.kub.constants import LABEL_KEY_JOB_ID, ANNOTATION_KEY_JOB_ID, ANNOTATION_KEY_POD_SPEC_VERSION, \
-    V1_ANNOTATION_KEY_JOB_ID
+from titus_isolate.kub.constants import LABEL_KEY_JOB_ID, ANNOTATION_KEY_JOB_ID
 from titus_isolate.model.constants import CPU, TASK_ID_KEY, THREAD_COUNT_KEY, POD, JOB_ID_KEY
 from titus_isolate.model.pod_utils import get_main_container, parse_kubernetes_value
 from titus_isolate.model.workload_interface import Workload
@@ -20,9 +20,7 @@ class KubernetesWorkload(Workload):
         main_container = get_main_container(pod)
         resource_requests = main_container.resources.requests
         self.__cpus = int(parse_kubernetes_value(resource_requests[CPU]))
-
-        job_meta = get_job_annotations_from_pod(pod)
-        self.__job_id = job_meta.get(JOB_ID_KEY)
+        self.__job_id = get_job_id(pod)
 
     def get_pod(self):
         return copy.deepcopy(self.__pod)
@@ -59,25 +57,18 @@ def get_workload_from_pod(pod: V1Pod) -> KubernetesWorkload:
     return KubernetesWorkload(pod)
 
 
-def get_job_annotations_from_pod(pod: V1Pod) -> dict:
+def get_job_id(pod: V1Pod) -> str:
     metadata = pod.metadata
     job_id = None
 
-    if metadata.annotations.get(ANNOTATION_KEY_POD_SPEC_VERSION) is not None:
-        job_id = metadata.annotations.get(V1_ANNOTATION_KEY_JOB_ID, None)
-
-        return {
-            JOB_ID_KEY: job_id,
-        }
-
-    # pre-v1 pod spec pods
-
     if metadata.labels is not None:
         job_id = metadata.labels.get(LABEL_KEY_JOB_ID, None)
+
     if job_id is None:
         # legacy, very few pods launched a while ago
-        job_id = metadata.annotations.get(ANNOTATION_KEY_JOB_ID, 'UNKNOWN_JOB_ID')
+        job_id = metadata.annotations.get(ANNOTATION_KEY_JOB_ID, None)
 
-    return {
-        JOB_ID_KEY: job_id,
-    }
+    if job_id is None:
+        raise Exception("failed to extract job ID for pod: {}".format(pod.metadata.name))
+
+    return job_id
