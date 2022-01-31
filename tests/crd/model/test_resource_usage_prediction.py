@@ -3,12 +3,14 @@ import uuid
 
 from titus_isolate.crd.model.resource_usage_prediction import ResourceUsagePredictions
 
+test_task_id = str(uuid.uuid4())
 test_job_id = str(uuid.uuid4())
 test_raw_prediction = {
     'model_version': '0.2',
     'model_instance_id': '523d600d-c83b-4e53-9a63-97e6257b8c89',
     'prediction_ts_ms': '1593199215000',
     'predictions': [{
+        'task_id': test_task_id,
         'job_id': test_job_id,
         'cpu': [{
             'quantile': 'p50',
