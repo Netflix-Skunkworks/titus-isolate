@@ -9,7 +9,7 @@ from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE
 from titus_isolate.config.config_manager import ConfigManager
 from titus_isolate.config.constants import PREDICTION_SERVICE_URL_FORMAT_STR, CREDENTIALS_PATH
-from titus_isolate.model.kubernetes_workload import KubernetesWorkload
+from titus_isolate.model.kubernetes_workload import KubernetesWorkload, get_job_id
 from titus_isolate.model.pod_utils import get_job_descriptor, get_start_time, get_main_container_status
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
@@ -87,6 +87,14 @@ def get_first_window_cpu_predictions(predictions: ResourceUsagePredictions):
 
 class ResourceUsagePredictor(SimpleCpuPredictor):
 
+    def __init__(self):
+        cm = get_config_manager()
+        stack = cm.get_stack()
+        tokens = stack.split("cell")
+        if len(tokens) != 2:
+            raise Exception("Invalid stack name")
+        self.__stack_base = tokens[0]
+
     @staticmethod
     def __translate_usage(usages: Dict[str, List[float]]) -> dict:
         out_usage = {}
@@ -98,11 +106,8 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
 
     def __get_job_body(self, pod: V1Pod, resource_usage: GlobalResourceUsage):
         return {
-            "job_id": pod.metadata.name,
-            # Note that on v1 pods job_descriptor is None.
-            # That is OK though, because the resource prediction service will fetch the job
-            # descriptor itself in that case.
-            "job_descriptor": get_job_descriptor(pod),
+            "task_id": pod.metadata.name,
+            "job_id": get_job_id(pod),
             "task_data": {
                 "started_ts_ms": str(get_start_time(pod)),
                 "past_usage": self.__translate_usage(
@@ -112,7 +117,8 @@ class ResourceUsagePredictor(SimpleCpuPredictor):
 
     def __get_body(self, pods: List[V1Pod], resource_usage: GlobalResourceUsage) -> Optional[dict]:
         return {
-            "jobs": [self.__get_job_body(p, resource_usage) for p in pods]
+            "jobs": [self.__get_job_body(p, resource_usage) for p in pods],
+            "meta_data": {"stack_base": self.__stack_base}
         }
 
     @staticmethod
