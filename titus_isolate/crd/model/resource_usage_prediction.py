@@ -13,6 +13,7 @@ MODEL_INSTANCE_ID = 'model_instance_id'
 PREDICTION_TS_MS = 'prediction_ts_ms'
 PREDICTIONS = 'predictions'
 JOB_ID = 'job_id'
+TASK_ID = 'task_id'
 CPU = "cpu"
 MEM_MB = "memMB"
 NET_TRANS_MBPS = "net_transMbps"
@@ -170,8 +171,8 @@ class ResourceUsagePredictions:
         preds = raw.get(PREDICTIONS)
         if preds is not None:
             for p in preds:
-                job_id = p.get(JOB_ID, "UNKNOWN_JOB_ID")
-                self.__predictions[job_id] = ResourceUsagePrediction(p)
+                task_id = p.get(TASK_ID, "UNKNOWN_TASK_ID")
+                self.__predictions[task_id] = ResourceUsagePrediction(p)
 
         if PRED_TIME2EMPTY_BATCH in self.metadata:
             content = self.metadata[PRED_TIME2EMPTY_BATCH]

@@ -3,12 +3,14 @@ import uuid
 
 from titus_isolate.crd.model.resource_usage_prediction import ResourceUsagePredictions
 
+test_task_id = str(uuid.uuid4())
 test_job_id = str(uuid.uuid4())
 test_raw_prediction = {
     'model_version': '0.2',
     'model_instance_id': '523d600d-c83b-4e53-9a63-97e6257b8c89',
     'prediction_ts_ms': '1593199215000',
     'predictions': [{
+        'task_id': test_task_id,
         'job_id': test_job_id,
         'cpu': [{
             'quantile': 'p50',
@@ -55,10 +57,10 @@ class TestResourceUsagePrediction(unittest.TestCase):
 
     def test_add_resource_usage_predictions(self):
         preds = ResourceUsagePredictions(test_raw_prediction)
-        first_job_prediction = preds.predictions[test_job_id]
+        first_task_prediction = preds.predictions[test_task_id]
 
-        summed_job_prediction = first_job_prediction.add(first_job_prediction)
-        for res_type, prediction in first_job_prediction.resource_type_predictions.items():
+        summed_job_prediction = first_task_prediction.add(first_task_prediction)
+        for res_type, prediction in first_task_prediction.resource_type_predictions.items():
             for percentile in prediction.predictions.keys():
                 for i in range(len(prediction.predictions[percentile])):
                     orig_pred = prediction.predictions[percentile][i]
