@@ -57,10 +57,10 @@ class TestResourceUsagePrediction(unittest.TestCase):
 
     def test_add_resource_usage_predictions(self):
         preds = ResourceUsagePredictions(test_raw_prediction)
-        first_job_prediction = preds.predictions[test_job_id]
+        first_task_prediction = preds.predictions[test_task_id]
 
-        summed_job_prediction = first_job_prediction.add(first_job_prediction)
-        for res_type, prediction in first_job_prediction.resource_type_predictions.items():
+        summed_job_prediction = first_task_prediction.add(first_task_prediction)
+        for res_type, prediction in first_task_prediction.resource_type_predictions.items():
             for percentile in prediction.predictions.keys():
                 for i in range(len(prediction.predictions[percentile])):
                     orig_pred = prediction.predictions[percentile][i]
