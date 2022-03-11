@@ -1,5 +1,8 @@
 import json
 
+# Docker Event constants. You can see these in action by watching
+# docker events --format '{{json .}}'
+# on a titus agent as containers start
 ACTION = "Action"
 ACTOR = "Actor"
 ATTRIBUTES = "Attributes"
@@ -9,9 +12,10 @@ NAME = "name"
 REPO_DIGESTS = 'RepoDigests'
 TIME = "time"
 TYPE = "Type"
-TASK_ID = "TITUS_TASK_INSTANCE_ID"
-
 CONTAINER = "container"
+# The above are stock docker string constants, the below are custom docker labels (attributes)
+# set by the titus executor
+TASK_ID = "titus.task_id"
 
 # Handled Actions
 # Docker
