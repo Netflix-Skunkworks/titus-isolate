@@ -6,7 +6,7 @@ requests
 schedule
 titus-optimize==0.7.2
 cvxopt==1.2.5
-netflix-spectator-py
+netflix-spectator-py==0.1.17
 kubernetes
 grpcio
 grpcio-tools
