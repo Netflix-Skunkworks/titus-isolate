@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 import copy
 
@@ -102,9 +103,13 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
         req = self.__build_base_req(request.get_cpu())
         req.metadata[REQ_TYPE_METADATA_KEY] = "isolate" # for logging purposes server side
 
+        workload_id_to_thread_count = {}
         for wid, w in request.get_workloads().items():
             req.task_to_job_id[wid] = w.get_job_id()
             req.tasks_to_place.append(wid)
+            workload_id_to_thread_count[w.get_task_id()] = str(w.get_thread_count())
+
+        req.metadata['workload_id_to_thread_count'] = json.dumps(workload_id_to_thread_count)
 
         try:
             log.info("remote isolate (tasks_to_place=%s)", req.tasks_to_place)
