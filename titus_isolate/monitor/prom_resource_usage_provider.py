@@ -1,11 +1,14 @@
+import json
 from datetime import datetime, timedelta
 from typing import List
+from cachetools import cached, TTLCache
 
 import requests
 
 from titus_isolate import log
 from titus_isolate.allocate.constants import CPU_USAGE, MEM_USAGE, NET_RECV_USAGE, NET_TRANS_USAGE, DISK_USAGE
-from titus_isolate.config.constants import PROMETHEUS_HOST_OVERRIDE
+from titus_isolate.config.constants import PROMETHEUS_HOST_OVERRIDE, PROMETHEUS_SHARDING_ENABLED, \
+    DEFAULT_PROMETHEUS_SHARDING_ENABLED
 from titus_isolate.monitor.resource_usage import ResourceUsage
 from titus_isolate.monitor.resource_usage_provider import ResourceUsageProvider
 from titus_isolate.utils import get_config_manager
@@ -24,7 +27,48 @@ def dt2str(dt: datetime) -> str:
     return dt.isoformat("T") + "Z"
 
 
-def get_prom_url() -> str:
+def get_prom_shard_discovery_url() -> str:
+    cm = get_config_manager()
+
+    # e.g.: titusprometheus-staging01cell001-x10.cluster.us-east-1.test.cloud.netflix.net
+    host = f'titusprometheus-{cm.get_stack()}-x10.cluster.{cm.get_region()}.{cm.get_environment()}.cloud.netflix.net'
+    port = '9092'
+
+    # This URL evaluates to shard 0 always. We reach out to this well known shard to find out which shard really scrapes
+    # the data for the local node.
+    return f'http://{host}:{port}/shard'
+
+
+def get_sharded_prom_url() -> str:
+    cm = get_config_manager()
+    url = get_prom_shard_discovery_url()
+    body = {
+        "instance": cm.get_instance()
+    }
+
+    log.info(f'prometheus shard discovery url: {url}, body: {body}')
+
+    response = requests.post(url, json=body)
+    if response.status_code != 200:
+        log.error("Failed to query shard discovery service: %s")
+        return "UNKNOWN_SHARDED_PROM_URL"
+
+    resp_bytes = response.content
+    resp_str = resp_bytes.decode('utf8')
+
+    log.info(f'prometheus shard discovery response: {resp_str}')
+    resp_json = json.loads(resp_str.strip())
+
+    prom_endpoint = resp_json["endpoints"]["prometheus"]
+    host = prom_endpoint["host"]
+    port = prom_endpoint["port"]
+
+    prom_url = f'http://{host}:{port}/api/v1/query_range'
+    log.info(f'prometheus shard url: {prom_url}')
+    return prom_url
+
+
+def get_unsharded_prom_url() -> str:
     cm = get_config_manager()
 
     # e.g. titusprometheus.us-east-1.staging01cell001.test.netflix.net
@@ -33,11 +77,18 @@ def get_prom_url() -> str:
     return f'http://{host}/api/v1/query_range'
 
 
+@cached(cache = TTLCache(maxsize = 10, ttl = 60))
+def get_prom_url() -> str:
+    cm = get_config_manager()
+    if cm.get_cached_bool(PROMETHEUS_SHARDING_ENABLED, DEFAULT_PROMETHEUS_SHARDING_ENABLED):
+        return get_sharded_prom_url()
+    else:
+        return get_unsharded_prom_url()
+
+
 class PrometheusResourceUsageProvider(ResourceUsageProvider):
 
     def __init__(self):
-        self.__prom_url = get_prom_url()
-        log.info(f'Prometheus URL: {self.__prom_url}')
         self.__instance_id = get_config_manager().get_instance()
 
     def get_resource_usages(self, workload_ids: List[str]) -> List[ResourceUsage]:
@@ -58,8 +109,12 @@ class PrometheusResourceUsageProvider(ResourceUsageProvider):
         return self.__get_usages(query, resource, start, end, scale)
 
     def __get_usages(self, query: str, resource: str, start: str, end: str, scale: float = 1.0) -> List[ResourceUsage]:
+        log.info('Getting Prometheus URL...')
+        prom_url = get_prom_url()
+        log.info(f'Prometheus URL: {prom_url}')
+
         resp = requests.get(
-            self.__prom_url,
+            prom_url,
             timeout=1,
             params={
                 'query': query,
