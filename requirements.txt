@@ -19,7 +19,7 @@ itsdangerous==2.0.1
 Jinja2==3.0.3
 jmespath==0.10.0
 joblib==1.1.0
-kubernetes==22.6.0
+kubernetes==23.6.0
 lightgbm==2.2.3
 MarkupSafe==2.0.1
 netflix-spectator-py==0.1.17
