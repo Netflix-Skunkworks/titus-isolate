@@ -12,13 +12,17 @@ from titus_isolate.allocate.allocate_response import AllocateResponse
 from titus_isolate.allocate.cpu_allocator import CpuAllocator
 from titus_isolate.allocate.workload_allocate_response import WorkloadAllocateResponse
 from titus_isolate.config.constants import GRPC_REMOTE_ALLOC_ENDPOINT, GRPC_REMOTE_ALLOC_CLIENT_CALL_TIMEOUT_MS, \
-    GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS
+    GRPC_REMOTE_ALLOC_DEFAULT_CLIENT_CALL_TIMEOUT_MS, SYS_CORE_IDS, SYS_CORES_USAGE, SYS_CORES_HARD_ISOLATE
 from titus_isolate.kub.constants import *
 from titus_isolate.kub.utils import get_node
 from titus_isolate.model.processor.config import get_cpu_from_env
 from titus_isolate.utils import get_config_manager
 
 REQ_TYPE_METADATA_KEY = "req_type"
+
+SYS_CORE_IDS_KEY = 'SYS_CORE_IDS'
+SYS_CORES_USAGE_KEY = 'SYS_CORES_USAGE'
+SYS_CORES_HARD_ISOLATE_KEY = 'SYS_CORES_HARD_ISOLATE'
 
 
 class GrpcRemoteIsolationAllocator(CpuAllocator):
@@ -37,6 +41,19 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
         self.__empty_cpu = get_cpu_from_env()
         self.__natural2original_indexing = self.__empty_cpu.get_natural_indexing_2_original_indexing()
         self.__original2natural_indexing = {v: k for k, v in self.__natural2original_indexing.items()}
+        self.__init_sys_cores_data(config_manager)
+
+    def __init_sys_cores_data(self, config_manager):
+        self.__metadata = {}
+        sys_core_ids = config_manager.get_cached_str(SYS_CORE_IDS, None)
+        if sys_core_ids != None:
+            self.__metadata[SYS_CORE_IDS_KEY] = str(sys_core_ids)
+        sys_cores_usage = config_manager.get_cached_str(SYS_CORES_USAGE, None)
+        if sys_cores_usage != None:
+            self.__metadata[SYS_CORES_USAGE_KEY] = str(sys_cores_usage)
+        sys_cores_hard_isolate = config_manager.get_cached_str(SYS_CORES_HARD_ISOLATE, None)
+        if sys_cores_hard_isolate != None:
+            self.__metadata[SYS_CORES_HARD_ISOLATE_KEY] = str(sys_cores_hard_isolate)
 
     def __build_base_req(self, cpu) -> pb.IsolationRequest:
         req = pb.IsolationRequest()
@@ -70,6 +87,8 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
         req.layout.packages.extend(packages)
         req.layout.threads_per_core = threads_per_core
         req.instance_context.CopyFrom(self.__instance_ctx)
+        for k,v in self.__metadata.items():
+            req.metadata[k] = v
         return req
 
     def __deser(self, response: pb.IsolationResponse) -> AllocateResponse:
