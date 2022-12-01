@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z\014isolation/v1',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\risolate.proto\x12\x0cisolation.v1\"&\n\x06Thread\x12\n\n\x02id\x18\x01 \x01(\r\x12\x10\n\x08task_ids\x18\x02 \x03(\t\"9\n\x04\x43ore\x12\n\n\x02id\x18\x01 \x01(\r\x12%\n\x07threads\x18\x02 \x03(\x0b\x32\x14.isolation.v1.Thread\"K\n\x07Package\x12\n\n\x02id\x18\x01 \x01(\r\x12\x11\n\tnum_cores\x18\x02 \x01(\r\x12!\n\x05\x63ores\x18\x03 \x03(\x0b\x32\x12.isolation.v1.Core\"K\n\x06Layout\x12\x18\n\x10threads_per_core\x18\x01 \x01(\r\x12\'\n\x08packages\x18\x02 \x03(\x0b\x32\x15.isolation.v1.Package\"\x8d\x01\n\x0fInstanceContext\x12\x13\n\x0binstance_id\x18\x01 \x01(\t\x12\r\n\x05stack\x18\x02 \x01(\t\x12\x0f\n\x07\x63luster\x18\x03 \x01(\t\x12\x17\n\x0f\x61utoscale_group\x18\x04 \x01(\t\x12\x15\n\rresource_pool\x18\x05 \x01(\t\x12\x15\n\rinstance_type\x18\x06 \x01(\t\"\xa7\x04\n\x10IsolationRequest\x12$\n\x06layout\x18\x01 \x01(\x0b\x32\x14.isolation.v1.Layout\x12\x16\n\x0etasks_to_place\x18\x02 \x03(\t\x12G\n\x0etask_to_job_id\x18\x03 \x03(\x0b\x32/.isolation.v1.IsolationRequest.TaskToJobIdEntry\x12W\n\x16task_to_job_descriptor\x18\x04 \x03(\x0b\x32\x37.isolation.v1.IsolationRequest.TaskToJobDescriptorEntry\x12\x19\n\x11\x64\x65sired_policy_id\x18\x05 \x01(\t\x12\x37\n\x10instance_context\x18\x06 \x01(\x0b\x32\x1d.isolation.v1.InstanceContext\x12>\n\x08metadata\x18\x07 \x03(\x0b\x32,.isolation.v1.IsolationRequest.MetadataEntry\x1a\x32\n\x10TaskToJobIdEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a:\n\x18TaskToJobDescriptorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c:\x02\x38\x01\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"B\n\x0b\x43\x46STunables\x12\x11\n\tperiod_us\x18\x01 \x01(\r\x12\x10\n\x08quota_us\x18\x02 \x01(\x05\x12\x0e\n\x06shares\x18\x03 \x01(\r\"`\n\x0e\x43pusetTunables\x12\x16\n\x0ememory_migrate\x18\x01 \x01(\x08\x12\x1a\n\x12memory_spread_page\x18\x02 \x01(\x08\x12\x1a\n\x12memory_spread_slab\x18\x03 \x01(\x08\"\x84\x01\n\x06\x43puset\x12\x12\n\nthread_ids\x18\x01 \x03(\r\x12/\n\x0c\x63\x66s_tunables\x18\x02 \x01(\x0b\x32\x19.isolation.v1.CFSTunables\x12\x35\n\x0f\x63puset_tunables\x18\x03 \x01(\x0b\x32\x1c.isolation.v1.CpusetTunables\"+\n\x06Policy\x12\n\n\x02id\x18\x01 \x01(\t\x12\x15\n\rmodel_version\x18\x02 \x01(\t\"\xc1\x02\n\x11IsolationResponse\x12=\n\x07\x63pusets\x18\x01 \x03(\x0b\x32,.isolation.v1.IsolationResponse.CpusetsEntry\x12\x0f\n\x07\x63\x65ll_id\x18\x02 \x01(\t\x12$\n\x06policy\x18\x03 \x01(\x0b\x32\x14.isolation.v1.Policy\x12?\n\x08metadata\x18\x04 \x03(\x0b\x32-.isolation.v1.IsolationResponse.MetadataEntry\x1a\x44\n\x0c\x43pusetsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.isolation.v1.Cpuset:\x02\x38\x01\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x14\n\x12\x43urrentCellRequest\"&\n\x13\x43urrentCellResponse\x12\x0f\n\x07\x63\x65ll_id\x18\x01 \x01(\t2\xc2\x01\n\x10IsolationService\x12U\n\x10\x43omputeIsolation\x12\x1e.isolation.v1.IsolationRequest\x1a\x1f.isolation.v1.IsolationResponse\"\x00\x12W\n\x0eGetCurrentCell\x12 .isolation.v1.CurrentCellRequest\x1a!.isolation.v1.CurrentCellResponse\"\x00\x42\x0eZ\x0cisolation/v1b\x06proto3'
+  serialized_pb=b'\n\risolate.proto\x12\x0cisolation.v1\"&\n\x06Thread\x12\n\n\x02id\x18\x01 \x01(\r\x12\x10\n\x08task_ids\x18\x02 \x03(\t\"9\n\x04\x43ore\x12\n\n\x02id\x18\x01 \x01(\r\x12%\n\x07threads\x18\x02 \x03(\x0b\x32\x14.isolation.v1.Thread\"K\n\x07Package\x12\n\n\x02id\x18\x01 \x01(\r\x12\x11\n\tnum_cores\x18\x02 \x01(\r\x12!\n\x05\x63ores\x18\x03 \x03(\x0b\x32\x12.isolation.v1.Core\"K\n\x06Layout\x12\x18\n\x10threads_per_core\x18\x01 \x01(\r\x12\'\n\x08packages\x18\x02 \x03(\x0b\x32\x15.isolation.v1.Package\"\x8d\x01\n\x0fInstanceContext\x12\x13\n\x0binstance_id\x18\x01 \x01(\t\x12\r\n\x05stack\x18\x02 \x01(\t\x12\x0f\n\x07\x63luster\x18\x03 \x01(\t\x12\x17\n\x0f\x61utoscale_group\x18\x04 \x01(\t\x12\x15\n\rresource_pool\x18\x05 \x01(\t\x12\x15\n\rinstance_type\x18\x06 \x01(\t\"V\n\tCoTenancy\x12\x13\n\x0btarget_task\x18\x01 \x01(\t\x12\x1b\n\x13prct_slack_occupied\x18\x02 \x01(\x02\x12\x17\n\x0f\x63o_tenant_tasks\x18\x03 \x03(\t\"7\n\x0c\x41ntiAffinity\x12\x12\n\nfirst_task\x18\x01 \x01(\t\x12\x13\n\x0bsecond_task\x18\x02 \x01(\t\"\x96\x01\n\x0b\x43onstraints\x12,\n\x0b\x63otenancies\x18\x01 \x03(\x0b\x32\x17.isolation.v1.CoTenancy\x12\x33\n\x0f\x61nti_affinities\x18\x02 \x03(\x0b\x32\x1a.isolation.v1.AntiAffinity\x12$\n\x1cmax_cores_to_use_per_package\x18\x03 \x01(\r\"\xd7\x04\n\x10IsolationRequest\x12$\n\x06layout\x18\x01 \x01(\x0b\x32\x14.isolation.v1.Layout\x12\x16\n\x0etasks_to_place\x18\x02 \x03(\t\x12G\n\x0etask_to_job_id\x18\x03 \x03(\x0b\x32/.isolation.v1.IsolationRequest.TaskToJobIdEntry\x12W\n\x16task_to_job_descriptor\x18\x04 \x03(\x0b\x32\x37.isolation.v1.IsolationRequest.TaskToJobDescriptorEntry\x12\x19\n\x11\x64\x65sired_policy_id\x18\x05 \x01(\t\x12\x37\n\x10instance_context\x18\x06 \x01(\x0b\x32\x1d.isolation.v1.InstanceContext\x12>\n\x08metadata\x18\x07 \x03(\x0b\x32,.isolation.v1.IsolationRequest.MetadataEntry\x12.\n\x0b\x63onstraints\x18\x08 \x01(\x0b\x32\x19.isolation.v1.Constraints\x1a\x32\n\x10TaskToJobIdEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a:\n\x18TaskToJobDescriptorEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c:\x02\x38\x01\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"B\n\x0b\x43\x46STunables\x12\x11\n\tperiod_us\x18\x01 \x01(\r\x12\x10\n\x08quota_us\x18\x02 \x01(\x05\x12\x0e\n\x06shares\x18\x03 \x01(\r\"`\n\x0e\x43pusetTunables\x12\x16\n\x0ememory_migrate\x18\x01 \x01(\x08\x12\x1a\n\x12memory_spread_page\x18\x02 \x01(\x08\x12\x1a\n\x12memory_spread_slab\x18\x03 \x01(\x08\"\x84\x01\n\x06\x43puset\x12\x12\n\nthread_ids\x18\x01 \x03(\r\x12/\n\x0c\x63\x66s_tunables\x18\x02 \x01(\x0b\x32\x19.isolation.v1.CFSTunables\x12\x35\n\x0f\x63puset_tunables\x18\x03 \x01(\x0b\x32\x1c.isolation.v1.CpusetTunables\"+\n\x06Policy\x12\n\n\x02id\x18\x01 \x01(\t\x12\x15\n\rmodel_version\x18\x02 \x01(\t\"\xc1\x02\n\x11IsolationResponse\x12=\n\x07\x63pusets\x18\x01 \x03(\x0b\x32,.isolation.v1.IsolationResponse.CpusetsEntry\x12\x0f\n\x07\x63\x65ll_id\x18\x02 \x01(\t\x12$\n\x06policy\x18\x03 \x01(\x0b\x32\x14.isolation.v1.Policy\x12?\n\x08metadata\x18\x04 \x03(\x0b\x32-.isolation.v1.IsolationResponse.MetadataEntry\x1a\x44\n\x0c\x43pusetsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.isolation.v1.Cpuset:\x02\x38\x01\x1a/\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x14\n\x12\x43urrentCellRequest\"&\n\x13\x43urrentCellResponse\x12\x0f\n\x07\x63\x65ll_id\x18\x01 \x01(\t2\xc2\x01\n\x10IsolationService\x12U\n\x10\x43omputeIsolation\x12\x1e.isolation.v1.IsolationRequest\x1a\x1f.isolation.v1.IsolationResponse\"\x00\x12W\n\x0eGetCurrentCell\x12 .isolation.v1.CurrentCellRequest\x1a!.isolation.v1.CurrentCellResponse\"\x00\x42\x0eZ\x0cisolation/v1b\x06proto3'
 )
 
 
@@ -255,6 +255,137 @@ _INSTANCECONTEXT = _descriptor.Descriptor(
 )
 
 
+_COTENANCY = _descriptor.Descriptor(
+  name='CoTenancy',
+  full_name='isolation.v1.CoTenancy',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='target_task', full_name='isolation.v1.CoTenancy.target_task', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='prct_slack_occupied', full_name='isolation.v1.CoTenancy.prct_slack_occupied', index=1,
+      number=2, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='co_tenant_tasks', full_name='isolation.v1.CoTenancy.co_tenant_tasks', index=2,
+      number=3, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=428,
+  serialized_end=514,
+)
+
+
+_ANTIAFFINITY = _descriptor.Descriptor(
+  name='AntiAffinity',
+  full_name='isolation.v1.AntiAffinity',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='first_task', full_name='isolation.v1.AntiAffinity.first_task', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='second_task', full_name='isolation.v1.AntiAffinity.second_task', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=516,
+  serialized_end=571,
+)
+
+
+_CONSTRAINTS = _descriptor.Descriptor(
+  name='Constraints',
+  full_name='isolation.v1.Constraints',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='cotenancies', full_name='isolation.v1.Constraints.cotenancies', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='anti_affinities', full_name='isolation.v1.Constraints.anti_affinities', index=1,
+      number=2, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='max_cores_to_use_per_package', full_name='isolation.v1.Constraints.max_cores_to_use_per_package', index=2,
+      number=3, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=574,
+  serialized_end=724,
+)
+
+
 _ISOLATIONREQUEST_TASKTOJOBIDENTRY = _descriptor.Descriptor(
   name='TaskToJobIdEntry',
   full_name='isolation.v1.IsolationRequest.TaskToJobIdEntry',
@@ -289,8 +420,8 @@ _ISOLATIONREQUEST_TASKTOJOBIDENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=821,
-  serialized_end=871,
+  serialized_start=1167,
+  serialized_end=1217,
 )
 
 _ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY = _descriptor.Descriptor(
@@ -327,8 +458,8 @@ _ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=873,
-  serialized_end=931,
+  serialized_start=1219,
+  serialized_end=1277,
 )
 
 _ISOLATIONREQUEST_METADATAENTRY = _descriptor.Descriptor(
@@ -365,8 +496,8 @@ _ISOLATIONREQUEST_METADATAENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=933,
-  serialized_end=980,
+  serialized_start=1279,
+  serialized_end=1326,
 )
 
 _ISOLATIONREQUEST = _descriptor.Descriptor(
@@ -426,6 +557,13 @@ _ISOLATIONREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='constraints', full_name='isolation.v1.IsolationRequest.constraints', index=7,
+      number=8, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -438,8 +576,8 @@ _ISOLATIONREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=429,
-  serialized_end=980,
+  serialized_start=727,
+  serialized_end=1326,
 )
 
 
@@ -484,8 +622,8 @@ _CFSTUNABLES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=982,
-  serialized_end=1048,
+  serialized_start=1328,
+  serialized_end=1394,
 )
 
 
@@ -530,8 +668,8 @@ _CPUSETTUNABLES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1050,
-  serialized_end=1146,
+  serialized_start=1396,
+  serialized_end=1492,
 )
 
 
@@ -576,8 +714,8 @@ _CPUSET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1149,
-  serialized_end=1281,
+  serialized_start=1495,
+  serialized_end=1627,
 )
 
 
@@ -615,8 +753,8 @@ _POLICY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1283,
-  serialized_end=1326,
+  serialized_start=1629,
+  serialized_end=1672,
 )
 
 
@@ -654,8 +792,8 @@ _ISOLATIONRESPONSE_CPUSETSENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1533,
-  serialized_end=1601,
+  serialized_start=1879,
+  serialized_end=1947,
 )
 
 _ISOLATIONRESPONSE_METADATAENTRY = _descriptor.Descriptor(
@@ -692,8 +830,8 @@ _ISOLATIONRESPONSE_METADATAENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=933,
-  serialized_end=980,
+  serialized_start=1279,
+  serialized_end=1326,
 )
 
 _ISOLATIONRESPONSE = _descriptor.Descriptor(
@@ -744,8 +882,8 @@ _ISOLATIONRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1329,
-  serialized_end=1650,
+  serialized_start=1675,
+  serialized_end=1996,
 )
 
 
@@ -769,8 +907,8 @@ _CURRENTCELLREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1652,
-  serialized_end=1672,
+  serialized_start=1998,
+  serialized_end=2018,
 )
 
 
@@ -801,13 +939,15 @@ _CURRENTCELLRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1674,
-  serialized_end=1712,
+  serialized_start=2020,
+  serialized_end=2058,
 )
 
 _CORE.fields_by_name['threads'].message_type = _THREAD
 _PACKAGE.fields_by_name['cores'].message_type = _CORE
 _LAYOUT.fields_by_name['packages'].message_type = _PACKAGE
+_CONSTRAINTS.fields_by_name['cotenancies'].message_type = _COTENANCY
+_CONSTRAINTS.fields_by_name['anti_affinities'].message_type = _ANTIAFFINITY
 _ISOLATIONREQUEST_TASKTOJOBIDENTRY.containing_type = _ISOLATIONREQUEST
 _ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY.containing_type = _ISOLATIONREQUEST
 _ISOLATIONREQUEST_METADATAENTRY.containing_type = _ISOLATIONREQUEST
@@ -816,6 +956,7 @@ _ISOLATIONREQUEST.fields_by_name['task_to_job_id'].message_type = _ISOLATIONREQU
 _ISOLATIONREQUEST.fields_by_name['task_to_job_descriptor'].message_type = _ISOLATIONREQUEST_TASKTOJOBDESCRIPTORENTRY
 _ISOLATIONREQUEST.fields_by_name['instance_context'].message_type = _INSTANCECONTEXT
 _ISOLATIONREQUEST.fields_by_name['metadata'].message_type = _ISOLATIONREQUEST_METADATAENTRY
+_ISOLATIONREQUEST.fields_by_name['constraints'].message_type = _CONSTRAINTS
 _CPUSET.fields_by_name['cfs_tunables'].message_type = _CFSTUNABLES
 _CPUSET.fields_by_name['cpuset_tunables'].message_type = _CPUSETTUNABLES
 _ISOLATIONRESPONSE_CPUSETSENTRY.fields_by_name['value'].message_type = _CPUSET
@@ -829,6 +970,9 @@ DESCRIPTOR.message_types_by_name['Core'] = _CORE
 DESCRIPTOR.message_types_by_name['Package'] = _PACKAGE
 DESCRIPTOR.message_types_by_name['Layout'] = _LAYOUT
 DESCRIPTOR.message_types_by_name['InstanceContext'] = _INSTANCECONTEXT
+DESCRIPTOR.message_types_by_name['CoTenancy'] = _COTENANCY
+DESCRIPTOR.message_types_by_name['AntiAffinity'] = _ANTIAFFINITY
+DESCRIPTOR.message_types_by_name['Constraints'] = _CONSTRAINTS
 DESCRIPTOR.message_types_by_name['IsolationRequest'] = _ISOLATIONREQUEST
 DESCRIPTOR.message_types_by_name['CFSTunables'] = _CFSTUNABLES
 DESCRIPTOR.message_types_by_name['CpusetTunables'] = _CPUSETTUNABLES
@@ -873,6 +1017,27 @@ InstanceContext = _reflection.GeneratedProtocolMessageType('InstanceContext', (_
   # @@protoc_insertion_point(class_scope:isolation.v1.InstanceContext)
   })
 _sym_db.RegisterMessage(InstanceContext)
+
+CoTenancy = _reflection.GeneratedProtocolMessageType('CoTenancy', (_message.Message,), {
+  'DESCRIPTOR' : _COTENANCY,
+  '__module__' : 'isolate_pb2'
+  # @@protoc_insertion_point(class_scope:isolation.v1.CoTenancy)
+  })
+_sym_db.RegisterMessage(CoTenancy)
+
+AntiAffinity = _reflection.GeneratedProtocolMessageType('AntiAffinity', (_message.Message,), {
+  'DESCRIPTOR' : _ANTIAFFINITY,
+  '__module__' : 'isolate_pb2'
+  # @@protoc_insertion_point(class_scope:isolation.v1.AntiAffinity)
+  })
+_sym_db.RegisterMessage(AntiAffinity)
+
+Constraints = _reflection.GeneratedProtocolMessageType('Constraints', (_message.Message,), {
+  'DESCRIPTOR' : _CONSTRAINTS,
+  '__module__' : 'isolate_pb2'
+  # @@protoc_insertion_point(class_scope:isolation.v1.Constraints)
+  })
+_sym_db.RegisterMessage(Constraints)
 
 IsolationRequest = _reflection.GeneratedProtocolMessageType('IsolationRequest', (_message.Message,), {
 
@@ -985,8 +1150,8 @@ _ISOLATIONSERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=1715,
-  serialized_end=1909,
+  serialized_start=2061,
+  serialized_end=2255,
   methods=[
   _descriptor.MethodDescriptor(
     name='ComputeIsolation',

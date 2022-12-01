@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import titus_isolate.allocate.remote.isolate_pb2 as isolate__pb2
+import isolate_pb2 as isolate__pb2
 
 
 class IsolationServiceStub(object):
