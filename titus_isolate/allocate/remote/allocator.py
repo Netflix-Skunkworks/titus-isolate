@@ -2,6 +2,7 @@ import json
 from collections import defaultdict
 import copy
 
+from google.protobuf.json_format import Parse as ParsePbJson
 import grpc
 import titus_isolate.allocate.remote.isolate_pb2 as pb
 import titus_isolate.allocate.remote.isolate_pb2_grpc as pb_grpc
@@ -23,6 +24,8 @@ REQ_TYPE_METADATA_KEY = "req_type"
 SYS_CORE_IDS_KEY = 'SYS_CORE_IDS'
 SYS_CORES_USAGE_KEY = 'SYS_CORES_USAGE'
 SYS_CORES_HARD_ISOLATE_KEY = 'SYS_CORES_HARD_ISOLATE'
+
+CONSTRAINTS_FILE_PATH = "/opt/venvs/titus-isolate/constraints.json"
 
 
 class GrpcRemoteIsolationAllocator(CpuAllocator):
@@ -91,6 +94,18 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
             req.metadata[k] = v
         return req
 
+    @staticmethod
+    def __load_custom_constraints() -> pb.Constraints:
+        try:
+            with open(CONSTRAINTS_FILE_PATH) as f:
+                return ParsePbJson(f.read(), pb.Constraints())
+        except FileNotFoundError:
+            return None
+        except Exception as e:
+            log.error("Failed to load custom constraints file. Invalid syntax:\n %s", e, exc_info=1)
+            return None
+
+
     def __deser(self, response: pb.IsolationResponse) -> AllocateResponse:
         new_cpu = copy.deepcopy(self.__empty_cpu)
         id2workloads = defaultdict(list)
@@ -129,6 +144,11 @@ class GrpcRemoteIsolationAllocator(CpuAllocator):
             workload_id_to_thread_count[w.get_task_id()] = str(w.get_thread_count())
 
         req.metadata['workload_id_to_thread_count'] = json.dumps(workload_id_to_thread_count)
+
+        constraints = self.__load_custom_constraints()
+        if constraints is not None:
+            log.info("custom constraints to apply: %s", str(constraints).replace('\n', ' '))
+            req.constraints.CopyFrom(constraints)
 
         try:
             log.info("remote isolate (tasks_to_place=%s)", req.tasks_to_place)
