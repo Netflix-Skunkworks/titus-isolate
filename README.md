@@ -10,7 +10,7 @@
 Given a machine hosting multiple containers, `titus-isolate` partitions the available compute hardware (hyper-threads) 
 to achieve isolation and efficiency goals.
 
-In general greater cost efficiency implies less isolation and vice-versa.  To achieve maximal isolation workloads 
+In general greater cost efficiency implies less isolation and vice-versa. To achieve maximal isolation workloads 
 (containers) could each be running on their own dedicated machine, at the cost of great inefficiency.  On the other hand,
 to achieve maximal efficiency, many containers (thousands) could be run on the same machine, but at the cost of high
 interference and poor performance.
@@ -19,22 +19,11 @@ interference and poor performance.
 
 The core mechanism which enables compute isolation is to partition access to sets of hyper-threads on a per workload basis.
 This is accomplished by manipulation of the [`cpusets` cgroup](https://www.kernel.org/doc/Documentation/cgroup-v1/cpusets.txt)
-
-Workloads are categorized into either static or burst categories.  Each choice of workload type comes with a cost/benefit trade off.
-* static
-	* benefit: the workload will be isolated to the greatest degree possible, leading to more consistent performance
-	* cost: the workload opts out of consuming unallocated CPU capacity
-* burst
-	* benefit: the workload may consume unallocate CPU capacity
-	* cost: the workload opts in to less isolation from other workloads, and will see greater variance in performance depending on CPU usage
 	
 Choosing an efficient and performant partitioning of CPU resources is not a perfectly solvable problem.  `titus-isolate`
-allows for the specification of two core components which determine actual partitioning behavior: `CpuAllocator` and `FreeThreadProvider`
-
-In general the `CpuAllocator` determines how best to partition CPU resources according to the requested capacity of each
-workload.  The `FreeThreadProvider` determines which hyper-threads are "free" and therefore consumable by `burst`
-workloads.  The most advanced choices for these components are the `ForecastIPCpuAllocator` and 
-`OversubscribeFreeThreadProvider` respectively.
+delegates the choice of cpusets to a remote gRPC service, which is called through the `GrpcRemoteIsolationAllocator` client,
+a specialized kind of `CpuAllocator`. This remote service runs a MIP solver and come up with a placement proposal maximizing overall
+isolation and efficiency (balanced usage of hyper-threads, minimal overlap between cpusets etc.).
 
 ### CPU Diagrams
 Let us walk through an example scenario to get a feel for how hyper-thread allocation occurs under different conditions.
@@ -264,6 +253,56 @@ The workload manager is constantly processing a queue of events for adding, remo
 * queue depth: goes to zero very quickly in a properly operating system
 * success count: a count of the number of events it has processed successfully
 * error count: indicates how many events it failed to process
+
+### Specifying custom placement constraints
+For debugging purposes or experiments, it might be useful to specify custom constraints to the placement oof the containers one wants.
+`titus-isolate` and its remote service counterpart offer an API to do so. Note that this mode of operation is only designed for manual
+one-off interventions on specific machines by responsible users and in particular should **NOT** be automated against.
+
+If a file is present at `/opt/venvs/titus-isolate/constraints.json` on the Titus agent, it will be parsed and the constraints defined
+in this file will be added to every isolation request submitted to the service. It is not necessary to restart the `titus-isolate` unit, 
+as this file is read every time a request is submitted.
+
+The content of this file has to be a valid `json` representation of the `Constraints` protobuf API defined at `allocate/remote/isolate_pb2.py`.
+If the file is invalid, its content will be ignored, and a stack trace will be reported in `titus-isolate` logs.
+
+Here is an example of such file:
+```json
+{
+    "antiAffinities": [
+        {
+            "first_task": "a",
+            "second_task": "*"
+        }
+    ],
+    "cotenancies": [
+        {
+            "target_task": "b",
+            "co_tenant_tasks": ["c", "d"]
+        },
+        {
+            "target_task": "e",
+            "prct_slack_occupied": 30.0
+        }
+    ],
+    "maxCoresToUsePerPackage": 21
+}
+```
+#### Anti-affinity
+For a given target task, one can specify which tasks should not have overlapping cpusets with it. Specifying * means "No other task should overlap with me" (ie: no oversubscription).
+In the above example, we want Titus task `a` to have guaranteed dedicated cpus.
+
+#### Co-Tenancy
+##### Percent Slack Occupied
+For a given target task (`e`) in the example above, the solver will try to find a combination of other tasks making use of the specified percentage of slack of the target task,
+where slack is defined as `cgroup.limit - usage`.
+
+##### Co-tenant tasks
+For a given target task (victim, `b` in the example above), one can specify which specific other tasks (offenders: `c` and `d`) should overlap as much as possible with it. If an offender cpuset A is smaller or equal to the victim cpuset V, we will search for a solution such that A \in V. If the offender cpuset B is bigger than the victim, we will search a solution such that V \in B
+
+#### Max cores to use per package
+Allows to compress placements globally (and hence drive contention on the host) by avoiding any layout on a specified number of cores per socket.
+
 
 ## Build a Debian package
 
