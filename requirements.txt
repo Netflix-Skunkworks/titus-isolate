@@ -21,7 +21,7 @@ joblib==1.1.0
 kubernetes==24.2.0
 MarkupSafe==2.0.1
 netflix-spectator-py==0.1.17
-oauthlib==3.2.0
+oauthlib==3.2.1
 osqp==0.6.2.post5
 pandas==0.24.1
 pkg_resources==0.0.0
