@@ -5,7 +5,6 @@ from titus_isolate.allocate.allocate_request import AllocateRequest
 from titus_isolate.allocate.greedy_cpu_allocator import GreedyCpuAllocator
 from titus_isolate.event.container_batch_event_handler import ContainerBatchEventHandler
 from titus_isolate.kub.constants import ANNOTATION_KEY_JOB_ID
-import numpy as np
 import time
 from typing import List
 
@@ -24,7 +23,6 @@ from titus_isolate.model.processor.config import get_cpu
 from titus_isolate.model.processor.cpu import Cpu
 from titus_isolate.model.workload_interface import Workload
 from titus_isolate.monitor.resource_usage import GlobalResourceUsage
-from titus_isolate.predict.cpu_usage_predictor import PredEnvironment
 from titus_isolate.utils import set_config_manager
 
 DEFAULT_TIMEOUT_SECONDS = 3
@@ -261,31 +259,6 @@ class TestPredictor(object):
 
     def __init__(self):
         self.meta_data = {'model_training_titus_task_id': '123'}
-
-
-class TestCpuUsagePredictor:
-
-    def __init__(self, constant_percent_busy: float = 100):
-        self.__constant_percent_busy = constant_percent_busy
-        self.__model = TestPredictor()
-
-    def predict(self, workload: Workload, cpu_usage_last_hour: np.array, pred_env: PredEnvironment) -> float:
-        return workload.get_thread_count() * self.__constant_percent_busy / 100
-
-    def get_model(self):
-        return self.__model
-
-
-class TestCpuUsagePredictorManager:
-
-    def __init__(self, predictor=TestCpuUsagePredictor()):
-        self.__predictor = predictor
-
-    def get_cpu_predictor(self):
-        return self.__predictor
-
-    def set_predictor(self, predictor):
-        self.__predictor = predictor
 
 
 class TestWorkloadMonitorManager:

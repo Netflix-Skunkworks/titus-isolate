@@ -7,7 +7,6 @@ import schedule
 from titus_isolate import log
 from titus_isolate.allocate.utils import download_latest_cpu_model, get_cpu_model_file_path, CPU_PREDICTOR, \
     DEFAULT_CPU_PREDICTOR, SERVICE_CPU_PREDICTOR, LEGACY_CPU_PREDICTOR
-from titus_isolate.predict.cpu_usage_predictor import CpuUsagePredictor
 from titus_isolate.predict.resource_usage_predictor import ResourceUsagePredictor
 from titus_isolate.predict.simple_cpu_predictor import SimpleCpuPredictor
 from titus_isolate.utils import get_config_manager
@@ -33,9 +32,7 @@ class ConfigurableCpuUsagePredictorManager(CpuUsagePredictorManager):
     def __update_local_model(self):
         cpu_predictor = get_config_manager().get_str(CPU_PREDICTOR, DEFAULT_CPU_PREDICTOR)
         if cpu_predictor == LEGACY_CPU_PREDICTOR:
-            download_latest_cpu_model()
-            with self.__lock:
-                self.__cpu_usage_predictor = CpuUsagePredictor(get_cpu_model_file_path())
+            raise Exception("Unsupported legacy CPU predictor")
         else:
             log.info("Skipping model update.  CPU predictor: %s", cpu_predictor)
 

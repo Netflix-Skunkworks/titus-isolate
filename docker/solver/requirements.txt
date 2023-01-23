@@ -6,7 +6,6 @@ netflix-spectator-py
 netflix-spectator-pyconf
 requests
 schedule
-titus-optimize==0.7.7
 grpcio
 grpcio-tools
 /titus-isolate-0.SNAPSHOT.tar.gz

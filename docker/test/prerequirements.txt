@@ -1,9 +1,1 @@
-cython==0.28.5
-numpy
-scipy
-matplotlib
-ipython
-jupyter
-pandas
-sympy
 nose
