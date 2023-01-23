@@ -261,18 +261,6 @@ class TestPredictor(object):
         self.meta_data = {'model_training_titus_task_id': '123'}
 
 
-class TestCpuUsagePredictorManager:
-
-    def __init__(self, predictor=TestCpuUsagePredictor()):
-        self.__predictor = predictor
-
-    def get_cpu_predictor(self):
-        return self.__predictor
-
-    def set_predictor(self, predictor):
-        self.__predictor = predictor
-
-
 class TestWorkloadMonitorManager:
     def get_resource_usage(self, workload_ids: List[str]) -> GlobalResourceUsage:
         return GlobalResourceUsage({})
