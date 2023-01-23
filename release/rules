@@ -4,7 +4,7 @@
 	dh $@ --with systemd,python-virtualenv
 
 override_dh_virtualenv:
-	dh_virtualenv --python /usr/bin/python3 --no-test --preinstall numpy
+	dh_virtualenv --python /usr/bin/python3 --no-test
 override_dh_installinit:
 	echo "Supressing installinit, unneeded for systemd only packages"
 override_dh_systemd_start:
