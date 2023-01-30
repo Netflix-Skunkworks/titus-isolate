@@ -255,7 +255,7 @@ The workload manager is constantly processing a queue of events for adding, remo
 * error count: indicates how many events it failed to process
 
 ### Specifying custom placement constraints
-For debugging purposes or experiments, it might be useful to specify custom constraints to the placement oof the containers one wants.
+For debugging purposes or experiments, it might be useful to specify custom constraints to the placement of the containers one wants.
 `titus-isolate` and its remote service counterpart offer an API to do so. Note that this mode of operation is only designed for manual
 one-off interventions on specific machines by responsible users and in particular should **NOT** be automated against.
 
