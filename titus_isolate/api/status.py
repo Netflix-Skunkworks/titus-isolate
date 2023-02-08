@@ -36,6 +36,7 @@ from titus_isolate.utils import get_config_manager, get_workload_manager, \
     set_event_log_manager, start_periodic_scheduling, set_cpu_usage_predictor_manager, \
     set_workload_monitor_manager, set_workload_manager, set_event_manager, set_pod_manager, is_running_on_agent, \
     get_pod_manager
+from titus_isolate.model.processor import utils
 
 app = Flask(__name__)
 
@@ -86,6 +87,11 @@ def get_isolated_workload_ids():
 @app.route('/cpu')
 def get_cpu():
     return json.dumps(get_workload_manager().get_cpu().to_dict())
+
+
+@app.route('/cpu_viz')
+def get_cpu_viz():
+    return utils.visualize(get_workload_manager().get_cpu())
 
 
 @app.route('/violations')

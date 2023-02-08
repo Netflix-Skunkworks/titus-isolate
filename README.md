@@ -177,6 +177,19 @@ $ curl -s localhost:5555/cpu | jq
 }
 ```
 
+```
+GET /cpu_viz
+```
+This endpoint prints out a human readable ascii cpu diagram with the current tasks.
+```bash
+$ curl -s localhost:5555/cpu_viz
+| a | a | a | a |   a: ['burst0_4', 'burst1_4']
+| a | a | a | a |   b: ['static_2']
+| ------------- |
+| a | a | b | b |
+| a | a |   |   |
+```
+
 ### Violations
 ```
 GET /violations
